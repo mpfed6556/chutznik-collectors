@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-07-27T20:59:01.574Z",
+  "lastRun": "2026-07-27T22:16:25.459Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -35,10 +35,10 @@
     "Nefesh B'Nefesh": "ok via RSS (6 items)",
     "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
     "AACI": "no feed and no scannable items — needs manual selector or has no public news list",
-    "Janglo": "page HTTP 415",
+    "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
-    "Drushim": "ok via RSS (6 items)",
+    "Drushim": "page HTTP 404",
     "Jerusalem Light Rail (Cfir)": "page HTTP 404",
     "JET Jerusalem Transportation": "ok via RSS (6 items)",
     "Tel Aviv Light Rail (Dankal)": "blocked: robots.txt unreachable — skipping to be safe",
