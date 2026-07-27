@@ -1,0 +1,45 @@
+name: Chutznik Official Updates Sync
+
+# Collects updates from Israeli government agencies, health funds, transport,
+# airlines, and Anglo job boards — every 3 hours, on GitHub's servers, with no
+# involvement needed. New items go into the admin review queue on the site
+# (nothing appears publicly until Publish is clicked).
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # every 10 minutes (requires the collectors to live in a PUBLIC repo — see SETUP-COLLECTORS.md for why)
+  workflow_dispatch: {}      # manual "Run workflow" button on GitHub
+
+permissions:
+  contents: write   # to save the seen/status memory files back to the repo
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: scripts
+        run: npm install cheerio
+
+      - name: Run the updates sync
+        working-directory: scripts
+        env:
+          INGEST_URL: ${{ secrets.INGEST_URL }}
+          INGEST_KEY: ${{ secrets.INGEST_KEY }}
+        run: node updates-sync.js
+
+      - name: Save memory + status report back to the repo
+        run: |
+          git config user.name "chutznik-updates-sync"
+          git config user.email "actions@github.com"
+          git pull --rebase || true
+          git add seen-updates.json feeds-status.json 2>/dev/null || true
+          git diff --quiet --cached || git commit -m "Updates sync: memory + status [skip ci]"
+          git push || true
