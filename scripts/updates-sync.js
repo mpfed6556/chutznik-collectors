@@ -129,20 +129,26 @@ function extractLogo(html, pageUrl) {
   try {
     const $ = cheerio.load(html);
     const cands = [];
-    const og = $('meta[property="og:image"], meta[name="og:image"]').attr('content');
-    if (og) cands.push(og);
+    // PRIORITY ORDER matters: things that are RELIABLY square logos first.
+    // 1. apple-touch-icon — by spec a square app icon
     $('link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]').each((i, el) => {
       const h = $(el).attr('href'); if (h) cands.push(h);
     });
+    // 2. images that literally identify as the logo
     $('img').each((i, el) => {
-      if (cands.length > 6 || i > 80) return;
+      if (cands.length > 8 || i > 120) return;
       const src = $(el).attr('src') || $(el).attr('data-src') || '';
       const idc = (($(el).attr('class') || '') + ' ' + ($(el).attr('id') || '') + ' ' + ($(el).attr('alt') || '') + ' ' + src).toLowerCase();
       if (/logo/.test(idc) && src) cands.push(src);
     });
+    // 3. large favicons
     $('link[rel="icon"], link[rel="shortcut icon"]').each((i, el) => {
       const h = $(el).attr('href'); if (h) cands.push(h);
     });
+    // 4. og:image LAST, and ONLY when its URL suggests a logo — og:image is
+    //    usually a wide social-share banner, which looked wrong on the site.
+    const og = $('meta[property="og:image"], meta[name="og:image"]').attr('content');
+    if (og && /logo|icon|brand/i.test(og)) cands.push(og);
     for (const cnd of cands) {
       try {
         const abs = new URL(cnd, pageUrl).href;
