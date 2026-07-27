@@ -1,0 +1,546 @@
+{
+  "_comment": "Each org: name, page (its news/updates page - the collector auto-discovers an RSS feed from it, or falls back to scanning the page for article links), types (which Chutznik categories its items get), lang hint. Set enabled:false to pause one. Orgs that CANNOT be collected automatically (login-walled social platforms etc.) are listed at the bottom in _cannot_collect for transparency.",
+  "minDelayMs": 400,
+  "feeds": [
+    {
+      "name": "Bituach Leumi",
+      "page": "https://www.btl.gov.il/English%20Homepage/Pages/default.aspx",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Ministry of Aliyah & Integration",
+      "page": "https://www.gov.il/en/departments/ministry_of_aliyah_and_integration",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Population & Immigration Authority",
+      "page": "https://www.gov.il/en/departments/population_and_immigration_authority",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Ministry of Interior",
+      "page": "https://www.gov.il/en/departments/ministry_of_interior",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Ministry of Health",
+      "page": "https://www.gov.il/en/departments/ministry_of_health",
+      "types": [
+        "Healthcare"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "gov.il News",
+      "page": "https://www.gov.il/en/departments/news",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Tax Authority",
+      "page": "https://www.gov.il/en/departments/israel_tax_authority",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Ministry of Housing",
+      "page": "https://www.gov.il/en/departments/ministry_of_construction_and_housing",
+      "types": [
+        "Community",
+        "Rental"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Ministry of Education",
+      "page": "https://www.gov.il/en/departments/ministry_of_education",
+      "types": [
+        "Education"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Ministry of Transportation",
+      "page": "https://www.gov.il/en/departments/ministry_of_transport_and_road_safety",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Consumer Protection Authority",
+      "page": "https://www.gov.il/en/departments/cpfta",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Home Front Command",
+      "page": "https://www.oref.org.il/en",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Employment Service",
+      "page": "https://www.gov.il/en/departments/israeli_employment_service",
+      "types": [
+        "Jobs"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Meuhedet",
+      "page": "https://www.meuhedet.co.il/",
+      "types": [
+        "Healthcare"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Clalit",
+      "page": "https://www.clalit.co.il/he/Pages/default.aspx",
+      "types": [
+        "Healthcare"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Maccabi",
+      "page": "https://www.maccabi4u.co.il/",
+      "types": [
+        "Healthcare"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Leumit",
+      "page": "https://www.leumit.co.il/",
+      "types": [
+        "Healthcare"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Ben Gurion Airport",
+      "page": "https://www.iaa.gov.il/en/airports/ben-gurion/",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "El Al",
+      "page": "https://www.elal.com/en/Israel/Pages/default.aspx",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Israir",
+      "page": "https://www.israir.co.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Arkia",
+      "page": "https://www.arkia.co.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Israel Railways",
+      "page": "https://www.rail.co.il/en",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Egged",
+      "page": "https://www.egged.co.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Superbus",
+      "page": "https://www.superbus.co.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Dan",
+      "page": "https://www.dan.co.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Rav-Kav",
+      "page": "https://ravkavonline.co.il/en/",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Bezeq",
+      "page": "https://www.bezeq.co.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Israel Electric Corporation",
+      "page": "https://www.iec.co.il/en/content/homepage",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Cellcom",
+      "page": "https://www.cellcom.co.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Partner",
+      "page": "https://www.partner.co.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "HOT",
+      "page": "https://www.hot.net.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Nefesh B'Nefesh",
+      "page": "https://www.nbn.org.il/",
+      "types": [
+        "Jobs",
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Nefesh B'Nefesh Jobs",
+      "page": "https://www.nbn.org.il/jobboard/",
+      "types": [
+        "Jobs"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "AACI",
+      "page": "https://www.aaci.org.il/",
+      "types": [
+        "Jobs",
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Janglo",
+      "page": "https://janglo.net/",
+      "types": [
+        "Jobs",
+        "Items / Questions"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Gvahim",
+      "page": "https://www.gvahim.org.il/",
+      "types": [
+        "Jobs"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "AllJobs",
+      "page": "https://www.alljobs.co.il/",
+      "types": [
+        "Jobs"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Drushim",
+      "page": "https://www.drushim.co.il/",
+      "types": [
+        "Jobs"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Jerusalem Light Rail (Cfir)",
+      "page": "https://www.cfir.co.il/en/",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "JET Jerusalem Transportation",
+      "page": "https://jet.gov.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Tel Aviv Light Rail (Dankal)",
+      "page": "https://www.dankal.co.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Kavim",
+      "page": "https://www.kavim-t.co.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Metropoline",
+      "page": "https://www.metropoline.com/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Israel Post",
+      "page": "https://israelpost.co.il/en/",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Kol Zchut (All Rights)",
+      "page": "https://www.kolzchut.org.il/en/Main_Page",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Jerusalem Municipality",
+      "page": "https://www.jerusalem.muni.il/en/",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Beit Shemesh Municipality",
+      "page": "https://www.betshemesh.muni.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Hagihon (Jerusalem Water)",
+      "page": "https://www.hagihon.co.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Magen David Adom",
+      "page": "https://www.mdais.org/en",
+      "types": [
+        "Healthcare",
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "United Hatzalah",
+      "page": "https://israelrescue.org/",
+      "types": [
+        "Healthcare",
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Yad Sarah",
+      "page": "https://yadsarah.org/",
+      "types": [
+        "Healthcare",
+        "Chesed"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Chief Rabbinate (kashrut alerts)",
+      "page": "https://www.gov.il/he/departments/the_chief_rabbinate_of_israel",
+      "types": [
+        "Community",
+        "Spiritual"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Bank of Israel",
+      "page": "https://www.boi.org.il/en/",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Ministry of Welfare",
+      "page": "https://www.gov.il/en/departments/molsa",
+      "types": [
+        "Community",
+        "Chesed"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Tipat Chalav (Family Health Centers)",
+      "page": "https://www.gov.il/en/service/family-health-centers",
+      "types": [
+        "Healthcare"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Harel Insurance",
+      "page": "https://www.harel-group.co.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Israel Nature & Parks Authority",
+      "page": "https://en.parks.org.il/",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Chaim V'Chessed",
+      "page": "https://chaimvchessed.org/",
+      "types": [
+        "Community",
+        "Chesed"
+      ],
+      "lang": "en",
+      "enabled": true
+    }
+  ],
+  "_cannot_collect": [
+    "LinkedIn Jobs — blocks all automated access (aggressive anti-bot + login wall)",
+    "Facebook groups / Secret Jerusalem — login-walled; Facebook prohibits scraping",
+    "Pango — app-only, no public news feed",
+    "Upwork / FlexJobs — require paid API access or block scrapers",
+    "Water corporations by city — dozens of separate small sites; add specific cities to feeds later if wanted",
+    "Israel Police / Israel Innovation Authority — mostly not resident-service news; add via gov.il News which covers all ministries"
+  ]
+}

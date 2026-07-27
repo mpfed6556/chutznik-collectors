@@ -1,0 +1,19 @@
+{
+  "minDelayMs": 2000,
+  "sites": [
+    {
+      "name": "Example Rental Site",
+      "listUrl": "https://example.com/rentals/jerusalem",
+      "selectors": {
+        "item": ".listing-card",
+        "title": ".listing-title",
+        "description": ".listing-description",
+        "price": ".listing-price",
+        "phone": ".listing-phone",
+        "address": ".listing-address",
+        "image": ".listing-photo img",
+        "link": "a.listing-link"
+      }
+    }
+  ]
+}
