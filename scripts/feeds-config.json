@@ -533,6 +533,42 @@
       ],
       "lang": "en",
       "enabled": true
+    },
+    {
+      "name": "Moovit",
+      "page": "https://moovit.com/blog/",
+      "types": [
+        "Community"
+      ],
+      "lang": "en",
+      "enabled": true
+    },
+    {
+      "name": "Hadassah Medical Center",
+      "page": "https://hadassah.org.il/news/",
+      "types": [
+        "Healthcare"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Shaare Zedek Medical Center",
+      "page": "https://www.szmc.org.il/news/",
+      "types": [
+        "Healthcare"
+      ],
+      "lang": "he",
+      "enabled": true
+    },
+    {
+      "name": "Herzog Medical Center",
+      "page": "https://herzoghospital.org/news/",
+      "types": [
+        "Healthcare"
+      ],
+      "lang": "en",
+      "enabled": true
     }
   ],
   "_cannot_collect": [

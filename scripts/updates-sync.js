@@ -239,7 +239,7 @@ async function buildUpdateItem(raw) {
     area: '',
     communities: [],
     contactWebsite: raw.link,
-    created: raw.published || Date.now(),
+    created: (Date.parse(raw.published)||Date.now()),
     status: 'pending',
     dedupeKey: fingerprint(raw.link, raw.title),
   };
@@ -253,10 +253,10 @@ async function forward(item) {
       body: JSON.stringify({ file: 'updates', item }),
     });
     const j = await res.json().catch(() => ({}));
-    if (res.ok && j.added) log('  queued for review: [' + item.group + '] "' + item.title.slice(0, 60) + '"');
-    else if (res.ok) log('  duplicate skipped: "' + item.title.slice(0, 50) + '"');
-    else log('  ingest error ' + res.status + ': ' + (j.error || ''));
-  } catch (e) { log('  could not reach Chutznik: ' + e.message); }
+    if (res.ok && j.added) { log('  queued for review: [' + item.group + '] "' + item.title.slice(0, 60) + '"'); return true; }
+    else if (res.ok) { log('  duplicate skipped: "' + item.title.slice(0, 50) + '"'); return true; }
+    else { log('  ingest error ' + res.status + ': ' + (j.error || '')); return false; }
+  } catch (e) { log('  could not reach Chutznik: ' + e.message); return false; }
 }
 
 async function main() {
@@ -269,10 +269,11 @@ async function main() {
     for (const raw of raws) {
       const key = fingerprint(raw.link, raw.title);
       if (SEEN.has(key)) continue;
-      SEEN.add(key);
       const item = await buildUpdateItem(raw);
-      await forward(item);
-      queued++;
+      const delivered = await forward(item);
+      // Only remember items the site ACTUALLY accepted — a failed delivery
+      // (wrong key, site down) must be retried on the next run, not lost.
+      if (delivered) { SEEN.add(key); queued++; }
       await sleep(CONFIG.minDelayMs || 2500);
     }
     await sleep(CONFIG.minDelayMs || 2500);
