@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-07-27T23:33:11.323Z",
+  "lastRun": "2026-07-27T23:52:25.988Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -38,7 +38,7 @@
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
-    "Drushim": "page HTTP 404",
+    "Drushim": "ok via RSS (6 items)",
     "Jerusalem Light Rail (Cfir)": "page HTTP 404",
     "JET Jerusalem Transportation": "ok via RSS (6 items)",
     "Tel Aviv Light Rail (Dankal)": "blocked: robots.txt unreachable — skipping to be safe",
@@ -51,13 +51,17 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "ok via RSS (6 items)",
+    "Yad Sarah": "no feed and no scannable items — needs manual selector or has no public news list",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed and no scannable items — needs manual selector or has no public news list",
     "Ministry of Welfare": "page HTTP 403",
     "Tipat Chalav (Family Health Centers)": "page HTTP 403",
     "Harel Insurance": "blocked: robots.txt disallows this path",
     "Israel Nature & Parks Authority": "blocked: robots.txt unreachable — skipping to be safe",
-    "Chaim V'Chessed": "no feed and no scannable items — needs manual selector or has no public news list"
+    "Chaim V'Chessed": "no feed and no scannable items — needs manual selector or has no public news list",
+    "Moovit": "ok via RSS (6 items)",
+    "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
+    "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
+    "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found"
   }
 }
