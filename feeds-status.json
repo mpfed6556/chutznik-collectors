@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-07-27T19:48:01.407Z",
+  "lastRun": "2026-07-27T20:59:01.574Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -35,7 +35,7 @@
     "Nefesh B'Nefesh": "ok via RSS (6 items)",
     "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
     "AACI": "no feed and no scannable items — needs manual selector or has no public news list",
-    "Janglo": "ok via page-scan (5 items) — no RSS found",
+    "Janglo": "page HTTP 415",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
     "Drushim": "ok via RSS (6 items)",
