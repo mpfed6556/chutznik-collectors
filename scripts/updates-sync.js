@@ -210,14 +210,46 @@ async function collectOrg(org) {
   if (!items.length) {
     items = scanPageForItems(html, org.page);
     if (items.length) STATUS[org.name] = 'ok via page-scan (' + items.length + ' items) — no RSS found';
-    else if (!STATUS[org.name]) STATUS[org.name] = 'no feed and no scannable items — needs manual selector or has no public news list';
   }
+
+  // FRESHNESS: when items carry dates, keep only the last 48 hours
+  const cutoff = Date.now() - 48 * 3600 * 1000;
+  items = items.filter((it) => { const t = Date.parse(it.published || ''); return isNaN(t) ? true : t >= cutoff; });
+
+  // FALLBACK — Google News RSS: every org is COVERED by the news even when its
+  // own site has no feed. Public RSS, respectful of robots, capped small.
+  if (!items.length) {
+    try {
+      const gq = 'https://news.google.com/rss/search?q=' + encodeURIComponent('"' + org.name + '"') + '&hl=en-IL&gl=IL&ceid=IL:en';
+      const perm2 = await checkAllowed(gq);
+      if (perm2.allowed) {
+        const gr = await fetch(gq, { headers: UA });
+        if (gr.ok) {
+          let news = parseFeedItems(await gr.text(), gq)
+            .filter((it) => { const t = Date.parse(it.published || ''); return !isNaN(t) && t >= cutoff; })
+            .slice(0, 3)
+            .map((it) => ({ ...it, viaNews: true }));
+          if (news.length) { items = news; STATUS[org.name] = 'ok via Google News (' + news.length + ' items, last 48h)'; }
+        }
+      }
+    } catch (e) {}
+    if (!items.length && !STATUS[org.name]) STATUS[org.name] = 'no feed, no scannable items, nothing in the news last 48h';
+    else if (!items.length && /no feed|page-scan/.test(STATUS[org.name]||'')) STATUS[org.name] += ' · nothing in the news last 48h either';
+  }
+
+  // Per-org relevance filter (e.g. Moovit → Israel-related only)
+  if (org.filter && org.filter.length) {
+    const rx = new RegExp(org.filter.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'i');
+    items = items.filter((it) => rx.test((it.title || '') + ' ' + (it.desc || '')));
+  }
+
   return items.slice(0, 4).map((it) => ({ ...it, _org: org }));
 }
 
 async function buildUpdateItem(raw) {
   const org = raw._org;
   let title = raw.title || '';
+  if (raw.viaNews) title = '📰 ' + title; // came via news coverage, not the org's own feed
   let body = raw.desc || '';
   // English-only output: translate Hebrew (best-effort), else trim English.
   if (hasHebrew(title)) {

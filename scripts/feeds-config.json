@@ -541,7 +541,17 @@
         "Community"
       ],
       "lang": "en",
-      "enabled": true
+      "enabled": true,
+      "filter": [
+        "israel",
+        "jerusalem",
+        "tel aviv",
+        "haifa",
+        "beer sheva",
+        "rav-kav",
+        "ישראל",
+        "ירושלים"
+      ]
     },
     {
       "name": "Hadassah Medical Center",
