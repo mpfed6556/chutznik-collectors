@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-07-29T12:28:01.491Z",
+  "lastRun": "2026-07-29T14:58:40.545Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -38,7 +38,7 @@
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
-    "Drushim": "ok via RSS (6 items)",
+    "Drushim": "ok via page-scan (5 items) — no RSS found",
     "Jerusalem Light Rail (Cfir)": "no feed, no scannable items, nothing in the news last 48h",
     "JET Jerusalem Transportation": "no feed, no scannable items, nothing in the news last 48h",
     "Tel Aviv Light Rail (Dankal)": "blocked: robots.txt unreachable — skipping to be safe",
@@ -49,7 +49,7 @@
     "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Beit Shemesh Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
-    "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
+    "Magen David Adom": "blocked: robots.txt unreachable — skipping to be safe",
     "United Hatzalah": "page HTTP 403",
     "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
@@ -58,7 +58,7 @@
     "Tipat Chalav (Family Health Centers)": "page HTTP 403",
     "Harel Insurance": "blocked: robots.txt disallows this path",
     "Israel Nature & Parks Authority": "blocked: robots.txt unreachable — skipping to be safe",
-    "Chaim V'Chessed": "no feed, no scannable items, nothing in the news last 48h",
+    "Chaim V'Chessed": "blocked: robots.txt unreachable — skipping to be safe",
     "Moovit": "ok via RSS (6 items)",
     "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
