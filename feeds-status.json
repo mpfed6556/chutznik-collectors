@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-07-28T23:30:39.217Z",
+  "lastRun": "2026-07-29T01:04:34.047Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -14,7 +14,7 @@
     "Consumer Protection Authority": "page HTTP 403",
     "Home Front Command": "blocked: robots.txt unreachable — skipping to be safe",
     "Employment Service": "page HTTP 403",
-    "Meuhedet": "no feed, no scannable items, nothing in the news last 48h",
+    "Meuhedet": "page HTTP 404",
     "Clalit": "blocked: robots.txt unreachable — skipping to be safe",
     "Maccabi": "no feed, no scannable items, nothing in the news last 48h",
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
