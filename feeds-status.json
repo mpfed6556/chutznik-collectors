@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-07-31T23:54:47.269Z",
+  "lastRun": "2026-08-01T01:23:16.732Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -17,7 +17,7 @@
     "Meuhedet": "no feed, no scannable items, nothing in the news last 48h",
     "Clalit": "blocked: robots.txt unreachable — skipping to be safe",
     "Maccabi": "no feed, no scannable items, nothing in the news last 48h",
-    "Leumit": "no feed, no scannable items, nothing in the news last 48h",
+    "Leumit": "blocked: robots.txt unreachable — skipping to be safe",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
     "Israir": "no feed, no scannable items, nothing in the news last 48h",
@@ -35,8 +35,8 @@
     "Nefesh B'Nefesh": "ok via RSS (6 items)",
     "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
     "AACI": "no feed, no scannable items, nothing in the news last 48h",
-    "Janglo": "no feed, no scannable items, nothing in the news last 48h",
-    "Gvahim": "no feed, no scannable items, nothing in the news last 48h",
+    "Janglo": "ok via page-scan (5 items) — no RSS found",
+    "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
     "Drushim": "ok via RSS (6 items)",
     "Jerusalem Light Rail (Cfir)": "no feed, no scannable items, nothing in the news last 48h",
@@ -49,9 +49,9 @@
     "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Beit Shemesh Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
-    "Magen David Adom": "blocked: robots.txt unreachable — skipping to be safe",
+    "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "RSS found but empty",
+    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Chaim V'Chessed": "no feed, no scannable items, nothing in the news last 48h",
     "Moovit": "ok via RSS (6 items)",
     "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
-    "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
-    "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found"
+    "Shaare Zedek Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
+    "Herzog Medical Center": "blocked: robots.txt unreachable — skipping to be safe"
   }
 }
