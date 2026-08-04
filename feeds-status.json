@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-04T09:19:45.820Z",
+  "lastRun": "2026-08-04T11:40:54.301Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -14,7 +14,7 @@
     "Consumer Protection Authority": "page HTTP 403",
     "Home Front Command": "blocked: robots.txt unreachable — skipping to be safe",
     "Employment Service": "page HTTP 403",
-    "Meuhedet": "no feed, no scannable items, nothing in the news last 48h",
+    "Meuhedet": "blocked: robots.txt unreachable — skipping to be safe",
     "Clalit": "blocked: robots.txt unreachable — skipping to be safe",
     "Maccabi": "no feed, no scannable items, nothing in the news last 48h",
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
@@ -27,7 +27,7 @@
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
+    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Electric Corporation": "blocked: robots.txt disallows this path",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
