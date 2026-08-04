@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-04T00:20:58.577Z",
+  "lastRun": "2026-08-04T03:51:44.319Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -38,7 +38,7 @@
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
-    "Drushim": "ok via RSS (6 items)",
+    "Drushim": "ok via page-scan (5 items) — no RSS found",
     "Jerusalem Light Rail (Cfir)": "no feed, no scannable items, nothing in the news last 48h",
     "JET Jerusalem Transportation": "no feed, no scannable items, nothing in the news last 48h",
     "Tel Aviv Light Rail (Dankal)": "blocked: robots.txt unreachable — skipping to be safe",
@@ -51,7 +51,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "blocked: robots.txt unreachable — skipping to be safe",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "RSS found but empty",
+    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
