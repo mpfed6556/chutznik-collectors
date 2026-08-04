@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-03T22:58:23.562Z",
+  "lastRun": "2026-08-04T00:20:58.577Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -51,7 +51,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "blocked: robots.txt unreachable — skipping to be safe",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "blocked: robots.txt unreachable — skipping to be safe",
+    "Yad Sarah": "RSS found but empty",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
