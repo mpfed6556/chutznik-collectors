@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-05T04:35:45.688Z",
+  "lastRun": "2026-08-05T07:25:55.591Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Chaim V'Chessed": "no feed, no scannable items, nothing in the news last 48h",
     "Moovit": "ok via RSS (6 items)",
     "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
-    "Shaare Zedek Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
-    "Herzog Medical Center": "blocked: robots.txt unreachable — skipping to be safe"
+    "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
+    "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found"
   }
 }
