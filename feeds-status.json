@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-05T20:02:48.028Z",
+  "lastRun": "2026-08-05T21:24:35.172Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -29,7 +29,7 @@
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
     "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Electric Corporation": "blocked: robots.txt disallows this path",
-    "Cellcom": "page HTTP 403",
+    "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
     "Nefesh B'Nefesh": "ok via RSS (6 items)",
