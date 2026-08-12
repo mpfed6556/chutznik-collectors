@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-12T15:48:19.869Z",
+  "lastRun": "2026-08-12T16:44:05.039Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -17,10 +17,10 @@
     "Meuhedet": "no feed, no scannable items, nothing in the news last 48h",
     "Clalit": "blocked: robots.txt unreachable — skipping to be safe",
     "Maccabi": "no feed, no scannable items, nothing in the news last 48h",
-    "Leumit": "no feed, no scannable items, nothing in the news last 48h",
+    "Leumit": "blocked: robots.txt unreachable — skipping to be safe",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "blocked: robots.txt unreachable — skipping to be safe",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -35,7 +35,7 @@
     "Nefesh B'Nefesh": "ok via RSS (6 items)",
     "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
     "AACI": "no feed, no scannable items, nothing in the news last 48h",
-    "Janglo": "ok via page-scan (5 items) — no RSS found",
+    "Janglo": "no feed, no scannable items, nothing in the news last 48h",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
     "Drushim": "ok via RSS (6 items)",
