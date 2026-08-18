@@ -1,11 +1,11 @@
 {
-  "lastRun": "2026-08-18T19:41:23.496Z",
+  "lastRun": "2026-08-18T20:00:55.556Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
     "Population & Immigration Authority": "page HTTP 403",
     "Ministry of Interior": "page HTTP 403",
-    "Ministry of Health": "no feed, no scannable items, nothing in the news last 48h",
+    "Ministry of Health": "page HTTP 403",
     "gov.il News": "page HTTP 403",
     "Tax Authority": "page HTTP 403",
     "Ministry of Housing": "page HTTP 403",
