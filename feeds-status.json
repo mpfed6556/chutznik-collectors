@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-18T03:34:48.063Z",
+  "lastRun": "2026-08-18T04:21:45.776Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -35,7 +35,7 @@
     "Nefesh B'Nefesh": "ok via RSS (6 items)",
     "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
     "AACI": "no feed, no scannable items, nothing in the news last 48h",
-    "Janglo": "no feed, no scannable items, nothing in the news last 48h",
+    "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
     "Drushim": "ok via RSS (6 items)",
@@ -44,7 +44,7 @@
     "Tel Aviv Light Rail (Dankal)": "blocked: robots.txt unreachable — skipping to be safe",
     "Kavim": "blocked: robots.txt unreachable — skipping to be safe",
     "Metropoline": "no feed, no scannable items, nothing in the news last 48h",
-    "Israel Post": "no feed, no scannable items, nothing in the news last 48h",
+    "Israel Post": "blocked: robots.txt unreachable — skipping to be safe",
     "Kol Zchut (All Rights)": "blocked: robots.txt unreachable — skipping to be safe",
     "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Beit Shemesh Municipality": "blocked: robots.txt unreachable — skipping to be safe",
