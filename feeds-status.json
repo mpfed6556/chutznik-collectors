@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-18T18:18:31.485Z",
+  "lastRun": "2026-08-18T19:05:15.419Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -56,7 +56,7 @@
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
     "Tipat Chalav (Family Health Centers)": "page HTTP 403",
-    "Harel Insurance": "blocked: robots.txt disallows this path",
+    "Harel Insurance": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Nature & Parks Authority": "blocked: robots.txt unreachable — skipping to be safe",
     "Chaim V'Chessed": "no feed, no scannable items, nothing in the news last 48h",
     "Moovit": "ok via RSS (6 items)",
