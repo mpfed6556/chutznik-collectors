@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-19T16:47:12.093Z",
+  "lastRun": "2026-08-19T17:15:55.870Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -27,7 +27,7 @@
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
+    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Electric Corporation": "blocked: robots.txt disallows this path",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
@@ -40,7 +40,7 @@
     "AllJobs": "blocked: robots.txt disallows this path",
     "Drushim": "ok via RSS (6 items)",
     "Jerusalem Light Rail (Cfir)": "no feed, no scannable items, nothing in the news last 48h",
-    "JET Jerusalem Transportation": "no feed, no scannable items, nothing in the news last 48h",
+    "JET Jerusalem Transportation": "ok via RSS (1 items)",
     "Tel Aviv Light Rail (Dankal)": "blocked: robots.txt unreachable — skipping to be safe",
     "Kavim": "blocked: robots.txt unreachable — skipping to be safe",
     "Metropoline": "no feed, no scannable items, nothing in the news last 48h",
