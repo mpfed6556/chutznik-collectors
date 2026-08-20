@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-20T05:08:54.048Z",
+  "lastRun": "2026-08-20T05:47:45.978Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -27,7 +27,7 @@
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
+    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Electric Corporation": "blocked: robots.txt disallows this path",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
@@ -58,7 +58,7 @@
     "Tipat Chalav (Family Health Centers)": "page HTTP 403",
     "Harel Insurance": "blocked: robots.txt disallows this path",
     "Israel Nature & Parks Authority": "blocked: robots.txt unreachable — skipping to be safe",
-    "Chaim V'Chessed": "blocked: robots.txt unreachable — skipping to be safe",
+    "Chaim V'Chessed": "no feed, no scannable items, nothing in the news last 48h",
     "Moovit": "ok via RSS (6 items)",
     "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
