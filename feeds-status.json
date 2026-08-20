@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-20T16:15:53.585Z",
+  "lastRun": "2026-08-20T16:58:18.135Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -9,7 +9,7 @@
     "gov.il News": "page HTTP 403",
     "Tax Authority": "page HTTP 403",
     "Ministry of Housing": "page HTTP 403",
-    "Ministry of Education": "page HTTP 403",
+    "Ministry of Education": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Transportation": "page HTTP 403",
     "Consumer Protection Authority": "page HTTP 403",
     "Home Front Command": "blocked: robots.txt unreachable — skipping to be safe",
@@ -51,7 +51,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "ok via RSS (6 items)",
+    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Chaim V'Chessed": "no feed, no scannable items, nothing in the news last 48h",
     "Moovit": "ok via RSS (6 items)",
     "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
-    "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
-    "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found"
+    "Shaare Zedek Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
+    "Herzog Medical Center": "blocked: robots.txt unreachable — skipping to be safe"
   }
 }
