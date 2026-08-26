@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-26T14:12:27.973Z",
+  "lastRun": "2026-08-26T15:57:15.617Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -13,7 +13,7 @@
     "Ministry of Transportation": "page HTTP 403",
     "Consumer Protection Authority": "page HTTP 403",
     "Home Front Command": "blocked: robots.txt unreachable — skipping to be safe",
-    "Employment Service": "page HTTP 403",
+    "Employment Service": "no feed, no scannable items, nothing in the news last 48h",
     "Meuhedet": "no feed, no scannable items, nothing in the news last 48h",
     "Clalit": "blocked: robots.txt unreachable — skipping to be safe",
     "Maccabi": "no feed, no scannable items, nothing in the news last 48h",
@@ -51,9 +51,9 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
-    "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
+    "Bank of Israel": "unreachable: fetch failed",
     "Ministry of Welfare": "page HTTP 403",
     "Tipat Chalav (Family Health Centers)": "page HTTP 403",
     "Harel Insurance": "blocked: robots.txt disallows this path",
