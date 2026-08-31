@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-08-31T15:01:59.182Z",
+  "lastRun": "2026-08-31T20:49:35.716Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -27,14 +27,14 @@
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
+    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Electric Corporation": "no feed, no scannable items, nothing in the news last 48h",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
     "Nefesh B'Nefesh": "ok via RSS (6 items)",
     "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
-    "AACI": "blocked: robots.txt unreachable — skipping to be safe",
+    "AACI": "no feed, no scannable items, nothing in the news last 48h",
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
