@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-01T21:17:25.306Z",
+  "lastRun": "2026-09-01T23:26:28.867Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -38,7 +38,7 @@
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
-    "Drushim": "ok via page-scan (4 items) — no RSS found",
+    "Drushim": "ok via RSS (6 items)",
     "Jerusalem Light Rail (Cfir)": "no feed, no scannable items, nothing in the news last 48h",
     "JET Jerusalem Transportation": "ok via RSS (1 items)",
     "Tel Aviv Light Rail (Dankal)": "blocked: robots.txt unreachable — skipping to be safe",
