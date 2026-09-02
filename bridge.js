@@ -35,6 +35,7 @@ try { SEEN = new Set(JSON.parse(fs.readFileSync(SEEN_FILE, 'utf8'))); } catch (e
 const saveSeen = () => { try { fs.writeFileSync(SEEN_FILE, JSON.stringify([...SEEN].slice(-20000))); } catch (e) {} };
 
 const log = (s) => console.log(new Date().toLocaleTimeString() + '  ' + s);
+log('web-version pin: ' + (process.env.WEB_VERSION || '2.3000.1042505466-alpha'));
 log('config: site=' + SITE + ' · key=' + (INGEST_KEY ? INGEST_KEY.slice(0,6) + '… (' + INGEST_KEY.length + ' chars)' : '❗ MISSING — nothing can be sent! Check the .env file') + ' · flush every ' + FLUSH_MINUTES + ' min');
 
 // ── OCR (lazy-loaded; heavy) ─────────────────────────────────────────────────
@@ -225,10 +226,12 @@ else if (_chromePath === undefined) log("❗ No browser found. Run `npm install`
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: path.join(__dirname, '.wwebjs_auth') }),
   puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'], ...(_chromePath ? { executablePath: _chromePath } : {}) },
-  // Optional: pin a specific WhatsApp Web version via .env (WEB_VERSION=2.xxxx.xx)
-  // — only needed if WhatsApp breaks the library again someday.
-  ...(process.env.WEB_VERSION ? { webVersionCache: { type: 'remote', remotePath:
-    'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/' + process.env.WEB_VERSION + '.html' } } : {}),
+  // PIN WhatsApp Web to a version the library understands. WhatsApp keeps
+  // pushing newer builds that silently break getChats AND message events
+  // (symptom: "Connected" but nothing ever arrives). Override via .env
+  // WEB_VERSION=… ; set WEB_VERSION=none to unpin.
+  ...(String(process.env.WEB_VERSION || '2.3000.1042505466-alpha') !== 'none' ? { webVersionCache: { type: 'remote', remotePath:
+    'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/' + (process.env.WEB_VERSION || '2.3000.1042505466-alpha') + '.html' } } : {}),
 });
 
 client.on('qr', (qr) => { console.log('\n📱 Scan with WhatsApp → Settings → Linked devices → Link a device:\n'); qrcode.generate(qr, { small: true }); });
