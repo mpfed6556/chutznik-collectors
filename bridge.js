@@ -25,7 +25,7 @@ const { classify, categoriesFor, topicTitle, clusterWindow, fingerprint, phonesI
 const INGEST_URL = process.env.INGEST_URL || 'https://chutznik.org/api/ingest-whatsapp';
 const INGEST_KEY = process.env.INGEST_KEY || '';
 const SITE = INGEST_URL.replace(/\/api\/.*/, '');
-const FLUSH_MINUTES = Number(process.env.FLUSH_MINUTES || 10);
+const FLUSH_MINUTES = Number(process.env.FLUSH_MINUTES || 1);
 const OCR = String(process.env.OCR || 'on') !== 'off';
 const EXCLUDE = (process.env.EXCLUDE_CHATS || '').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
 
@@ -168,7 +168,7 @@ async function buildPost(cluster, chatName) {
 const buffers = new Map(); // chatName → msgs[]
 async function flush() {
   const waiting = [...buffers.values()].reduce((n, a) => n + a.length, 0);
-  if (!waiting) { log('… cycle: nothing new to send'); return; }
+  if (!waiting) return;
   for (const [chatName, msgs] of buffers) {
     if (!msgs.length) continue;
     buffers.set(chatName, []);
@@ -276,27 +276,16 @@ client.on('ready', async () => {
   // The bulk "list every chat" call is broken by WhatsApp for many accounts
   // (the infamous "r"). We now back-fill each group's last 48h individually,
   // the moment it sends any live message — so the bulk sweep is OFF by default.
-  if (String(process.env.BULK_CATCHUP || 'off') !== 'on') {
-    log('⏳ History mode: each group back-fills its last 48h on its next live message (⤴ lines).');
-    log('👀 Now listening live…');
-    return;
-  }
-  log('   warming up for 15 seconds before reading history…');
+  log('👀 Listening live — every message is sent within ~1 minute.');
   let done = false;
-  for (let attempt = 1; attempt <= 4 && !done; attempt++) {
-    await new Promise(r => setTimeout(r, attempt === 1 ? 15000 : 45000));
+  for (let attempt = 1; attempt <= 2 && !done; attempt++) {
+    await new Promise(r => setTimeout(r, attempt === 1 ? 8000 : 20000));
     try { await catchUp(attempt); done = true; }
     catch (e) {
       const m = (e && e.message) || String(e);
-      log('   catch-up try ' + attempt + ' failed: ' + m + (attempt < 4 ? ' — retrying in 45s…' : ''));
-      if (attempt === 4) {
-        log('❗ Catch-up could not run. Live listening still works (new messages ARE captured).');
-        log('   Fixes to try, in order: 1) in this folder run: npm install whatsapp-web.js@latest');
-        log('   2) make sure the disk has free space  3) delete the .wwebjs_cache folder and restart.');
-      }
+      if (attempt === 2) log('   (48h sweep unavailable on this account — each group back-fills its 48h on its next message instead)');
     }
   }
-  log('👀 Now listening live… (keep this window open — or install autostart, see README)');
 });
 
 // Plan B catch-up: WhatsApp sometimes breaks the "list all chats" call (the
@@ -338,7 +327,7 @@ async function onGroupMessage(msg) {
     buffers.get(chat.name).push(it);
     log('💬 ' + chat.name + ' · ' + it.sender + ' · ' + it.kind + (msg.fromMe ? ' (you)' : '') + (it.media ? ' 📷' : ''));
     // first-ever message: don't make her wait 10 minutes to see proof of life
-    if (!global._fastFlushed) { global._fastFlushed = true; setTimeout(() => { log('⚡ quick first send…'); flush(); }, 60000); }
+    if (!global._fastFlushed) { global._fastFlushed = true; setTimeout(() => { log('⚡ sending…'); flush(); }, 10000); }
   } catch (e) {}
 }
 client.on('message', onGroupMessage);                    // messages from others
