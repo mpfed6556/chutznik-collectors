@@ -311,7 +311,7 @@ async function lazyBackfill(chat) {
   let n = 0;
   for (const m of history || []) {
     const ts = (m.timestamp || 0) * 1000;
-    if (ts < cutoff || m.fromMe) continue;
+    if (ts < cutoff) continue;
     if (SEEN.has('m_' + m.id._serialized)) continue;
     SEEN.add('m_' + m.id._serialized);
     const it = await intake(m, chat.name || 'Group');
@@ -322,7 +322,7 @@ async function lazyBackfill(chat) {
   if (n) log('⤴ back-filled ' + n + ' message(s) from the last 48h of "' + chat.name + '"');
 }
 
-client.on('message', async (msg) => {
+async function onGroupMessage(msg) {
   try {
     const chat = await msg.getChat();
     if (!chat.isGroup) return;
@@ -333,11 +333,13 @@ client.on('message', async (msg) => {
     const it = await intake(msg, chat.name || 'Group');
     if (!buffers.has(chat.name)) buffers.set(chat.name, []);
     buffers.get(chat.name).push(it);
-    log('💬 ' + chat.name + ' · ' + it.sender + ' · ' + it.kind + (it.media ? ' 📷' : ''));
+    log('💬 ' + chat.name + ' · ' + it.sender + ' · ' + it.kind + (msg.fromMe ? ' (you)' : '') + (it.media ? ' 📷' : ''));
     // first-ever message: don't make her wait 10 minutes to see proof of life
     if (!global._fastFlushed) { global._fastFlushed = true; setTimeout(() => { log('⚡ quick first send…'); flush(); }, 60000); }
   } catch (e) {}
-});
+}
+client.on('message', onGroupMessage);                    // messages from others
+client.on('message_create', (m) => { if (m.fromMe) onGroupMessage(m); }); // messages YOU send in groups
 
 process.on('SIGINT', async () => { log('flushing before exit…'); await flush(); process.exit(0); });
 client.initialize();
