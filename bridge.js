@@ -270,6 +270,14 @@ client.on('ready', async () => {
   log('   Every ' + FLUSH_MINUTES + ' min: conversations are clustered into posts → your review queue.');
   // WhatsApp needs a moment after "ready" before chats are actually readable —
   // rushing this is a classic cause of the cryptic "Evaluation failed: r".
+  // The bulk "list every chat" call is broken by WhatsApp for many accounts
+  // (the infamous "r"). We now back-fill each group's last 48h individually,
+  // the moment it sends any live message — so the bulk sweep is OFF by default.
+  if (String(process.env.BULK_CATCHUP || 'off') !== 'on') {
+    log('⏳ History mode: each group back-fills its last 48h on its next live message (⤴ lines).');
+    log('👀 Now listening live…');
+    return;
+  }
   log('   warming up for 15 seconds before reading history…');
   let done = false;
   for (let attempt = 1; attempt <= 4 && !done; attempt++) {
