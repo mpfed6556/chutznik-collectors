@@ -607,7 +607,20 @@ async function intake(sock, m, chatName) {
   // phone. Only keep it if it actually validates -- this is where the bogus
   // "+201..." numbers on the site were coming from.
   const rawId = participant ? participant.split('@')[0].split(':')[0] : '';
-  const phone = /@lid$/i.test(participant) ? '' : normalizePhone('+' + rawId);
+  // Newer WhatsApp groups identify people by a privacy id (@lid), not their
+  // number. Baileys usually supplies the real number alongside it
+  // (participantAlt); failing that, ask its lid→number mapping. This is what
+  // lets "pls pm me" posts carry the poster's own number.
+  let pnJid = key.participantAlt || key.remoteJidAlt || '';
+  if (!pnJid && /@lid$/i.test(participant)) {
+    try {
+      const map = sock && sock.signalRepository && sock.signalRepository.lidMapping;
+      if (map && typeof map.getPNForLID === 'function') { const r = await map.getPNForLID(participant); if (r) pnJid = String(r); }
+    } catch (e) {}
+  }
+  const pnDigits = pnJid ? String(pnJid).split('@')[0].split(':')[0] : '';
+  const phone = pnDigits ? normalizePhone('+' + pnDigits) : (/@lid$/i.test(participant) ? '' : normalizePhone('+' + rawId));
+  if (pnDigits && m.pushName) NAMES.set(pnDigits, m.pushName);
   const sender = m.pushName || 'Member';
   const body = (textOf(m) || '').trim();
   let media = null;
@@ -897,8 +910,15 @@ async function buildPost(cluster, chatName) {
     for (const a of cluster.answers) for (const p of phonesOfMsg(a)) if (!fromAnswers.includes(p)) fromAnswers.push(p);
     const askerOwn = cluster.q.phone ? [cluster.q.phone] : [];
     contacts.phones = fromAnswers.concat(contacts.phones.filter(p => !fromAnswers.includes(p) && !askerOwn.includes(p)));
+    // A question nobody has answered yet: the asker's own WhatsApp number is
+    // the way to reply to her, so it goes on the post.
+    if (!contacts.phones.length && cluster.q.phone) contacts.phones.push(cluster.q.phone);
   } else {
     for (const m of msgs) for (const p of phonesOfMsg(m)) if (!contacts.phones.includes(p)) contacts.phones.push(p);
+    // "pls pm me" / "dm me" / "message me" with no number in the text: the
+    // sender's own number is the contact.
+    const pm = /\b(?:pm|dm|message|msg|whatsapp|text|contact|call)\s+(?:me|us)\b|\bpm\b|\bp\.m\.?\b|\bprivate(?:ly)?\b|\bpls\s+pm\b/i.test(allText);
+    if ((pm || first.kind === 'question') && first.phone && !contacts.phones.includes(first.phone)) contacts.phones.unshift(first.phone);
   }
   const kinds = msgs.map(m => m.kind);
   const kind = kinds.includes('rental') ? 'rental' : kinds.includes('ad') ? 'ad' : cluster.kind === 'combined' ? 'question' : 'info';
