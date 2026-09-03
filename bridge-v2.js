@@ -252,6 +252,87 @@ function isRecentDuplicate(key, ts) {
   return false;
 }
 
+
+// ═════════════════════════════════════════════════════════════════════════════
+// RENTAL TITLES  (Sep 2026)
+// Miriam's format, written as plain English:
+//   "2 bdrm short term avail in Ramat Eshkol for Sukkos for 110/night"
+// Order: bedrooms · short/long term · location · holiday (if any) · price.
+// Requests ("looking for…") are prefixed "Wanted:" rather than "avail", so an
+// ask is never dressed up as an offer.
+// ═════════════════════════════════════════════════════════════════════════════
+const HOOD_ABBR = { RE:'Ramat Eshkol', SM:'Sanhedria', RS:'Ramat Shlomo', RBS:'Ramat Bet Shemesh' };
+const HOLIDAY_ABBR = { RH:'Rosh Hashana', YK:'Yom Kippur', SKS:'Sukkos' };
+const HOODS = ['Ramat Eshkol','Sanhedria Murchevet','Sanhedria','Ramat Shlomo','Ramat Bet Shemesh',
+  'Bet Shemesh','Beit Shemesh','Nachlaot','Nachalot','Rechavia','Rachavia','Har Nof','Givat Shaul',
+  'Bayit Vegan','Katamon','Baka','Arnona','Talpiot','Old City','City Center','Geula','Geulah',
+  'Mekor Baruch','Romema','French Hill','Pisgat Zev','Neve Yaakov','Gilo','Har Homa','Maalot Dafna',
+  'Kiryat Moshe','Shaarei Chesed','Mattersdorf','Ezras Torah','Unsdorf','Beitar','Efrat','Gush Etzion',
+  'Telz Stone','Ramot','Givat Hamivtar','Kiryat Sefer','Modiin Illit','Jerusalem','Yerushalayim'];
+const HOLIDAYS = [
+  ['sukkos|sukkot|succos|succot|sukkah','Sukkos'], ['pesach|passover','Pesach'],
+  ['rosh hashan(?:a|ah)','Rosh Hashana'], ['yom kippur','Yom Kippur'],
+  ['chanuk(?:a|ah)|hanukkah','Chanuka'], ['purim','Purim'],
+  ['shavuos|shavuot','Shavuos'], ['bein hazmanim','Bein Hazmanim'],
+  ['chol hamoed','Chol Hamoed'], ['yom tov','Yom Tov'],
+  ['summer','the summer'], ['winter','the winter']];
+
+function rentalTitle(text) {
+  const t = String(text || '');
+  const low = t.toLowerCase();
+
+  let beds = '';
+  let m = low.match(/(\d+)\s*(?:or|to|-|,|\/)\s*(\d+)\s*(?:bdrm|bedroom|bed\b|br\b|room)/);
+  if (m) beds = m[1] + '-' + m[2] + ' bdrm';
+  else if ((m = low.match(/(\d+)\s*\+?\s*(?:bdrm|bedrooms?|beds?\b|br\b)/))) beds = m[1] + ' bdrm';
+  else if (/\bstudio\b/.test(low)) beds = 'studio';
+  else if (/\b(?:single|private)\s+room\b|\broom available\b/.test(low)) beds = 'room';
+
+  let term = '';
+  const explicitShort = /\bshort[-\s]?term\b|\bnightly\b|per night|a night|\/\s*night|\bweekend\b|\bvacation\b/.test(low);
+  const explicitLong  = /\blong[-\s]?term\b|\byearly\b|\bannual\b|per month|a month|\/\s*month|\bmonthly\b|year lease/.test(low);
+  if (explicitShort) term = 'short term';
+  else if (explicitLong) term = 'long term';
+
+  let loc = '', locAt = Infinity;
+  for (const h of HOODS) {
+    const i = low.indexOf(h.toLowerCase());
+    if (i > -1 && i < locAt) { locAt = i; loc = h; }   // earliest mention wins
+  }
+  if (!loc) for (const k in HOOD_ABBR) { if (new RegExp('\\b' + k + '\\b').test(t)) { loc = HOOD_ABBR[k]; break; } }
+
+  let hol = '';
+  for (const [pat, name] of HOLIDAYS) { if (new RegExp('\\b(?:' + pat + ')\\b').test(low)) { hol = name; break; } }
+  if (!hol) for (const k in HOLIDAY_ABBR) { if (new RegExp('\\b' + k + '\\b').test(t)) { hol = HOLIDAY_ABBR[k]; break; } }
+
+  let price = '';
+  const pm = t.match(/(?:₪|\$|nis\s*)?\s*(\d[\d,]{1,6})\s*(?:₪|nis|shekels?|\$)?\s*(?:\/|\s+per\s+|\s+a\s+)\s*(night|nite|month|mo\b|week)/i);
+  if (pm) {
+    const n = Number(pm[1].replace(/,/g, ''));
+    if (n >= 20 && n <= 200000) {
+      const unit = /night|nite/i.test(pm[2]) ? 'night' : /week/i.test(pm[2]) ? 'week' : 'month';
+      price = (/\$/.test(pm[0]) ? '$' : '₪') + n + '/' + unit;
+    }
+  }
+
+  // A monthly price means long term, a nightly one short term -- unless she
+  // actually wrote "short term" / "long term", which always wins.
+  if (price && !explicitShort && !explicitLong) term = /\/month$/.test(price) ? 'long term' : 'short term';
+  else if (price && /\/month$/.test(price) && explicitShort && !/\bshort[-\s]?term\b/.test(low)) term = 'long term';
+
+  const wants = /\b(?:looking for|in search of|seeking|wanted|need(?:ed|ing)?\b|anyone (?:know|have|got))/.test(low)
+             && !/\b(?:available|avail\b|for rent|to rent|renting out)\b/.test(low);
+
+  const head = [beds, term].filter(Boolean).join(' ');
+  let out = wants
+    ? 'Wanted: ' + (head || 'apartment')
+    : (head || 'Apartment') + ' avail';
+  if (loc)   out += ' in ' + loc;
+  if (hol)   out += ' for ' + hol;
+  if (price) out += ' for ' + price;
+  return out.charAt(0).toUpperCase() + out.slice(1);
+}
+
 // ── Message intake: normalize a WhatsApp msg into our shape ──────────────────
 async function intake(msg, chatName) {
   let sender = 'Member', phone = '';
@@ -321,7 +402,10 @@ async function buildPost(cluster, chatName) {
     }
   } else {
     const cleaned = cleanBody(first.body, contacts);
-    title = smartTitle(cleaned || first.body, first.kind, chatName);
+    // Rentals get Miriam's structured title; everything else keeps its own words.
+    title = first.kind === 'rental'
+      ? rentalTitle(first.body + ' ' + cleaned)
+      : smartTitle(cleaned || first.body, first.kind, chatName);
     memo  = summarize(cleaned, 900);
   }
   if (ocrTexts.length) {
