@@ -69,7 +69,7 @@ async function sendToQueue(item) {
     log('   ⊘ duplicate of a post from another group — skipped');
     return true;
   }
-  delete item._contentKey; delete item._kind;
+  delete item._contentKey; delete item._kind; delete item._msgIds;
   try {
     const r = await fetch(INGEST_URL + '?file=updates', {
       method: 'POST',
@@ -542,11 +542,59 @@ function rentalFacts(text) {
 }
 
 // ── Message intake: Baileys message → our shape ──────────────────────────────
-function textOf(m) {
+function innerOf(m) {
   const msg = m.message || {};
-  const inner = msg.ephemeralMessage?.message || msg.viewOnceMessage?.message || msg;
+  return msg.ephemeralMessage?.message || msg.viewOnceMessage?.message || msg.viewOnceMessageV2?.message || msg;
+}
+function textOf(m) {
+  const inner = innerOf(m);
   return inner.conversation || inner.extendedTextMessage?.text || inner.imageMessage?.caption || inner.videoMessage?.caption || inner.documentMessage?.caption || '';
 }
+// The contextInfo (quoted message, @mentions) lives inside whichever message
+// type this happens to be.
+function ctxOf(m) {
+  const inner = innerOf(m);
+  for (const k of Object.keys(inner)) {
+    const v = inner[k];
+    if (v && typeof v === 'object' && v.contextInfo) return v.contextInfo;
+  }
+  return null;
+}
+// A shared contact (vCard) → { name, phones[] }
+function parseVcard(vc, fallbackName) {
+  const name = (String(vc || '').match(/^FN:(.+)$/m) || [])[1] || fallbackName || '';
+  const phones = [];
+  for (const line of String(vc || '').split(/\r?\n/)) {
+    if (!/^(?:item\d+\.)?TEL/i.test(line)) continue;
+    const waid = (line.match(/waid=(\d+)/) || [])[1];
+    const raw = line.split(':').slice(1).join(':').trim();
+    const p = normalizePhone(waid ? '+' + waid : raw) || normalizePhone(raw);
+    if (p && !phones.includes(p)) phones.push(p);
+  }
+  return { name: stripEmoji(name).trim(), phones };
+}
+function cardsOf(m) {
+  const inner = innerOf(m);
+  const out = [];
+  if (inner.contactMessage) out.push(parseVcard(inner.contactMessage.vcard, inner.contactMessage.displayName));
+  if (inner.contactsArrayMessage && Array.isArray(inner.contactsArrayMessage.contacts))
+    for (const c of inner.contactsArrayMessage.contacts) out.push(parseVcard(c.vcard, c.displayName));
+  return out.filter(c => c.name || c.phones.length);
+}
+// A link with WhatsApp's own preview (title / description)
+function linkOf(m) {
+  const e = innerOf(m).extendedTextMessage;
+  if (!e) return null;
+  const url = e.canonicalUrl || e.matchedText || (urlsInText(e.text || '')[0]);
+  if (!url) return null;
+  return { url, title: stripEmoji(e.title || '').trim(), description: stripEmoji(e.description || '').trim().slice(0, 200) };
+}
+// Names we have seen people use, by phone/id -- so "@Sara" can become a real
+// name and number in a comment.
+const NAMES_FILE = path.join(__dirname, 'names.json');
+let NAMES = new Map();
+try { NAMES = new Map(JSON.parse(fs.readFileSync(NAMES_FILE, 'utf8'))); } catch (e) {}
+const saveNames = () => { try { fs.writeFileSync(NAMES_FILE, JSON.stringify([...NAMES].slice(-20000))); } catch (e) {} };
 function imageOf(m) {
   const msg = m.message || {};
   const inner = msg.ephemeralMessage?.message || msg.viewOnceMessage?.message || msg;
@@ -571,7 +619,200 @@ async function intake(sock, m, chatName) {
     } catch (e) {}
   }
   const ts = Number(m.messageTimestamp || 0) * 1000;
-  return { id: key.id || String(Date.now()+Math.random()), ts, chat: chatName, sender, phone, body, media, kind: classify(body, !!media) };
+  if (rawId && m.pushName) { NAMES.set(rawId, m.pushName); }
+  const ctx = ctxOf(m) || {};
+  const quotedId = ctx.stanzaId || '';
+  const mentions = (ctx.mentionedJid || []).map(j => String(j).split('@')[0].split(':')[0]).filter(Boolean);
+  const cards = cardsOf(m);
+  const link = linkOf(m);
+  // A contact card or a link with no words is still a real answer.
+  let kind = classify(body, !!media);
+  if ((cards.length || link) && (kind === 'chatter' || kind === 'info')) kind = 'answer';
+  return { id: key.id || String(Date.now()+Math.random()), ts, chat: chatName, sender, phone, body, media, kind,
+           quotedId, mentions, cards, link };
+}
+
+
+// ── Threads ─────────────────────────────────────────────────────────────────
+// Every WhatsApp message we turn into (or fold into) a post is remembered by
+// its message id, so a reply that quotes it -- an hour or a day later -- lands
+// as a comment on that post instead of becoming a choppy post of its own.
+const THREADS_FILE = path.join(__dirname, 'threads.json');
+let THREADS = new Map();   // messageId → { post, dedupeKey, ts }
+try { THREADS = new Map(JSON.parse(fs.readFileSync(THREADS_FILE, 'utf8'))); } catch (e) {}
+const saveThreads = () => { try { fs.writeFileSync(THREADS_FILE, JSON.stringify([...THREADS].slice(-20000))); } catch (e) {} };
+function rememberThread(msgIds, post) {
+  for (const id of msgIds) if (id) THREADS.set(id, { post: post.id, dedupeKey: post.dedupeKey, ts: Date.now() });
+  saveThreads();
+}
+// The last open question per chat: an answer that quotes nothing but arrives
+// within a few hours still belongs to it.
+const LAST_Q = new Map();   // chatName → { id, post, ts }
+const ANSWER_WINDOW_MS = 3 * 3600 * 1000;
+
+// How a reply reads as a comment: its words, then any contact card, link or
+// @mention spelled out with a name and number.
+function nameFor(digits) { return NAMES.get(digits) || ''; }
+function commentTextOf(m) {
+  const parts = [];
+  let text = stripEmoji(m.body || '').trim();
+  // "@~Sara" / "@972…" → the person, spelled out below with a number
+  if ((m.mentions || []).length) {
+    text = text.replace(/@~?[\w.\-]+/g, (all) => {
+      const d = all.replace(/\D/g, '');
+      const nm = d ? nameFor(d) : '';
+      return nm ? nm : '';
+    }).replace(/\s{2,}/g, ' ').trim();
+  }
+  if (m.link && text && text.replace(m.link.url, '').trim().length < 3) text = '';
+  if (text) parts.push(text);
+  for (const c of (m.cards || [])) {
+    const line = [c.name, c.phones.join(', ')].filter(Boolean).join(' — ');
+    if (line) parts.push(line);
+  }
+  if (m.link) parts.push([m.link.title, m.link.url].filter(Boolean).join(' — '));
+  for (const d of (m.mentions || [])) {
+    const nm = nameFor(d); const ph = /^\d{9,13}$/.test(d) ? normalizePhone('+' + d) : '';
+    if (nm || ph) {
+      const line = [nm || 'Contact', ph].filter(Boolean).join(' — ');
+      if (!parts.some(p => p.includes(line))) parts.push(line);
+    }
+  }
+  return parts.join('\n').trim();
+}
+function phonesOfMsg(m) {
+  const out = new Set(phonesInText(m.body || ''));
+  for (const c of (m.cards || [])) c.phones.forEach(p => out.add(p));
+  for (const d of (m.mentions || [])) { const p = /^\d{9,13}$/.test(d) ? normalizePhone('+' + d) : ''; if (p) out.add(p); }
+  return [...out];
+}
+
+// A question, as a title: the topic, not the whole sentence.
+function questionTitle(text) {
+  let t = stripEmoji(String(text || '')).replace(/\s+/g, ' ').trim();
+  t = t.replace(/^(?:hi|hello|hey|good (?:morning|evening|afternoon))[,!. ]*/i, '');
+  t = t.replace(/^(?:or|and|also|so|ok|okay)[,\s]+/i, '');
+  t = t.replace(/\?.*$/, '').replace(/[.!]+$/, '').trim();
+  const FILL = '(?:(?:a|an|the|of|any|some|good|great|reliable|nice|decent|number|numbers|contact|contacts|info|details|name|names|leads?|recs?|recommendations?)\\s+(?:for\\s+|of\\s+)?)*';
+  const seek = new RegExp('^(?:does |do )?(?:anyone|anybody|someone|any1|ne1|any one)\\s+(?:here\\s+)?(?:have|has|hv|got|know(?:s)?(?: of)?|recommend(?:s)?|use(?:s|d)?)\\s+' + FILL, 'i');
+  const seek2 = /^(?:any (?:leads?|recs?|recommendations?|suggestions?|ideas?|info)\s+(?:for|on|of|about)\s+|looking for\s+(?:a |an |the |some )?|(?:i |we )?need\s+(?:a |an |the |some )?(?:recommendation for |rec for |good )?|who (?:has|knows|does|is doing|is giving|gives|makes|sells|can recommend)\s+(?:a |an |the )?|where can (?:i|we|one) (?:find|get|buy)\s+(?:a |an |the |some )?|is there (?:a |an |any |anyone who )?|can (?:anyone|someone) recommend\s+(?:a |an |the )?|(?:any|anyone) recs? for\s+)/i;
+  let core = t, seeking = false;
+  if (seek.test(t)) { core = t.replace(seek, ''); seeking = true; }
+  else if (seek2.test(t)) { core = t.replace(seek2, ''); seeking = true; }
+  else if (/^(?:does |do )?(?:anyone|anybody|someone)\s+/i.test(t)) { core = t.replace(/^(?:does |do )?(?:anyone|anybody|someone)\s+/i, ''); }
+  core = core.replace(/\s+(?:that|who|which)\s+(?:talks?|speaks?|is|are|can|does|do|will|would|has|have)\b.*$/i, '')
+             .replace(/\s+(?:please|pls|plz|tia|thanks|thank you|urgent(?:ly)?)\b.*$/i, '')
+             .replace(/\s+(?:to recommend|recommendation)$/i, '')
+             .trim();
+  const words = core.split(' ').filter(Boolean);
+  if (words.length > 9) core = words.slice(0, 9).join(' ');
+  if (!core) return '';
+  const acronym = /^[A-Z]{2,}/.test(core);       // "IV hydration" stays "IV"
+  core = core.charAt(0).toUpperCase() + core.slice(1);
+  if (!seeking) return core;
+  return 'Seeking ' + (acronym ? core : core.charAt(0).toLowerCase() + core.slice(1));
+}
+
+// Who a reply belongs to: the post of the message it quotes, or of the last
+// open question in that chat if it looks like an answer.
+const FOLLOWUP_MS = 15 * 60 * 1000;
+const LAST_ACT = new Map();   // chatName → { ts, post, cluster, people:Set }
+function noteActivity(chat, m, ref) {
+  const cur = LAST_ACT.get(chat) || { people: new Set() };
+  cur.ts = m.ts; if (ref.cluster) { cur.cluster = ref.cluster; cur.post = null; } else { cur.post = ref.sent; cur.cluster = null; }
+  cur.people.add(m.sender); LAST_ACT.set(chat, cur);
+}
+function resolveParent(m, batchIndex) {
+  const viaBatch = (id) => {
+    const e = batchIndex.get(id);
+    if (!e) return null;
+    return e.kind === 'sent' ? { sent: e.target } : { cluster: e };
+  };
+  if (m.quotedId) {
+    const b = viaBatch(m.quotedId); if (b) return b;
+    const t = THREADS.get(m.quotedId);
+    if (t) return { sent: t };
+  }
+  const isAnswerish = m.kind === 'answer' || (m.cards && m.cards.length) || m.link;
+  if (isAnswerish) {
+    const lq = LAST_Q.get(m.chat);
+    if (lq && m.ts - lq.ts < ANSWER_WINDOW_MS) {
+      const b = viaBatch(lq.id); if (b) return b;
+      if (lq.post) return { sent: lq.post };
+    }
+  }
+  // A short follow-up right after a thread was active -- "Where is she
+  // located?" / "Mem gimmel" -- belongs to that thread when it's a question
+  // or comes from someone already in the conversation.
+  const la = LAST_ACT.get(m.chat);
+  if (la && m.ts - la.ts < FOLLOWUP_MS && m.kind !== 'question' && m.kind !== 'rental' && m.kind !== 'ad') {
+    const short = stripEmoji(m.body || '').length <= 80;
+    const asks = /\?/.test(m.body || '');
+    if ((asks || la.people.has(m.sender)) && short && !m.media) {
+      if (la.cluster) return { cluster: la.cluster };
+      if (la.post) return { sent: la.post };
+    }
+  }
+  return null;
+}
+
+// Group a flush window into posts and comments.
+//  {kind:'combined', q, answers[]}  a question with its replies
+//  {kind:'single', msgs:[m]}         a rental, an ad, a recommendation on its own
+//  {kind:'comment', target, msg}     a reply to a post we already sent
+function clusterThreads(msgs) {
+  const out = [];
+  const batchIndex = new Map();   // messageId → cluster in this batch
+  for (const m of msgs) {
+    const hasStuff = (m.cards && m.cards.length) || m.link || m.media;
+    const parent = resolveParent(m, batchIndex);
+    if (m.kind === 'chatter' && !hasStuff && !parent) continue;
+    if (parent && parent.cluster) {
+      const c = parent.cluster;
+      if (c.kind === 'combined') c.answers.push(m); else { c.kind = 'combined'; c.q = c.msgs[0]; c.answers = [m]; }
+      batchIndex.set(m.id, c);
+      noteActivity(m.chat, m, { cluster: c });
+      continue;
+    }
+    if (parent && parent.sent) {
+      if (m.kind === 'chatter' && !hasStuff && stripEmoji(m.body || '').length < 4) continue;
+      out.push({ kind: 'comment', target: parent.sent, msg: m });
+      batchIndex.set(m.id, { kind: 'sent', target: parent.sent });   // so a reply to THIS reply follows too
+      noteActivity(m.chat, m, { sent: parent.sent });
+      continue;
+    }
+    if (m.kind === 'rental' || m.kind === 'ad') { const c = { kind: 'single', msgs: [m] }; out.push(c); batchIndex.set(m.id, c); continue; }
+    if (m.kind === 'question') {
+      const c = { kind: 'combined', q: m, answers: [] };
+      out.push(c); batchIndex.set(m.id, c);
+      LAST_Q.set(m.chat, { id: m.id, ts: m.ts, post: null });
+      LAST_ACT.set(m.chat, { ts: m.ts, cluster: c, post: null, people: new Set([m.sender]) });
+      continue;
+    }
+    if (m.kind === 'chatter') continue;
+    const c = { kind: 'single', msgs: [m] }; out.push(c); batchIndex.set(m.id, c);
+  }
+  return out;
+}
+
+// A comment on a post the site already has.
+async function sendComment(target, m) {
+  const content = commentTextOf(m);
+  if (!content) return false;
+  const post = typeof target === 'string' ? { post: target } : target;
+  try {
+    const r = await fetch(INGEST_URL + '?file=updates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
+      body: JSON.stringify({ file: 'updates', action: 'comment',
+        target: { id: post.post, dedupeKey: post.dedupeKey || '' },
+        comment: { author: m.sender || 'Member', content: content.slice(0, 2000), timestamp: m.ts || Date.now() } }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.ok) { log('   ↳ comment added to "' + (j.title || post.post) + '": ' + content.slice(0, 50).replace(/\n/g, ' ')); THREADS.set(m.id, { post: post.post, dedupeKey: post.dedupeKey, ts: Date.now() }); saveThreads(); return true; }
+    log('   ↳ comment not added (' + r.status + ' ' + (j.error || '') + ')');
+    return false;
+  } catch (e) { log('   ↳ comment failed: ' + (e && e.message)); return false; }
 }
 
 // ── Build the final Chutznik post from a cluster ─────────────────────────────
@@ -581,14 +822,14 @@ async function buildPost(cluster, chatName) {
   const tag = first.id.replace(/[^a-zA-Z0-9]/g, '').slice(-16);
 
   // images: upload + OCR
-  const attachments = []; const ocrTexts = [];
+  const attachments = []; const ocrTexts = []; const ocrByMsg = new Map();
   let idx = 0;
   for (const m of msgs) {
     if (!m.media) continue;
     const url = await uploadImage(m.media.base64, m.media.mime, tag, idx++);
     if (url) attachments.push({ url, name: 'photo' + idx + '.jpg' });
     const t = await ocrImage(m.media.base64);
-    if (t) ocrTexts.push(t);
+    if (t) { ocrTexts.push(t); ocrByMsg.set(m.id, t); }
     if (idx >= 6) break;
   }
 
@@ -602,16 +843,35 @@ async function buildPost(cluster, chatName) {
   };
 
   let title, memo;
+  const comments = [];
   if (cluster.kind === 'combined') {
+    // The question is the post -- short title, the ask itself as the body --
+    // and every reply is a comment, in the replier's name, with any contact
+    // card, link or @mention written out as a name and number.
     const q = cleanBody(cluster.q.body, contacts);
-    title = smartTitle(q, 'question', chatName);
+    title = questionTitle(cluster.q.body) || smartTitle(q, 'question', chatName);
     memo  = summarize(q, 700);
-    if (cluster.answers.length) {
-      const ans = cluster.answers
-        .map(a => '• ' + summarize(cleanBody(a.body, contacts), 220))
-        .filter(l => l.length > 4);
-      if (ans.length) memo += '\n\nReplies from the group:\n' + ans.join('\n');
+    for (const a of cluster.answers) {
+      let content = commentTextOf(a);
+      const flyer = ocrByMsg.get(a.id);
+      if (flyer) content = (content ? content + '\n' : '') + 'From the flyer: ' + summarize(cleanBody(flyer, contacts), 300);
+      if (!content || content.length < 2) continue;
+      const last = comments[comments.length - 1];
+      if (last && last.author === (a.sender || 'Member') && Math.abs((a.ts || 0) - last.timestamp) < 2 * 60 * 1000) {
+        last.content = (last.content + '\n' + content).slice(0, 2000);
+        continue;
+      }
+      comments.push({ author: a.sender || 'Member', content: content.slice(0, 2000), timestamp: a.ts || first.ts });
     }
+  } else if (first.cards && first.cards.length && first.kind !== 'rental' && first.kind !== 'ad') {
+    // A shared contact with a word of praise: the contact is the post.
+    const card = first.cards[0];
+    title = card.name || smartTitle(cleanBody(first.body, contacts), first.kind, chatName);
+    const praise = stripEmoji(first.body || '').trim();
+    memo = [praise, ...first.cards.map(c => [c.name, c.phones.join(', ')].filter(Boolean).join(' — '))].filter(Boolean).join('\n');
+  } else if (first.link && first.link.title && !first.kind.match(/rental|ad/)) {
+    title = first.link.title.slice(0, 90);
+    memo = [stripEmoji(first.body || '').replace(first.link.url, '').trim(), first.link.description, first.link.url].filter(Boolean).join('\n');
   } else {
     const cleaned = cleanBody(first.body, contacts);
     // Rentals get Miriam's structured title; everything else keeps its own words.
@@ -620,13 +880,26 @@ async function buildPost(cluster, chatName) {
       : smartTitle(cleaned || first.body, first.kind, chatName);
     memo  = summarize(cleaned, 900);
   }
-  if (ocrTexts.length) {
+  if (ocrTexts.length && cluster.kind !== 'combined') {
     const fromImg = summarize(cleanBody(ocrTexts.join(' '), contacts), 400);
     if (fromImg) memo += '\n\nFrom the attached image: ' + fromImg;
   }
   if (!memo || memo.length < 3) memo = summarize(cleanBody(first.body, contacts), 900) || title;
 
-  const allText = msgs.map(m => m.body).join(' ') + ' ' + ocrTexts.join(' ');
+  const allText = msgs.map(m => m.body).join(' ') + ' ' + ocrTexts.join(' ')
+    + ' ' + msgs.flatMap(m => (m.cards || []).map(c => c.name)).join(' ')
+    + ' ' + msgs.map(m => m.link ? (m.link.title + ' ' + m.link.description) : '').join(' ');
+  // numbers from cards and @mentions count as the post's contact too -- and
+  // for a question, the answers' numbers come first; the asker's own number
+  // is not the recommendation.
+  if (cluster.kind === 'combined') {
+    const fromAnswers = [];
+    for (const a of cluster.answers) for (const p of phonesOfMsg(a)) if (!fromAnswers.includes(p)) fromAnswers.push(p);
+    const askerOwn = cluster.q.phone ? [cluster.q.phone] : [];
+    contacts.phones = fromAnswers.concat(contacts.phones.filter(p => !fromAnswers.includes(p) && !askerOwn.includes(p)));
+  } else {
+    for (const m of msgs) for (const p of phonesOfMsg(m)) if (!contacts.phones.includes(p)) contacts.phones.push(p);
+  }
   const kinds = msgs.map(m => m.kind);
   const kind = kinds.includes('rental') ? 'rental' : kinds.includes('ad') ? 'ad' : cluster.kind === 'combined' ? 'question' : 'info';
   // A rental is a Rental. The generic classifier was tagging plenty of them
@@ -646,7 +919,12 @@ async function buildPost(cluster, chatName) {
     title: stripEmoji(title).substring(0, 150),
     memo,
     types,
-    author: chatName,
+    // A question-and-answers post is Chutznik's own digest; a plain forward
+    // still says which group it came from.
+    author: cluster.kind === 'combined' ? 'Chutznik' : chatName,
+    comments,
+    lastCommentTime: comments.length ? Math.max(...comments.map(c => c.timestamp)) : undefined,
+    _msgIds: msgs.map(m => m.id),
     contactPhone: contacts.phones[0] || '',
     contactWebsite: contacts.urls[0] || '',
     // Rentals go live immediately; everything else still waits for Miriam.
@@ -669,14 +947,32 @@ async function flush() {
   for (const [chatName, msgs] of buffers) {
     if (!msgs.length) continue;
     buffers.set(chatName, []);
-    const clusters = clusterWindow(msgs);
-    log('📦 ' + chatName + ': ' + msgs.length + ' msg(s) → ' + clusters.length + ' post(s) after clustering');
+    msgs.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    const clusters = clusterThreads(msgs);
+    const nPosts = clusters.filter(c => c.kind !== 'comment').length, nCmts = clusters.length - nPosts;
+    log('📦 ' + chatName + ': ' + msgs.length + ' msg(s) → ' + nPosts + ' post(s)' + (nCmts ? ' + ' + nCmts + ' comment(s) on earlier posts' : ''));
     for (const cl of clusters) {
       try {
+        if (cl.kind === 'comment') { await sendComment(cl.target, cl.msg); continue; }
         const post = await buildPost(cl, chatName);
-        if (SEEN.has(post.dedupeKey)) { log('   ≈ similar post already sent — skipped'); continue; }
+        const msgIds = post._msgIds || []; delete post._msgIds;
+        if (SEEN.has(post.dedupeKey)) {
+          // the same question already went out (another group, or a re-send):
+          // the replies still belong to it
+          const prior = [...THREADS.values()].find(t => t.dedupeKey === post.dedupeKey);
+          if (prior && cl.kind === 'combined') for (const a of cl.answers) await sendComment(prior, a);
+          log('   ≈ similar post already sent — skipped'); continue;
+        }
         const ok = await sendToQueue(post);
-        if (ok) { SEEN.add(post.dedupeKey); saveSeen(); }
+        if (ok) {
+          SEEN.add(post.dedupeKey); saveSeen();
+          rememberThread(msgIds, post);
+          if (cl.kind === 'combined') {
+            const ref = { post: post.id, dedupeKey: post.dedupeKey };
+            LAST_Q.set(chatName, { id: cl.q.id, ts: cl.q.ts, post: ref });
+            const la = LAST_ACT.get(chatName); if (la && la.cluster === cl) { la.cluster = null; la.post = ref; }
+          }
+        }
       } catch (e) { log('   post build failed: ' + (e && e.message)); }
     }
   }
@@ -712,7 +1008,7 @@ async function handleMessages(sock, messages, label) {
     } catch (e) {}
   }
   if (n && label !== 'live') { log('⤴ history: collected ' + n + ' group message(s) from the last ' + HOURS + 'h'); }
-  saveSeen();
+  saveSeen(); saveNames();
 }
 
 async function start() {
