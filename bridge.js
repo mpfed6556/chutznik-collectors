@@ -999,6 +999,20 @@ async function flush() {
 }
 setInterval(flush, FLUSH_MINUTES * 60 * 1000);
 
+// ── Chutznik reply drafts → Miriam's inbox ──────────────────────────────────
+// The drafter writes suggested replies into drafts.json; the site emails each
+// one to Miriam exactly once. This machine is always on and can reach the
+// site, so it gives the site a nudge every few minutes. Cheap and idempotent.
+async function nudgeDraftEmails() {
+  try {
+    const r = await fetch(SITE + '/api/send-email?drafts=1', { signal: AbortSignal.timeout(60000) });
+    const j = await r.json().catch(() => ({}));
+    if (j && j.sent) log('✉️  draft emails sent: ' + j.sent + (j.failed ? ' (failed ' + j.failed + ')' : ''));
+  } catch (e) { /* the next nudge will get it */ }
+}
+setInterval(nudgeDraftEmails, 3 * 60 * 1000);
+setTimeout(nudgeDraftEmails, 20 * 1000);
+
 
 // ── Connection ───────────────────────────────────────────────────────────────
 const buffersPush = (name, it) => { if (!buffers.has(name)) buffers.set(name, []); buffers.get(name).push(it); };
