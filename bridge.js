@@ -267,12 +267,115 @@ function isRecentDuplicate(key, ts) {
 // ═════════════════════════════════════════════════════════════════════════════
 const HOOD_ABBR = { RE:'Ramat Eshkol', SM:'Sanhedria', RS:'Ramat Shlomo', RBS:'Ramat Bet Shemesh' };
 const HOLIDAY_ABBR = { RH:'Rosh Hashana', YK:'Yom Kippur', SKS:'Sukkos' };
-const HOODS = ['Ramat Eshkol','Sanhedria Murchevet','Sanhedria','Ramat Shlomo','Ramat Bet Shemesh',
-  'Bet Shemesh','Beit Shemesh','Nachlaot','Nachalot','Rechavia','Rachavia','Har Nof','Givat Shaul',
-  'Bayit Vegan','Katamon','Baka','Arnona','Talpiot','Old City','City Center','Geula','Geulah',
-  'Mekor Baruch','Romema','French Hill','Pisgat Zev','Neve Yaakov','Gilo','Har Homa','Maalot Dafna',
-  'Kiryat Moshe','Shaarei Chesed','Mattersdorf','Ezras Torah','Unsdorf','Beitar','Efrat','Gush Etzion',
-  'Telz Stone','Ramot','Givat Hamivtar','Kiryat Sefer','Modiin Illit','Jerusalem','Yerushalayim'];
+const HOODS = [
+  'City Center (Jerusalem)',
+  'Old City Bet Shemesh',
+  'Ramat Bet Shemesh A',
+  'Ramat Bet Shemesh B',
+  'Ramat Bet Shemesh C',
+  'Ramat Bet Shemesh D',
+  'Sanhedria Murchevet',
+  'Ramat Beit Shemesh',
+  'Ramat Bet Shemesh',
+  'Givat Hamivtar',
+  'Kiryat Malachi',
+  'Zichron Yaakov',
+  'Givat Sharett',
+  'Migdal HaEmek',
+  'Rishon LeZion',
+  'Shikun Chabad',
+  'Shmuel Hanavi',
+  'Zichron Moshe',
+  'Arzei Habira',
+  'Arzei HaBira',
+  'Beit Hakerem',
+  'Beit Shemesh',
+  'Beit Yisrael',
+  'Hod HaSharon',
+  'Kiryat Moshe',
+  'Kiryat Yovel',
+  'Maalot Dafna',
+  'Mekor Baruch',
+  'Pardes Hanna',
+  'Ramat Eshkol',
+  'Ramat Shlomo',
+  'Yerushalayim',
+  'Bayit Vegan',
+  'Bet Shemesh',
+  'Ezras Torah',
+  'French Hill',
+  'Givat Shaul',
+  'Gush Etzion',
+  'Kiryat Belz',
+  'Mattersdorf',
+  'Neve Yaakov',
+  'Nof HaGalil',
+  'Petah Tikva',
+  'Rosh HaAyin',
+  'Kiryat Gat',
+  'Kiryat Ono',
+  'Ness Ziona',
+  'Nofei Aviv',
+  'Pisgat Zev',
+  'Telz Stone',
+  'Bnei Brak',
+  'Givat Zev',
+  'Givatayim',
+  'Jerusalem',
+  'Kfar Saba',
+  'Or Yehuda',
+  'Ramat Gan',
+  'Sanhedria',
+  'Sorotzkin',
+  'Ashkelon',
+  'Caesarea',
+  'Har Homa',
+  'Herzliya',
+  'Nachalot',
+  'Nachlaot',
+  'Nahariya',
+  'Old City',
+  'Rachavia',
+  'Rechavia',
+  'Tel Arza',
+  'Tel Aviv',
+  'Tiberias',
+  'Bat Yam',
+  'Har Nof',
+  'Karmiel',
+  'Katamon',
+  'Netanya',
+  'Netivot',
+  'Rehovot',
+  'Talpiot',
+  'Unsdorf',
+  'Arnona',
+  'Ashdod',
+  'Dimona',
+  'Geulah',
+  'Hadera',
+  'Mamila',
+  'Ofakim',
+  'Romema',
+  'Sderot',
+  'Afula',
+  'Efrat',
+  'Eilat',
+  'Geula',
+  'Haifa',
+  'Holon',
+  'Ramla',
+  'Ramot',
+  'Tzfas',
+  'Yehud',
+  'Akko',
+  'Arad',
+  'Baka',
+  'Elad',
+  'Gilo',
+  'Yafo',
+  'Lod'
+];
 const HOLIDAYS = [
   ['sukkos|sukkot|succos|succot|sukkah','Sukkos'], ['pesach|passover','Pesach'],
   ['rosh hashan(?:a|ah)','Rosh Hashana'], ['yom kippur','Yom Kippur'],
@@ -281,15 +384,59 @@ const HOLIDAYS = [
   ['chol hamoed','Chol Hamoed'], ['yom tov','Yom Tov'],
   ['summer','the summer'], ['winter','the winter']];
 
+
+// Building complexes people name instead of a street. Miriam's list -- add more
+// here as they come up; they're matched before the neighbourhood so a title can
+// read "in Tenuva, Ramat Eshkol".
+const COMPLEXES = ['Tenuva','Kaduri','Shefa','Shefa Mall','Merkaz Shefa','Grand Court','Kiryat Belz'];
+
+// One short, specific thing that makes a listing stand out. First match wins,
+// so the list is ordered from most distinctive to most generic.
+const RENTAL_FEATURES = [
+  [/\bpent\s?house\b/i,                         'penthouse'],
+  [/\bduplex\b/i,                               'duplex'],
+  [/\b(?:luxur\w*|high[- ]end|upscale)\b/i,     'luxury'],
+  [/\b(?:stunning|amazing|breathtaking|gorgeous|beautiful)\s+views?\b|\bview of the (?:old city|kotel|city)\b/i, 'stunning views'],
+  [/\bviews?\b/i,                               'nice views'],
+  [/\b(?:s[uo]k+[ao]?h?|succ?[ao]h?)\s*(?:porch|balcony|mirpeset|deck)\b/i, 'sukkah balcony'],
+  [/\b(?:newly|just|fully|recently)\s+renovated\b|\brenovated\b|\bbrand[- ]new\b/i, 'newly renovated'],
+  [/\b(?:huge|big|large|spacious)\s+(?:balcon\w+|mirpeset|porch)\b/i, 'big balcony'],
+  [/\b(?:top|high)\s+floor\b/i,                 'high floor'],
+  [/\bground\s+floor\b/i,                       'ground floor'],
+  [/\b(?:private\s+)?(?:garden|yard|gina)\b/i,  'private garden'],
+  [/\b(?:huge|spacious|large|roomy)\b/i,        'spacious'],
+  [/\bfully\s+furnished\b|\bfurnished\b/i,      'fully furnished'],
+  [/\b(?:private\s+)?parking\b|\bchanaya\b/i,   'parking included'],
+  [/\belevator\b|\bmaalit\b/i,                  'elevator'],
+  [/\b(?:cheap|bargain|great\s+price|price\s+drop|reduced|must\s+go)\b/i, 'great price'],
+  [/\b(?:great|prime|central|amazing|perfect)\s+location\b|\bvery\s+central\b/i, 'great location'],
+  [/\b(?:steps|walking\s+distance|next\s+door)\s+(?:to|from)\b|\bnear\s+(?:shul|kotel|shops)\b/i, 'walk to shul'],
+  [/\bquiet\b|\bpeaceful\b/i,                   'quiet street'],
+  [/\bwasher\b.*\bdryer\b|\bdryer\b/i,          'washer & dryer'],
+  [/\bmachsan\b|\bstorage\b/i,                  'storage room'],
+  [/\bmirpeset\b|\bbalcon\w+\b|\bporch\b/i,     'balcony'],
+];
+function rentalFeature(text) {
+  const t = String(text || '');
+  for (const [re, label] of RENTAL_FEATURES) if (re.test(t)) return label;
+  return '';
+}
+
 function rentalTitle(text) {
   const t = String(text || '');
   const low = t.toLowerCase();
 
+  const NUMWORDS = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+  const NUMW = '(?:one|two|three|four|five|six|seven|eight|nine|ten)';
   let beds = '';
   let m = low.match(/(\d+)\s*(?:or|to|-|,|\/)\s*(\d+)\s*(?:bdrm|bedroom|bed\b|br\b|room)/);
   if (m) beds = m[1] + '-' + m[2] + ' bdrm';
   else if ((m = low.match(/(\d+)\s*\+?\s*(?:bdrm|bedrooms?|beds?\b|br\b)/))) beds = m[1] + ' bdrm';
   else if (/\bstudio\b/.test(low)) beds = 'studio';
+  else if ((m = low.match(new RegExp('\\b' + NUMW + '\\s*(?:or|to|-)\\s*' + NUMW + '\\s*(?:bdrm|bedrooms?|beds?|br\\b|room)'))))
+    { const w = m[0].match(new RegExp(NUMW,'g')); beds = NUMWORDS[w[0]] + '-' + NUMWORDS[w[1]] + ' bdrm'; }
+  else if ((m = low.match(new RegExp('\\b(' + NUMW + ')\\s*(?:bdrm|bedrooms?|beds?\\b|br\\b|room)'))))
+    beds = NUMWORDS[m[1]] + ' bdrm';
   else if (/\b(?:single|private)\s+room\b|\broom available\b/.test(low)) beds = 'room';
 
   let term = '';
@@ -301,8 +448,15 @@ function rentalTitle(text) {
   let loc = '', locAt = Infinity;
   for (const h of HOODS) {
     const i = low.indexOf(h.toLowerCase());
-    if (i > -1 && i < locAt) { locAt = i; loc = h; }   // earliest mention wins
+    // earliest mention wins; on a tie the longer, more specific name wins
+    // (so "Sanhedria Murchevet" beats "Sanhedria" at the same position)
+    if (i > -1 && (i < locAt || (i === locAt && h.length > loc.length))) { locAt = i; loc = h; }
   }
+  let complex = '';
+  for (const c of COMPLEXES) {
+    if (new RegExp('\\b' + c.replace(/\s+/g, '\\s+') + '\\b', 'i').test(t)) { complex = c; break; }
+  }
+  const place = complex && loc ? (complex + ', ' + loc) : (complex || loc);
   if (!loc) for (const k in HOOD_ABBR) { if (new RegExp('\\b' + k + '\\b').test(t)) { loc = HOOD_ABBR[k]; break; } }
 
   let hol = '';
@@ -324,16 +478,19 @@ function rentalTitle(text) {
   if (price && !explicitShort && !explicitLong) term = /\/month$/.test(price) ? 'long term' : 'short term';
   else if (price && /\/month$/.test(price) && explicitShort && !/\bshort[-\s]?term\b/.test(low)) term = 'long term';
 
-  const wants = /\b(?:looking for|in search of|seeking|wanted|need(?:ed|ing)?\b|anyone (?:know|have|got))/.test(low)
-             && !/\b(?:available|avail\b|for rent|to rent|renting out)\b/.test(low);
+  // "Looking to rent" contains the words "to rent", so an offer test alone
+  // read requests as offers. A request phrase now always wins.
+  const wants = /\b(?:looking (?:for|to rent)|want(?:ed|ing)? to rent|in search of|seeking\b|wanted\b|iso\b|anyone (?:know|have|got)|need(?:ed|ing)?\s+(?:a|an|to|small|big|\d))/.test(low);
 
   const head = [beds, term].filter(Boolean).join(' ');
   let out = wants
     ? 'Wanted: ' + (head || 'apartment')
     : (head || 'Apartment') + ' avail';
-  if (loc)   out += ' in ' + loc;
+  if (place) out += ' in ' + place;
   if (hol)   out += ' for ' + hol;
   if (price) out += ' for ' + price;
+  const feat = rentalFeature(t);
+  if (feat) out += ' — ' + feat;
   return out.charAt(0).toUpperCase() + out.slice(1);
 }
 
