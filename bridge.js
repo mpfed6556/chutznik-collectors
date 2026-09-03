@@ -494,6 +494,53 @@ function rentalTitle(text) {
   return out.charAt(0).toUpperCase() + out.slice(1);
 }
 
+
+// ── Rental facts: bedrooms, term, price, per night/month ─────────────────────
+// Read out of the text so a WhatsApp rental carries the same structured fields
+// as one posted through the site's form — which is what makes the site's
+// rental filters (bedrooms, short/long, price) work on it. The site runs the
+// same rules for anything that arrived before this existed.
+const _NUMW = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8 };
+function rentalFacts(text) {
+  const low = String(text || '').toLowerCase().replace(/\s+/g, ' ');
+  const out = {};
+  let m;
+  if (/\bstudio\b/.test(low)) out.beds = 0;
+  else if ((m = low.match(/(\d+(?:\.5)?)\s*\+?\s*(?:bdrm|bdrms|bedrooms?|beds?\b|br\b|rooms?\b)/))) out.beds = Math.round(parseFloat(m[1]));
+  else if ((m = low.match(/\b(one|two|three|four|five|six|seven|eight)\s*(?:bdrm|bedrooms?|beds?\b|br\b|rooms?\b)/))) out.beds = _NUMW[m[1]];
+  const isLong = /\blong[- ]?term\b|\byearly\b|\bannual\b|\blease\b|\bunfurnished\b|\bfor the year\b/.test(low);
+  const isShort = /\bshort[- ]?term\b|\bsukk?o[st]\b|\bsucc?o[st]\b|\bpesach\b|\bpassover\b|\byom kippur\b|\byk\b|\brosh hashan?ah?\b|\brh\b|\bchagim\b|\bchag\b|\btishrei\b|\bholiday\b|\bvacation\b|\bweekend\b|\bshabbo?s\b|\bshabbat\b|\bper night\b|\/night|\ba night\b|\bnightly\b|\bbein hazmanim\b|\bsummer\b|\bshort[- ]?let\b/.test(low);
+  if (isLong && !isShort) out.term = 'long';
+  else if (isShort && !isLong) out.term = 'short';
+  else if (isLong) out.term = 'long';
+  const P = [
+    /(?:₪|nis|shekels?|\$|usd)\s*(\d{1,3}(?:,\d{3})+|\d{3,6})\b(?:\s*(?:\/|per|a|for the)\s*(night|nite|month|mo\b|week))?/,
+    /(\d{1,3}(?:,\d{3})+|\d{3,6})\s*(?:₪|nis|shekels?|sh\b|\$|usd)(?:\s*(?:\/|per|a)\s*(night|nite|month|mo\b|week))?/,
+    /(\d{1,3}(?:,\d{3})+|\d{3,6})\s*(?:\/|per|a)\s*(night|nite|month|mo\b|week)/,
+    /(\d{1,2})k\b(?:\s*(?:\/|per|a)\s*(night|nite|month|mo\b))?/,
+  ];
+  for (const re of P) {
+    const mm = low.match(re);
+    if (!mm) continue;
+    let n = parseInt(mm[1].replace(/,/g, ''), 10);
+    if (re === P[3]) n *= 1000;
+    if (n < 100 || n > 200000) continue;
+    out.price = String(n);
+    const unit = mm[2] || '';
+    if (/night|nite/.test(unit)) out.priceMode = 'night';
+    else if (/month|mo/.test(unit)) out.priceMode = 'month';
+    else if (/week/.test(unit)) out.priceMode = 'night';
+    break;
+  }
+  if (out.price && !out.priceMode) {
+    if (/\b(per night|\/night|a night|nightly|\/n\b)\b/.test(low)) out.priceMode = 'night';
+    else if (/\b(per month|\/month|a month|monthly|\/m\b)\b/.test(low)) out.priceMode = 'month';
+    else out.priceMode = out.term === 'short' ? 'night' : 'month';
+  }
+  if (!out.priceMode && out.term) out.priceMode = out.term === 'short' ? 'night' : 'month';
+  return out;
+}
+
 // ── Message intake: Baileys message → our shape ──────────────────────────────
 function textOf(m) {
   const msg = m.message || {};
@@ -588,10 +635,14 @@ async function buildPost(cluster, chatName) {
   if (kind === 'rental') types = ['Rental'];
   if (!Array.isArray(types) || !types.length) types = ['Community'];
 
+  // Structured rental fields, so the site's filters treat this like a form post.
+  const facts = kind === 'rental' ? rentalFacts(title + '\n' + memo + '\n' + allText) : {};
+
   return {
     id: 'wa_' + tag,
     source: 'whatsapp',
     group: chatName,
+    ...facts,
     title: stripEmoji(title).substring(0, 150),
     memo,
     types,
