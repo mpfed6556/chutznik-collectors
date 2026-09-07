@@ -649,7 +649,9 @@ async function intake(sock, m, chatName) {
   let kind = classify(body, !!media);
   if ((cards.length || link) && (kind === 'chatter' || kind === 'info')) kind = 'answer';
   return { id: key.id || String(Date.now()+Math.random()), ts, chat: chatName, sender, phone, body, media, kind,
-           quotedId, mentions, cards, link };
+           quotedId, mentions, cards, link,
+           // where a private "your post is up" note can be sent (real number first, privacy id as fallback)
+           jid: pnJid || participant, fromMe: !!key.fromMe };
 }
 
 
@@ -1070,6 +1072,113 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
   log('✉️  jobs mail: off (set GMAIL_USER and GMAIL_APP_PASSWORD in .env to turn it on)');
 }
 
+// ── "Your post is up on Chutznik" — a private WhatsApp note to the poster ────
+// Sent from this same WhatsApp account, moments after a post goes public
+// (automatically, or when Miriam presses Publish). Off until switched on:
+//   NOTIFY_MODE=off   nothing (default)
+//   NOTIFY_MODE=dry   logs exactly what it WOULD send, sends nothing
+//   NOTIFY_MODE=live  sends
+// Guard rails, because WhatsApp bans accounts that behave like spammers:
+// only people who posted in a group we share; 08:00–22:00 Israel time only;
+// at most NOTIFY_DAILY a day (default 25); 60–150 s between notes; one note
+// per person per day; never to Miriam's own numbers; and anyone who replies
+// STOP is never messaged -- or posted -- again.
+const NOTIFY_MODE = String(process.env.NOTIFY_MODE || 'off').toLowerCase();
+const NOTIFY_DAILY = Number(process.env.NOTIFY_DAILY || 25);
+const NOTIFY_FROM = Number(process.env.NOTIFY_FROM_HOUR || 8), NOTIFY_TO = Number(process.env.NOTIFY_TO_HOUR || 22);
+const MY_NUMBERS = (process.env.MY_NUMBERS || '').split(',').map(x => x.replace(/\D/g, '')).filter(Boolean);
+const POSTED_FILE = path.join(__dirname, 'posted.json');
+const OPTOUT_FILE = path.join(__dirname, 'optout.json');
+let POSTED = {}; try { POSTED = JSON.parse(fs.readFileSync(POSTED_FILE, 'utf8')) || {}; } catch (e) {}
+let OPTOUT = new Set(); try { OPTOUT = new Set(JSON.parse(fs.readFileSync(OPTOUT_FILE, 'utf8'))); } catch (e) {}
+const savePosted = () => { try {
+  // keep the file small: drop entries older than 30 days
+  const cut = Date.now() - 30 * 24 * 3600 * 1000;
+  for (const k of Object.keys(POSTED)) if ((POSTED[k].ts || 0) < cut) delete POSTED[k];
+  fs.writeFileSync(POSTED_FILE, JSON.stringify(POSTED));
+} catch (e) {} };
+const saveOptout = () => { try { fs.writeFileSync(OPTOUT_FILE, JSON.stringify([...OPTOUT])); } catch (e) {} };
+function optKey(m) { return String((m && (m.phone || m.jid)) || '').replace(/\D/g, '').slice(-9) || ''; }
+function isOptedOut(m) { const k = optKey(m); return !!k && OPTOUT.has(k); }
+function rememberPosted(post, msg, cluster) {
+  try {
+    const src = (cluster && cluster.kind === 'combined') ? cluster.q : msg;
+    if (!src || !src.jid || src.fromMe) return;
+    POSTED[post.id] = { jid: src.jid, phone: src.phone || '', name: src.sender || '', chat: src.chat || '',
+      title: post.title || '', ts: Date.now(), public: post.status === 'public', notified: false };
+    savePosted();
+  } catch (e) {}
+}
+function israelHour() {
+  try { return Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: 'numeric', hour12: false }).format(new Date())); }
+  catch (e) { return new Date().getHours(); }
+}
+function todayKey() { try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(new Date()); } catch (e) { return new Date().toISOString().slice(0, 10); } }
+let NOTIFY_STATE = { day: '', sent: 0, people: {} };
+function noteText(entry, postId) {
+  const first = String(entry.name || '').trim().split(/\s+/)[0] || '';
+  const hi = first && /^[A-Za-z\u0590-\u05FF][\w'.\-\u0590-\u05FF]*$/.test(first) ? 'Hi ' + first + '! 👋' : 'Hi! 👋';
+  const link = SITE + '/#post/up_' + postId;
+  const title = String(entry.title || '').slice(0, 70);
+  return hi + " I'm Miriam from Chutznik. Your message in *" + (entry.chat || 'the group') + "*"
+    + (title ? ' — "' + title + '" —' : '') + " is now up on chutznik.org, where English-speaking women in Israel look for exactly this:\n" + link
+    + "\n\nIf someone contacts you through it, that's how they found you 😊"
+    + "\n(Reply STOP if you'd rather I don't post your messages.)";
+}
+let _notifyBusy = false, _lastUpdSha = '';
+async function notifyPosters() {
+  if (NOTIFY_MODE === 'off' || _notifyBusy) return;
+  _notifyBusy = true;
+  try {
+    const day = todayKey();
+    if (NOTIFY_STATE.day !== day) NOTIFY_STATE = { day, sent: 0, people: {} };
+    const pending = Object.entries(POSTED).filter(([, e]) => !e.notified && e.jid);
+    if (!pending.length) return;
+    // which of them are public now? (the review queue → Publish makes them public)
+    let statusOf = {};
+    try {
+      const mr = await fetch(SITE + '/api/live-data?type=meta'); const meta = mr.ok ? await mr.json() : {};
+      if (meta.updates && meta.updates !== _lastUpdSha) {
+        const r = await fetch(SITE + '/api/live-data?type=updates');
+        if (r.ok) { const arr = await r.json(); if (Array.isArray(arr)) { _lastUpdSha = meta.updates; global._updStatus = {}; for (const u of arr) global._updStatus[String(u.id)] = u.status; } }
+      }
+      statusOf = global._updStatus || {};
+    } catch (e) {}
+    const hour = israelHour();
+    if (hour < NOTIFY_FROM || hour >= NOTIFY_TO) return;
+    for (const [postId, e] of pending) {
+      const isPublic = e.public || statusOf[String(postId)] === 'public';
+      if (!isPublic) continue;
+      if (statusOf[String(postId)] === undefined && !e.public) continue;
+      if (NOTIFY_STATE.sent >= NOTIFY_DAILY) { log('📣 notify: daily limit reached (' + NOTIFY_DAILY + ')'); return; }
+      const who = optKey(e);
+      if (!who) { e.notified = true; e.skipped = 'no number'; continue; }
+      if (OPTOUT.has(who)) { e.notified = true; e.skipped = 'opted out'; continue; }
+      if (MY_NUMBERS.some(n => n.endsWith(who) || who.endsWith(n.slice(-9)))) { e.notified = true; e.skipped = 'own number'; continue; }
+      if (NOTIFY_STATE.people[who]) { continue; }   // already told this person today; another day
+      const text = noteText(e, postId);
+      if (NOTIFY_MODE === 'dry') {
+        log('📣 notify (dry run) → ' + (e.phone || e.jid) + ' [' + (e.name || '?') + ']: ' + text.replace(/\n/g, ' / ').slice(0, 220));
+      } else {
+        const sock = global._sock;
+        if (!sock) return;
+        try { await sock.sendMessage(e.jid, { text }); log('📣 notify → ' + (e.phone || e.jid) + ' [' + (e.name || '?') + ']: "' + e.title.slice(0, 50) + '"'); }
+        catch (err) { log('📣 notify failed → ' + (e.phone || e.jid) + ': ' + (err && err.message)); e.tries = (e.tries || 0) + 1; if (e.tries >= 3) e.notified = true; continue; }
+      }
+      e.notified = true; e.notifiedAt = Date.now(); NOTIFY_STATE.sent++; NOTIFY_STATE.people[who] = true;
+      savePosted();
+      await new Promise(r => setTimeout(r, 60000 + Math.floor(Math.random() * 90000)));   // 60–150 s between notes
+    }
+    savePosted();
+  } catch (e) { log('📣 notify: ' + (e && e.message)); }
+  finally { _notifyBusy = false; }
+}
+if (NOTIFY_MODE !== 'off') {
+  setInterval(notifyPosters, 3 * 60 * 1000);
+  setTimeout(notifyPosters, 45 * 1000);
+}
+log('📣 poster notes: ' + NOTIFY_MODE + (NOTIFY_MODE !== 'off' ? ' · max ' + NOTIFY_DAILY + '/day · ' + NOTIFY_FROM + ':00–' + NOTIFY_TO + ':00 Israel time' : ' (NOTIFY_MODE=dry to rehearse, live to send)'));
+
 // ── Buffering: collect per-chat, flush every FLUSH_MINUTES ───────────────────
 const buffers = new Map(); // chatName → msgs[]
 async function flush() {
@@ -1098,6 +1207,7 @@ async function flush() {
         if (ok) {
           SEEN.add(post.dedupeKey); saveSeen();
           rememberThread(msgIds, post);
+          rememberPosted(post, cl.msgs ? cl.msgs[0] : cl.q, cl);
           if (cl.kind === 'combined') {
             const ref = { post: post.id, dedupeKey: post.dedupeKey };
             LAST_Q.set(chatName, { id: cl.q.id, ts: cl.q.ts, post: ref });
@@ -1134,7 +1244,20 @@ async function handleMessages(sock, messages, label) {
   for (const m of messages) {
     try {
       const jid = m.key?.remoteJid || '';
-      if (!jid.endsWith('@g.us')) continue;               // groups only
+      if (!jid.endsWith('@g.us')) {
+        // a private reply: "STOP" means never message -- or post -- this person again
+        try {
+          if (m.key && !m.key.fromMe && label === 'live') {
+            const txt = String(innerOf(m.message) && (innerOf(m.message).conversation || (innerOf(m.message).extendedTextMessage || {}).text) || '').trim();
+            if (/^\s*(stop|unsubscribe|remove me|no thanks|לא תודה|תפסיקי|די)\b/i.test(txt)) {
+              const k = String(jid).replace(/\D/g, '').slice(-9);
+              if (k) { OPTOUT.add(k); saveOptout(); log('📣 STOP from ' + jid + ' — will not post or message again'); }
+              if (NOTIFY_MODE === 'live') { try { await sock.sendMessage(jid, { text: "Okay — I won't post or message you again. Wishing you all the best 💜" }); } catch (e) {} }
+            }
+          }
+        } catch (e) {}
+        continue;                                            // groups only from here
+      }
       if (!m.message) continue;                             // protocol/empty
       const ts = Number(m.messageTimestamp || 0) * 1000;
       const mid = 'm_' + (m.key.id || '');
@@ -1147,6 +1270,7 @@ async function handleMessages(sock, messages, label) {
       if (EXCLUDE.includes(name.toLowerCase())) continue;
       const it = await intake(sock, m, name);
       if (!it.body && !it.media) continue;
+      if (isOptedOut(it)) continue;                          // asked us not to post her messages
       buffersPush(name, it); n++;
       if (label === 'live') {
         log('💬 ' + name + ' · ' + it.sender + ' · ' + it.kind + (m.key.fromMe ? ' (you)' : '') + (it.media ? ' 📷' : ''));
@@ -1166,6 +1290,7 @@ async function start() {
     syncFullHistory: false, markOnlineOnConnect: false,
     browser: ['Chutznik Bridge', 'Chrome', '3.0'],
   });
+  global._sock = sock;
   sock.ev.on('creds.update', saveCreds);
   sock.ev.on('connection.update', (u) => {
     if (u.qr) { console.log('\n📱 Scan with WhatsApp → Settings → Linked devices → Link a device:\n'); qrcode.generate(u.qr, { small: true }); }
