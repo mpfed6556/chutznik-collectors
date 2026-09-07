@@ -870,6 +870,14 @@ async function sendComment(target, m) {
   } catch (e) { log('   ↳ comment failed: ' + (e && e.message)); return false; }
 }
 
+// ── Is this message actually a job? ─────────────────────────────────────────
+const JOB_RE = /\b(hiring|jobs?|position|opening|vacanc\w*|employ\w*|salary|per hour|an hour|hourly|nis|shekel|shifts?|part[- ]?time|full[- ]?time|remote|work from home|resume|cv|apply|wanted|needed|seeking|looking to hire|looking for (?:a |an |some(?:one|body) |girls? |woman |lady |help|cleaner|babysit|tutor|teacher|driver|secretary|assistant|nanny|worker|staff|counsel)|available (?:to|for) (?:work|babysit|help|clean|tutor)|(?:i'?m|we'?re|we are) available)\b|₪/i;
+const NOT_JOB_RE = /\b(this (?:chat|group)|the (?:chat|group)|admins?|rules|clog|will be (?:deleted|removed)|please (?:do not|don'?t)|reminder|welcome to|group description|shop our|% off|discount|sale\b|our (?:store|shop|website|collection)|order now|free delivery|delivery available|in stock|new arrivals|gift|shoes|dresses|boutique|honey dish|simanim)\b/i;
+function looksLikeJob(text) {
+  const t = String(text || '');
+  return JOB_RE.test(t) && !NOT_JOB_RE.test(t);
+}
+
 // ── Babysitting: one running thread instead of a post per message ───────────
 // Every "seeking a babysitter" and every "I'm available" from any group lands
 // as a comment on the same thread, in the sender's name, with her number.
@@ -1018,8 +1026,11 @@ async function buildPost(cluster, chatName) {
   }
   const kinds = msgs.map(m => m.kind);
   let kind = kinds.includes('rental') ? 'rental' : kinds.includes('ad') ? 'ad' : cluster.kind === 'combined' ? 'question' : 'info';
+  // A job chat carries more than jobs: admin notices, shop ads, chatter. Only
+  // what reads like a job (offered or sought) goes live as a Job; the rest
+  // waits for Miriam like any other group message.
   const jobChat = isJobChat(chatName);
-  if (jobChat && kind !== 'rental') kind = 'job';
+  if (jobChat && kind !== 'rental' && looksLikeJob(allText)) kind = 'job';
   // A rental is a Rental. The generic classifier was tagging plenty of them
   // "Items / Questions", which is why apartments showed up under questions.
   let types = categoriesFor(allText, kind);
