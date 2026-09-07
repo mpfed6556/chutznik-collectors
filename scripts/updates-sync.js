@@ -267,6 +267,27 @@ async function buildUpdateItem(raw) {
   const orgTypes = Array.isArray(org.types) && org.types.length ? org.types.slice(0, 3) : ['Community'];
   const jobOnlyOrg = orgTypes.length === 1 && orgTypes[0] === 'Jobs';
   const rawText = (raw.title || '') + ' ' + (raw.desc || '');
+  // ── Apartments from the classifieds boards are rentals, not jobs: they go
+  //    live at once under Rental with the structured fields the site filters
+  //    on (Miriam, 7 Sep 2026). Only Israel-based listings.
+  const rental = rentalFrom(rawText, title, body, raw);
+  if (rental) {
+    return {
+      source: 'official-updates',
+      group: org.name,
+      author: org.name,
+      title: rental.title,
+      memo: (summary + '\n\nFull listing: ' + raw.link).slice(0, 1200),
+      types: ['Rental'],
+      area: rental.area,
+      communities: [],
+      contactWebsite: raw.link,
+      created: (Date.parse(raw.published)||Date.now()),
+      status: 'public',
+      dedupeKey: fingerprint(raw.link, raw.title),
+      ...rental.facts,
+    };
+  }
   const looksJob = jobOnlyOrg || /\b(job|jobs|hiring|position|vacanc|career|opening|employ|recruit|salary|full[- ]time|part[- ]time)\b|דרוש|משרה|גיוס/i.test(rawText);
   if (orgTypes.includes('Jobs') && looksJob) {
     const fit = jobFit(rawText + ' ' + title + ' ' + body, org);
@@ -301,6 +322,27 @@ async function buildUpdateItem(raw) {
     dedupeKey: fingerprint(raw.link, raw.title),
   };
 }
+// A classifieds item that is an apartment for rent → Rental, with beds/price/term
+// pulled from the text and the board's "For Rent Sep 07, 2026" prefix removed.
+function rentalFrom(rawText, title, body, raw) {
+  const t = String(rawText || '') + ' ' + String(title || '') + ' ' + String(body || '');
+  const isRental = /\bfor rent\b|\brental\b|\bsublet\b|\bapartment\b|\bapt\b|\bflat\b|\b\d\s*(?:br|bdrm|bedroom|rooms?)\b|דירה|להשכרה/i.test(t)
+    && !/\b(job|hiring|position|vacanc|salary|employ)\b/i.test(String(raw.title || ''));
+  if (!isRental) return null;
+  const facts = {};
+  const beds = t.match(/(\d)(?:\.5)?\s*(?:br|bdrm|bedrooms?)\b/i) || t.match(/(\d)(?:\.5)?\s*rooms?\b/i);
+  if (beds) { let n = parseInt(beds[1], 10); if (/rooms?/i.test(beds[0]) && n > 1) n = n - 1; if (n >= 0 && n <= 20) facts.beds = n; }
+  const price = t.match(/(?:₪|nis\s*)\s*(\d[\d,]{2,})/i) || t.match(/(\d[\d,]{2,})\s*(?:₪|nis\b|shekel)/i) || t.match(/\$\s*(\d[\d,]{2,})/);
+  if (price) facts.price = price[1].replace(/,/g, '');
+  const short = /\b(sukkos|sukkot|succos|pesach|passover|rosh hashan|yom kippur|holidays?|chag|short[- ]term|sublet|per night|nightly|weekend|vacation|until (?:september|october|november|december|january|february|march|april|may|june|july|august))\b/i.test(t);
+  facts.term = short ? 'short' : 'long';
+  facts.priceMode = short && (/night/i.test(t) || (facts.price && Number(facts.price) < 3000)) ? 'night' : 'month';
+  const jlm = /\b(jerusalem|yerushalayim|jlm)\b|ירושלים/i.test(t);
+  const area = jlm ? 'Jerusalem & Surrounding' : '';
+  let clean = String(title || '').replace(/^\s*for rent\s+[A-Z][a-z]{2}\s+\d{1,2},\s*\d{4}\s*/i, '').replace(/^\s*for rent[:\s-]*/i, '').trim();
+  if (!clean) clean = String(title || '');
+  return { facts, area, title: clean.slice(0, 150) };
+}
 // A job is posted only when BOTH hold: it is for English speakers (said so,
 // or it comes from an English-language board) AND it is remote or in
 // Jerusalem (said so). Returns null when either is missing.
@@ -321,7 +363,7 @@ async function forward(item) {
       body: JSON.stringify({ file: 'updates', item }),
     });
     const j = await res.json().catch(() => ({}));
-    if (res.ok && j.added) { log('  ' + (item.status === 'public' ? 'PUBLISHED (job)' : 'queued for review') + ': [' + item.group + '] "' + item.title.slice(0, 60) + '"'); return true; }
+    if (res.ok && j.added) { log('  ' + (item.status === 'public' ? 'PUBLISHED (' + (item.types || [])[0] + ')' : 'queued for review') + ': [' + item.group + '] "' + item.title.slice(0, 60) + '"'); return true; }
     else if (res.ok) { log('  duplicate skipped: "' + item.title.slice(0, 50) + '"'); return true; }
     else { log('  ingest error ' + res.status + ': ' + (j.error || '')); return false; }
   } catch (e) { log('  could not reach Chutznik: ' + e.message); return false; }
