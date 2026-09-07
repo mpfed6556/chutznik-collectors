@@ -27,7 +27,12 @@ const EXCLUDE = (process.env.EXCLUDE_CHATS || '').split(',').map(s=>s.trim().toL
 // Job chats: anything from a group with "job" in its name goes live at once
 // under Jobs (Miriam, 4 Sep 2026). JOB_CHATS adds names that lack the word.
 const JOB_CHATS = (process.env.JOB_CHATS || '').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
-function isJobChat(name){ const n = String(name || '').toLowerCase(); return /\bjobs?\b|\bemployment\b|עבודה|דרושים/.test(n) || JOB_CHATS.includes(n); }
+function isJobChat(name){ const n = String(name || '').toLowerCase(); return /\bjobs?\b|\bemployment\b|\bcareers?\b|\bhiring\b|\bparnass?ah?\b|\bvacanc|\bgigs?\b|\bwork(?:ers?|ing)?\b(?!\s*out)|עבודה|דרושים|משרות|קריירה|פרנסה/.test(n) || JOB_CHATS.includes(n); }
+// A rental / real-estate group: anything that reads like housing in it is a
+// Rental (offer or request), even without the word "rent".
+const RENTAL_CHATS = (process.env.RENTAL_CHATS || '').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+function isRentalChat(name){ const n = String(name || '').toLowerCase(); return /\brent|real ?estate|\bapartments?\b|\bapts?\b|\bdira|\bdirot|\bsublet|\bhousing\b|\bflats?\b|\brealty\b|\bproperties\b|\bproperty\b|\baccommodation|\bvacation\b|\bsukkos? (?:rentals?|apartments?)|נדל|דירות|דירה|השכרה|סאבלט/.test(n) || RENTAL_CHATS.includes(n); }
+const RENT_HINT = /\b(apartment|apt|flat|dira|unit|penthouse|studio|rooms?|bdrms?|bedrooms?|beds?|sublet|rent(?:al)?|furnished|balcony|porch|elevator|floor|sukkah|chagim|sukkos|sukkot|pesach|yom tov|short[- ]term|long[- ]term|per month|per night|a month|a night|nis|shekel)\b|₪|\$\s?\d|\d\s?\$|\/\s*(?:month|night|mo)\b/i;
 const HOURS = Number(process.env.HISTORY_HOURS || 48);
 // Job sources may look further back (JOBS_HISTORY_HOURS, e.g. 168 for a week):
 // job chats and the jobs mailbox use this window instead of HISTORY_HOURS.
@@ -696,6 +701,8 @@ async function intake(sock, m, chatName) {
   // A contact card or a link with no words is still a real answer.
   let kind = classify(body, !!media);
   if ((cards.length || link) && (kind === 'chatter' || kind === 'info')) kind = 'answer';
+  // in a rental group, a housing message is a Rental even without "for rent"
+  if (kind !== 'rental' && kind !== 'chatter' && kind !== 'question' && isRentalChat(chatName) && RENT_HINT.test(body) && body.length > 25) kind = 'rental';
   return { id: key.id || String(Date.now()+Math.random()), ts, chat: chatName, sender, phone, body, media, kind,
            quotedId, mentions, cards, link,
            // where a private "your post is up" note can be sent (real number first, privacy id as fallback)
@@ -1044,6 +1051,9 @@ async function buildPost(cluster, chatName) {
   // A job chat carries more than jobs: admin notices, shop ads, chatter. Only
   // what reads like a job (offered or sought) goes live as a Job; the rest
   // waits for Miriam like any other group message.
+  // a housing request/offer in a rental group (asked as a question, with or
+  // without replies) is a Rental too, with the structured rental title
+  if (kind !== 'rental' && isRentalChat(chatName) && RENT_HINT.test(allText)) { kind = 'rental'; title = rentalTitle(first.body + ' ' + allText); }
   const jobChat = isJobChat(chatName);
   if (jobChat && kind !== 'rental' && looksLikeJob(allText)) kind = 'job';
   // A rental is a Rental. The generic classifier was tagging plenty of them
