@@ -1078,12 +1078,17 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
 //   NOTIFY_MODE=off   nothing (default)
 //   NOTIFY_MODE=dry   logs exactly what it WOULD send, sends nothing
 //   NOTIFY_MODE=live  sends
+// WHICH posts: the ones Miriam flags with the 📣 Notify poster button on the
+// site (admin). NOTIFY_AUTO=1 would also queue every post that goes public
+// (for later). However many she flags at once, the notes still go out one at
+// a time, spaced out, inside the daily cap.
 // Guard rails, because WhatsApp bans accounts that behave like spammers:
 // only people who posted in a group we share; 08:00–22:00 Israel time only;
 // at most NOTIFY_DAILY a day (default 25); 60–150 s between notes; one note
 // per person per day; never to Miriam's own numbers; and anyone who replies
 // STOP is never messaged -- or posted -- again.
 const NOTIFY_MODE = String(process.env.NOTIFY_MODE || 'off').toLowerCase();
+const NOTIFY_AUTO = String(process.env.NOTIFY_AUTO || '0') === '1';
 const NOTIFY_DAILY = Number(process.env.NOTIFY_DAILY || 25);
 const NOTIFY_FROM = Number(process.env.NOTIFY_FROM_HOUR || 8), NOTIFY_TO = Number(process.env.NOTIFY_TO_HOUR || 22);
 const MY_NUMBERS = (process.env.MY_NUMBERS || '').split(',').map(x => x.replace(/\D/g, '')).filter(Boolean);
@@ -1123,7 +1128,7 @@ function noteText(entry, postId) {
   return hi + " I'm Miriam from Chutznik. Your message in *" + (entry.chat || 'the group') + "*"
     + (title ? ' — "' + title + '" —' : '') + " is now up on chutznik.org, where English-speaking women in Israel look for exactly this:\n" + link
     + "\n\nIf someone contacts you through it, that's how they found you 😊"
-    + "\n(Reply STOP if you'd rather I don't post your messages.)";
+    + "\n(Reply STOP if I should stop messaging u.)";
 }
 let _notifyBusy = false, _lastUpdSha = '';
 async function notifyPosters() {
@@ -1134,22 +1139,24 @@ async function notifyPosters() {
     if (NOTIFY_STATE.day !== day) NOTIFY_STATE = { day, sent: 0, people: {} };
     const pending = Object.entries(POSTED).filter(([, e]) => !e.notified && e.jid);
     if (!pending.length) return;
-    // which of them are public now? (the review queue → Publish makes them public)
-    let statusOf = {};
+    // what the site says about each post: status, and whether Miriam pressed 📣
+    let info = {};
     try {
       const mr = await fetch(SITE + '/api/live-data?type=meta'); const meta = mr.ok ? await mr.json() : {};
       if (meta.updates && meta.updates !== _lastUpdSha) {
         const r = await fetch(SITE + '/api/live-data?type=updates');
-        if (r.ok) { const arr = await r.json(); if (Array.isArray(arr)) { _lastUpdSha = meta.updates; global._updStatus = {}; for (const u of arr) global._updStatus[String(u.id)] = u.status; } }
+        if (r.ok) { const arr = await r.json(); if (Array.isArray(arr)) { _lastUpdSha = meta.updates; global._updInfo = {}; for (const u of arr) global._updInfo[String(u.id)] = { status: u.status, notify: u.notify, notified: u.notified }; } }
       }
-      statusOf = global._updStatus || {};
+      info = global._updInfo || {};
     } catch (e) {}
     const hour = israelHour();
     if (hour < NOTIFY_FROM || hour >= NOTIFY_TO) return;
     for (const [postId, e] of pending) {
-      const isPublic = e.public || statusOf[String(postId)] === 'public';
-      if (!isPublic) continue;
-      if (statusOf[String(postId)] === undefined && !e.public) continue;
+      const u = info[String(postId)];
+      if (u && u.notified) { e.notified = true; e.notifiedAt = u.notified; continue; }   // the site already knows
+      const flagged = !!(u && u.notify);
+      const isPublic = e.public || (u && u.status === 'public');
+      if (!flagged && !(NOTIFY_AUTO && isPublic)) continue;
       if (NOTIFY_STATE.sent >= NOTIFY_DAILY) { log('📣 notify: daily limit reached (' + NOTIFY_DAILY + ')'); return; }
       const who = optKey(e);
       if (!who) { e.notified = true; e.skipped = 'no number'; continue; }
@@ -1167,6 +1174,10 @@ async function notifyPosters() {
       }
       e.notified = true; e.notifiedAt = Date.now(); NOTIFY_STATE.sent++; NOTIFY_STATE.people[who] = true;
       savePosted();
+      if (NOTIFY_MODE === 'live') {
+        try { await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
+          body: JSON.stringify({ file: 'updates', id: String(postId), patch: { notified: e.notifiedAt } }) }); } catch (err) {}
+      }
       await new Promise(r => setTimeout(r, 60000 + Math.floor(Math.random() * 90000)));   // 60–150 s between notes
     }
     savePosted();
@@ -1177,7 +1188,7 @@ if (NOTIFY_MODE !== 'off') {
   setInterval(notifyPosters, 3 * 60 * 1000);
   setTimeout(notifyPosters, 45 * 1000);
 }
-log('📣 poster notes: ' + NOTIFY_MODE + (NOTIFY_MODE !== 'off' ? ' · max ' + NOTIFY_DAILY + '/day · ' + NOTIFY_FROM + ':00–' + NOTIFY_TO + ':00 Israel time' : ' (NOTIFY_MODE=dry to rehearse, live to send)'));
+log('📣 poster notes: ' + NOTIFY_MODE + (NOTIFY_MODE !== 'off' ? ' · ' + (NOTIFY_AUTO ? 'every public post' : 'only posts flagged with 📣 on the site') + ' · max ' + NOTIFY_DAILY + '/day · ' + NOTIFY_FROM + ':00–' + NOTIFY_TO + ':00 Israel time' : ' (NOTIFY_MODE=dry to rehearse, live to send)'));
 
 // ── Buffering: collect per-chat, flush every FLUSH_MINUTES ───────────────────
 const buffers = new Map(); // chatName → msgs[]
