@@ -261,13 +261,38 @@ async function buildUpdateItem(raw) {
     body = t || '';
   }
   const summary = summarizeEnglish(body) || summarizeEnglish(title);
+  // ── Jobs from the job boards go live on their own -- but only jobs an
+  //    English speaker can do, and only remote or Jerusalem-based ones
+  //    (Miriam, 4 Sep 2026). Anything else from a job board is dropped.
+  const orgTypes = Array.isArray(org.types) && org.types.length ? org.types.slice(0, 3) : ['Community'];
+  const jobOnlyOrg = orgTypes.length === 1 && orgTypes[0] === 'Jobs';
+  const rawText = (raw.title || '') + ' ' + (raw.desc || '');
+  const looksJob = jobOnlyOrg || /\b(job|jobs|hiring|position|vacanc|career|opening|employ|recruit|salary|full[- ]time|part[- ]time)\b|דרוש|משרה|גיוס/i.test(rawText);
+  if (orgTypes.includes('Jobs') && looksJob) {
+    const fit = jobFit(rawText + ' ' + title + ' ' + body, org);
+    if (!fit) { log('  job skipped (not remote/Jerusalem for English speakers): "' + String(raw.title || '').slice(0, 60) + '"'); return null; }
+    return {
+      source: 'official-updates',
+      group: org.name,
+      author: org.name,
+      title: ('' + title).slice(0, 150),
+      memo: (summary + '\n\nFull listing: ' + raw.link).slice(0, 1200),
+      types: ['Jobs'],
+      area: fit.jerusalem ? 'Jerusalem & Surrounding' : '',
+      communities: [],
+      contactWebsite: raw.link,
+      created: (Date.parse(raw.published)||Date.now()),
+      status: 'public',
+      dedupeKey: fingerprint(raw.link, raw.title),
+    };
+  }
   return {
     source: 'official-updates',
     group: org.name,
     author: org.name,
     title: ('' + title).slice(0, 150),
     memo: (summary + '\n\nRead the full update: ' + raw.link).slice(0, 1200),
-    types: Array.isArray(org.types) && org.types.length ? org.types.slice(0, 3) : ['Community'],
+    types: orgTypes,
     area: '',
     communities: [],
     contactWebsite: raw.link,
@@ -275,6 +300,17 @@ async function buildUpdateItem(raw) {
     status: 'pending',
     dedupeKey: fingerprint(raw.link, raw.title),
   };
+}
+// A job is posted only when BOTH hold: it is for English speakers (said so,
+// or it comes from an English-language board) AND it is remote or in
+// Jerusalem (said so). Returns null when either is missing.
+function jobFit(text, org) {
+  const t = String(text || '');
+  const remote = /\b(remote|work[- ]from[- ]home|wfh|from home|home[- ]based|hybrid|online|virtual)\b|מהבית|עבודה מרחוק/i.test(t);
+  const jerusalem = /\b(jerusalem|yerushalayim|jlm|j-lm)\b|ירושלים|ירושלמי/i.test(t);
+  const english = /\b(english[- ]?speak\w*|native english|fluent english|english[- ]language|anglo|english mother tongue|english speaking)\b|אנגלית/i.test(t) || org.lang === 'en';
+  if (!(remote || jerusalem) || !english) return null;
+  return { remote, jerusalem };
 }
 
 async function forward(item) {
@@ -285,7 +321,7 @@ async function forward(item) {
       body: JSON.stringify({ file: 'updates', item }),
     });
     const j = await res.json().catch(() => ({}));
-    if (res.ok && j.added) { log('  queued for review: [' + item.group + '] "' + item.title.slice(0, 60) + '"'); return true; }
+    if (res.ok && j.added) { log('  ' + (item.status === 'public' ? 'PUBLISHED (job)' : 'queued for review') + ': [' + item.group + '] "' + item.title.slice(0, 60) + '"'); return true; }
     else if (res.ok) { log('  duplicate skipped: "' + item.title.slice(0, 50) + '"'); return true; }
     else { log('  ingest error ' + res.status + ': ' + (j.error || '')); return false; }
   } catch (e) { log('  could not reach Chutznik: ' + e.message); return false; }
@@ -302,6 +338,7 @@ async function main() {
       const key = fingerprint(raw.link, raw.title);
       if (SEEN.has(key)) continue;
       const item = await buildUpdateItem(raw);
+      if (!item) { SEEN.add(key); continue; }          // a job that does not fit: never offered again
       const delivered = await forward(item);
       // Only remember items the site ACTUALLY accepted — a failed delivery
       // (wrong key, site down) must be retried on the next run, not lost.

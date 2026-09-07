@@ -24,6 +24,10 @@ const SITE = INGEST_URL.replace(/\/api\/.*/, '');
 const FLUSH_MINUTES = Number(process.env.FLUSH_MINUTES || 1);
 const OCR = String(process.env.OCR || 'on') !== 'off';
 const EXCLUDE = (process.env.EXCLUDE_CHATS || '').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+// Job chats: anything from a group with "job" in its name goes live at once
+// under Jobs (Miriam, 4 Sep 2026). JOB_CHATS adds names that lack the word.
+const JOB_CHATS = (process.env.JOB_CHATS || '').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+function isJobChat(name){ const n = String(name || '').toLowerCase(); return /\bjobs?\b|\bemployment\b|עבודה|דרושים/.test(n) || JOB_CHATS.includes(n); }
 const HOURS = Number(process.env.HISTORY_HOURS || 48);
 
 const SEEN_FILE = path.join(__dirname, 'seen.json');
@@ -78,7 +82,7 @@ async function sendToQueue(item) {
     });
     const j = await r.json().catch(() => ({}));
     if (r.ok && j.added) {
-      log('   → ' + (item.status === 'public' ? 'PUBLISHED (rental)' : 'queued for review') + ': "' + item.title.slice(0, 60) + '"');
+      log('   → ' + (item.status === 'public' ? 'PUBLISHED (' + (item.source === 'email' ? 'email' : (item.types || [])[0] || 'auto') + ')' : 'queued for review') + ': "' + item.title.slice(0, 60) + '"');
       return true;
     }
     if (r.ok) { log('   → duplicate, site skipped it'); return true; }
@@ -925,11 +929,14 @@ async function buildPost(cluster, chatName) {
     if (!contacts.phones.length && !contacts.urls.length && first.phone) contacts.phones.push(first.phone);
   }
   const kinds = msgs.map(m => m.kind);
-  const kind = kinds.includes('rental') ? 'rental' : kinds.includes('ad') ? 'ad' : cluster.kind === 'combined' ? 'question' : 'info';
+  let kind = kinds.includes('rental') ? 'rental' : kinds.includes('ad') ? 'ad' : cluster.kind === 'combined' ? 'question' : 'info';
+  const jobChat = isJobChat(chatName);
+  if (jobChat && kind !== 'rental') kind = 'job';
   // A rental is a Rental. The generic classifier was tagging plenty of them
   // "Items / Questions", which is why apartments showed up under questions.
   let types = categoriesFor(allText, kind);
   if (kind === 'rental') types = ['Rental'];
+  if (kind === 'job') types = ['Jobs'];
   if (!Array.isArray(types) || !types.length) types = ['Community'];
 
   // Structured rental fields, so the site's filters treat this like a form post.
@@ -952,7 +959,7 @@ async function buildPost(cluster, chatName) {
     contactPhone: contacts.phones[0] || '',
     contactWebsite: contacts.urls[0] || '',
     // Rentals go live immediately; everything else still waits for Miriam.
-    status: kind === 'rental' ? 'public' : 'pending',
+    status: (kind === 'rental' || kind === 'job') ? 'public' : 'pending',
     attachments,
     created: first.ts,
     // Content-only key so the same ad posted into several groups collapses
@@ -961,6 +968,98 @@ async function buildPost(cluster, chatName) {
     _contentKey: contentKey(allText),
     _kind: kind,
   };
+}
+
+// ── Jobs by email: the Nshei Jobs list, read from Miriam's work Gmail ────────
+// Set in .env:  GMAIL_USER=miriampessyswork@gmail.com  GMAIL_APP_PASSWORD=xxxx
+// (a Google "app password" -- not the normal password). Every message from
+// JOB_MAIL_FROM (default nsheijobs@gmail.com) becomes a public Jobs post.
+const GMAIL_USER = process.env.GMAIL_USER || '';
+const GMAIL_APP_PASSWORD = String(process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
+const JOB_MAIL_FROM = (process.env.JOB_MAIL_FROM || 'nsheijobs@gmail.com').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+const MAIL_MINUTES = Number(process.env.MAIL_MINUTES || 5);
+function cleanMailText(t) {
+  let x = String(t || '').replace(/\r/g, '');
+  // list footers and quoted replies
+  x = x.replace(/--\s*\n[\s\S]*?(You received this message because|To unsubscribe|Visit this group|To view this discussion)[\s\S]*$/i, '');
+  x = x.replace(/\n(?:You received this message because|To unsubscribe from this group|To view this discussion|Visit this group at)[\s\S]*$/i, '');
+  x = x.replace(/\n>.*$/gm, '').replace(/\n{3,}/g, '\n\n').trim();
+  return x;
+}
+function cleanMailSubject(sub) {
+  return String(sub || '').replace(/^\s*(?:(?:re|fw|fwd)\s*:\s*)+/i, '').replace(/\[[^\]]*\]\s*/g, '').trim();
+}
+async function pollJobMail() {
+  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) return;
+  let ImapFlow, simpleParser;
+  try { ({ ImapFlow } = require('imapflow')); ({ simpleParser } = require('mailparser')); }
+  catch (e) { log('✉️  jobs mail: run  npm i imapflow mailparser  in /opt/chutznik-bridge'); return; }
+  const client = new ImapFlow({ host: 'imap.gmail.com', port: 993, secure: true, auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD }, logger: false });
+  let sent = 0;
+  try {
+    await client.connect();
+    // Gmail's "All Mail" catches the list even when a filter skips the inbox
+    let box = '[Gmail]/All Mail';
+    try { await client.mailboxOpen(box); } catch (e) { box = 'INBOX'; await client.mailboxOpen(box); }
+    const since = new Date(Date.now() - HOURS * 3600 * 1000);
+    let uids = [];
+    for (const from of JOB_MAIL_FROM) {
+      const found = await client.search({ from, since }, { uid: true });
+      for (const u of (found || [])) if (!uids.includes(u)) uids.push(u);
+    }
+    for (const uid of uids) {
+      let parsed;
+      try {
+        const msg = await client.fetchOne(uid, { source: true, envelope: true }, { uid: true });
+        if (!msg || !msg.source) continue;
+        parsed = await simpleParser(msg.source);
+      } catch (e) { continue; }
+      const mid = 'em_' + String(parsed.messageId || uid).replace(/[<>\s]/g, '').slice(0, 80);
+      if (SEEN.has(mid)) continue;
+      const fromAddr = String((parsed.from && parsed.from.value && parsed.from.value[0] && parsed.from.value[0].address) || '').toLowerCase();
+      if (!JOB_MAIL_FROM.includes(fromAddr)) { SEEN.add(mid); continue; }
+      const subject = cleanMailSubject(parsed.subject);
+      const text = cleanMailText(parsed.text || (parsed.html ? String(parsed.html).replace(/<[^>]+>/g, ' ') : ''));
+      if (!subject && text.length < 20) { SEEN.add(mid); continue; }
+      const body = text.length > 1400 ? text.slice(0, 1400).replace(/\s+\S*$/, '') + '…' : text;
+      const phones = phonesInText(text);
+      const urls = urlsInText(text).filter(u => !/googlegroups\.com|google\.com\/url|unsubscribe/i.test(u));
+      const mailto = (text.match(/[\w.+-]+@(?!googlegroups)[\w-]+\.[\w.]+/) || [])[0] || '';
+      const created = parsed.date ? new Date(parsed.date).getTime() : Date.now();
+      const item = {
+        id: mid,
+        source: 'email',
+        group: 'Nshei Jobs',
+        title: (subject || body.split('\n')[0] || 'Job posting').slice(0, 150),
+        memo: body + (mailto && !body.includes(mailto) ? '\n\nContact: ' + mailto : ''),
+        types: ['Jobs'],
+        area: '',
+        communities: [],
+        author: 'Nshei Jobs',
+        contactPhone: phones[0] || '',
+        contactWebsite: urls[0] || (mailto ? 'mailto:' + mailto : ''),
+        attachments: [],
+        created,
+        dedupeKey: 'em_' + contentKey(subject + ' ' + text),
+        _contentKey: contentKey(subject + ' ' + text),
+        status: 'public',
+      };
+      if (SEEN.has(item.dedupeKey)) { SEEN.add(mid); continue; }
+      const ok = await sendToQueue(item);
+      if (ok) { SEEN.add(mid); SEEN.add(item.dedupeKey); sent++; }
+    }
+    saveSeen();
+  } catch (e) {
+    log('✉️  jobs mail: ' + (e && e.message ? e.message.slice(0, 160) : e));
+  } finally { try { await client.logout(); } catch (e) {} }
+  if (sent) log('✉️  jobs mail: ' + sent + ' new job post(s) published');
+}
+if (GMAIL_USER && GMAIL_APP_PASSWORD) {
+  setTimeout(pollJobMail, 30 * 1000);
+  setInterval(pollJobMail, MAIL_MINUTES * 60 * 1000);
+  log('✉️  jobs mail: watching ' + GMAIL_USER + ' for ' + JOB_MAIL_FROM.join(', ') + ' every ' + MAIL_MINUTES + ' min');
+} else {
+  log('✉️  jobs mail: off (set GMAIL_USER and GMAIL_APP_PASSWORD in .env to turn it on)');
 }
 
 // ── Buffering: collect per-chat, flush every FLUSH_MINUTES ───────────────────
