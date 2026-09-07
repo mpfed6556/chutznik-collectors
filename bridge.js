@@ -930,7 +930,7 @@ function babysitLine(m, chatName) {
   const inText = phonesInText(content);
   if (!inText.length) {
     if (m.phone) content += '\n📞 ' + m.phone;
-    else content += '\n📞 no number given — reply to ' + (m.sender || 'her') + ' in “' + chatName + '”';
+    else content += '\n📞 number not shared';
   }
   return content.slice(0, 2000);
 }
