@@ -29,6 +29,9 @@ const EXCLUDE = (process.env.EXCLUDE_CHATS || '').split(',').map(s=>s.trim().toL
 const JOB_CHATS = (process.env.JOB_CHATS || '').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
 function isJobChat(name){ const n = String(name || '').toLowerCase(); return /\bjobs?\b|\bemployment\b|עבודה|דרושים/.test(n) || JOB_CHATS.includes(n); }
 const HOURS = Number(process.env.HISTORY_HOURS || 48);
+// Job sources may look further back (JOBS_HISTORY_HOURS, e.g. 168 for a week):
+// job chats and the jobs mailbox use this window instead of HISTORY_HOURS.
+const JOBS_HOURS = Math.max(HOURS, Number(process.env.JOBS_HISTORY_HOURS || 0));
 
 const SEEN_FILE = path.join(__dirname, 'seen.json');
 let SEEN = new Set();
@@ -1001,7 +1004,7 @@ async function pollJobMail() {
     // Gmail's "All Mail" catches the list even when a filter skips the inbox
     let box = '[Gmail]/All Mail';
     try { await client.mailboxOpen(box); } catch (e) { box = 'INBOX'; await client.mailboxOpen(box); }
-    const since = new Date(Date.now() - HOURS * 3600 * 1000);
+    const since = new Date(Date.now() - JOBS_HOURS * 3600 * 1000);
     let uids = [];
     for (const from of JOB_MAIL_FROM) {
       const found = await client.search({ from, since }, { uid: true });
@@ -1024,7 +1027,12 @@ async function pollJobMail() {
       const body = text.length > 1400 ? text.slice(0, 1400).replace(/\s+\S*$/, '') + '…' : text;
       const phones = phonesInText(text);
       const urls = urlsInText(text).filter(u => !/googlegroups\.com|google\.com\/url|unsubscribe/i.test(u));
-      const mailto = (text.match(/[\w.+-]+@(?!googlegroups)[\w-]+\.[\w.]+/) || [])[0] || '';
+      let mailto = (text.match(/[\w.+-]+@(?!googlegroups)[\w-]+\.[\w.]+/) || [])[0] || '';
+      // every job needs a way to reply: the email's Reply-To, else its sender
+      if (!mailto && !phones.length) {
+        const rt = parsed.replyTo && parsed.replyTo.value && parsed.replyTo.value[0] && parsed.replyTo.value[0].address;
+        mailto = String(rt || fromAddr || '').replace(/@googlegroups\.com$/i, '@gmail.com');
+      }
       const created = parsed.date ? new Date(parsed.date).getTime() : Date.now();
       const item = {
         id: mid,
@@ -1129,11 +1137,13 @@ async function handleMessages(sock, messages, label) {
       if (!jid.endsWith('@g.us')) continue;               // groups only
       if (!m.message) continue;                             // protocol/empty
       const ts = Number(m.messageTimestamp || 0) * 1000;
-      if (ts && ts < cutoff) continue;                      // older than the window
       const mid = 'm_' + (m.key.id || '');
       if (SEEN.has(mid)) continue;
-      SEEN.add(mid);
       const name = await groupName(sock, jid);
+      // job chats get the longer look-back; everything else the normal window
+      const myCutoff = isJobChat(name) ? Date.now() - JOBS_HOURS * 3600 * 1000 : cutoff;
+      if (ts && ts < myCutoff) continue;                    // older than the window
+      SEEN.add(mid);
       if (EXCLUDE.includes(name.toLowerCase())) continue;
       const it = await intake(sock, m, name);
       if (!it.body && !it.media) continue;
