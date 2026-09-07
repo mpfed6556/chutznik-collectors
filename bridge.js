@@ -881,7 +881,7 @@ async function sendComment(target, m) {
     const r = await fetch(INGEST_URL + '?file=updates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
-      body: JSON.stringify({ file: 'updates', action: 'comment',
+      body: JSON.stringify({ file: 'updates', action: 'comment', group: m.chat || '',
         target: { id: post.post, dedupeKey: post.dedupeKey || '' },
         comment: { author: m.sender || 'Member', content: content.slice(0, 2000), timestamp: m.ts || Date.now() } }),
     });
@@ -1077,6 +1077,7 @@ async function buildPost(cluster, chatName) {
     // A question-and-answers post is Chutznik's own digest; a plain forward
     // still says which group it came from.
     author: cluster.kind === 'combined' ? 'Chutznik' : chatName,
+    senderName: first.sender || '',      // used only when the site folds this into a shared thread
     comments,
     lastCommentTime: comments.length ? Math.max(...comments.map(c => c.timestamp)) : undefined,
     _msgIds: msgs.map(m => m.id),
@@ -1241,13 +1242,15 @@ async function backfillContacts() {
     if (e.contactDone) continue;
     let phone = e.phone || '';
     if (!phone && /@lid$/i.test(String(e.jid || ''))) phone = phoneForLid(e.jid);
-    if (!phone) continue;
-    e.phone = phone;
+    const pname = (e.name && e.name !== 'Member') ? e.name : '';
+    if (!phone && !pname) continue;
+    if (!phone && e.nameSent) continue;
+    if (phone) e.phone = phone;
     try {
       const r = await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
-        body: JSON.stringify({ file: 'updates', action: 'contact', id, phone }) });
+        body: JSON.stringify({ file: 'updates', action: 'contact', id, phone, name: pname }) });
       const j = await r.json().catch(() => ({}));
-      if (r.ok && j.ok) { e.contactDone = true; if (j.changed) n++; }
+      if (r.ok && j.ok) { if (phone) e.contactDone = true; else e.nameSent = true; if (j.changed) n++; }
     } catch (err) {}
   }
   savePosted();
