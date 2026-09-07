@@ -919,6 +919,10 @@ async function buildPost(cluster, chatName) {
     // sender's own number is the contact.
     const pm = /\b(?:pm|dm|message|msg|whatsapp|text|contact|call)\s+(?:me|us)\b|\bpm\b|\bp\.m\.?\b|\bprivate(?:ly)?\b|\bpls\s+pm\b/i.test(allText);
     if ((pm || first.kind === 'question') && first.phone && !contacts.phones.includes(first.phone)) contacts.phones.unshift(first.phone);
+    // No contact of any kind in the text (no number, no link, no card): the
+    // poster's own WhatsApp number is the only way to reach her, so it goes
+    // on the post (Miriam, 4 Sep 2026). Cards and links still win when present.
+    if (!contacts.phones.length && !contacts.urls.length && first.phone) contacts.phones.push(first.phone);
   }
   const kinds = msgs.map(m => m.kind);
   const kind = kinds.includes('rental') ? 'rental' : kinds.includes('ad') ? 'ad' : cluster.kind === 'combined' ? 'question' : 'info';
