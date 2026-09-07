@@ -461,6 +461,15 @@ function rentalFeature(text) {
   return '';
 }
 
+const RENT_REQ_STRONG = /\b(?:i'?m|i am|we'?re|we are|my (?:family|parents|kids|daughter|son|friend)s?(?: and i)?)\s+(?:are\s+|is\s+)?looking\b|\bdoes anyone\b|\banyone (?:know|have|got|renting|subletting|has)\b|\biso\b|\bin search of\b|\bwanted\b|\bseeking\b|\blooking to rent\b|\bwant(?:ed|ing)? to rent\b|\bneed(?:ed|ing)? (?:a|an|to find) (?:apartment|apt|flat|place|room|dira|sublet)|\blooking for (?:a |an )?(?:apartment|apt|flat|place|room|dira|sublet|somewhere|something)\b.*?\b(?:budget|for (?:my|our|us|me)|we (?:are|need)|i (?:am|need))/;
+const RENT_REQ_WEAK   = /\blooking (?:for|to)\b|\bneed(?:ed|ing)?\s+(?:a|an|to|small|big|\d)/;
+const RENT_OFFER      = /\bfor rent\b|\bto let\b|\brent(?:ing)? out\b|\bnow renting\b|\bsublett?(?:ing)?\s+(?:my|our|a |an |available|avail)\b|\b(?:apartment|apt|flat|unit|room|dira|house|villa|penthouse|studio)\s+(?:is\s+)?(?:available|avail)\b|\bavailable (?:from|for|now|immediately|starting|over|during|this)\b|\bavail(?:able)? (?:from|for|now|immediately|starting|over|during|this)\b|\bfor sale\b|\bprice\s*:|\bfully furnished\b|\bcontact (?:me|us)\b|\bpm for (?:details|more|info)\b|\bdm for\b|\bbook(?:ing)? now\b|\bdon'?t miss\b|\bstunning\b|\bluxur(?:y|ious)\b|\bbrand[- ]new\b|\bnewly renovated\b|\bpanoramic\b|\bincludes\b|\bamenities\b/;
+function rentalIsWanted(low) {
+  const t = String(low || '').toLowerCase();
+  if (RENT_REQ_STRONG.test(t)) return true;
+  if (RENT_OFFER.test(t)) return false;
+  return RENT_REQ_WEAK.test(t);
+}
 function rentalTitle(text) {
   const t = String(text || '');
   const low = t.toLowerCase();
@@ -519,7 +528,12 @@ function rentalTitle(text) {
 
   // "Looking to rent" contains the words "to rent", so an offer test alone
   // read requests as offers. A request phrase now always wins.
-  const wants = /\b(?:looking (?:for|to rent)|want(?:ed|ing)? to rent|in search of|seeking\b|wanted\b|iso\b|anyone (?:know|have|got)|need(?:ed|ing)?\s+(?:a|an|to|small|big|\d))/.test(low);
+  // An ad often opens with a sales question ("Looking for the perfect place to
+  // stay this Rosh Hashanah?") and then offers an apartment FOR RENT -- that
+  // is an offer, not a request. So: a clear first-person request always wins;
+  // a bare "looking for" counts as a request only when nothing says it is an
+  // offer (for rent / available from / renting out / sublet).
+  const wants = rentalIsWanted(low);
 
   const head = [beds, term].filter(Boolean).join(' ');
   let out = wants
