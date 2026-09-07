@@ -95,6 +95,38 @@ async function sendToQueue(item) {
 }
 
 
+// ── Who is who: privacy ids (@lid) → real numbers, from the member lists ────
+// Newer WhatsApp groups show people by a privacy id instead of a number, and
+// Baileys does not always know the number behind it. The group member list
+// does: it carries both. Read once on connect and every hour, kept on disk.
+const LIDS_FILE = path.join(__dirname, 'lids.json');
+let LIDS = {}; try { LIDS = JSON.parse(fs.readFileSync(LIDS_FILE, 'utf8')) || {}; } catch (e) {}
+function digitsOf(j) { return String(j || '').split('@')[0].split(':')[0].replace(/\D/g, ''); }
+async function refreshLids(sock) {
+  try {
+    const all = await sock.groupFetchAllParticipating();
+    let n = 0;
+    for (const jid of Object.keys(all || {})) {
+      const md = all[jid] || {};
+      if (md.subject) groupNames.set(jid, md.subject);
+      for (const p of (md.participants || [])) {
+        const ids = [p.id, p.jid, p.lid, p.phoneNumber].filter(Boolean).map(String);
+        const lid = ids.find(x => /@lid$/i.test(x));
+        const pn  = ids.find(x => /@s\.whatsapp\.net$/i.test(x));
+        if (!lid || !pn) continue;
+        const l = digitsOf(lid), d = digitsOf(pn);
+        if (l && d && LIDS[l] !== d) { LIDS[l] = d; n++; }
+      }
+    }
+    if (n) { try { fs.writeFileSync(LIDS_FILE, JSON.stringify(LIDS)); } catch (e) {} }
+    log('👥 member lists: ' + Object.keys(LIDS).length + ' privacy ids matched to numbers' + (n ? ' (+' + n + ' new)' : ''));
+  } catch (e) { log('member lists not read: ' + (e && e.message)); }
+}
+function phoneForLid(participant) {
+  const d = LIDS[digitsOf(participant)];
+  return d ? normalizePhone('+' + d) : '';
+}
+
 // ── Group names (cached) ─────────────────────────────────────────────────────
 const groupNames = new Map();
 async function groupName(sock, jid) {
@@ -625,6 +657,7 @@ async function intake(sock, m, chatName) {
       if (map && typeof map.getPNForLID === 'function') { const r = await map.getPNForLID(participant); if (r) pnJid = String(r); }
     } catch (e) {}
   }
+  if (!pnJid && /@lid$/i.test(participant)) { const d = LIDS[digitsOf(participant)]; if (d) pnJid = d + '@s.whatsapp.net'; }
   const pnDigits = pnJid ? String(pnJid).split('@')[0].split(':')[0] : '';
   const phone = pnDigits ? normalizePhone('+' + pnDigits) : (/@lid$/i.test(participant) ? '' : normalizePhone('+' + rawId));
   if (pnDigits && m.pushName) NAMES.set(pnDigits, m.pushName);
@@ -819,7 +852,7 @@ function clusterThreads(msgs) {
 
 // A comment on a post the site already has.
 async function sendComment(target, m) {
-  const content = commentTextOf(m);
+  const content = m._content || commentTextOf(m);
   if (!content) return false;
   const post = typeof target === 'string' ? { post: target } : target;
   try {
@@ -835,6 +868,56 @@ async function sendComment(target, m) {
     log('   ↳ comment not added (' + r.status + ' ' + (j.error || '') + ')');
     return false;
   } catch (e) { log('   ↳ comment failed: ' + (e && e.message)); return false; }
+}
+
+// ── Babysitting: one running thread instead of a post per message ───────────
+// Every "seeking a babysitter" and every "I'm available" from any group lands
+// as a comment on the same thread, in the sender's name, with her number.
+const BABYSIT_ID = 'wa_BABYSIT';
+const BABYSIT_RE = /babysit|baby-?sitt?|mother'?s?\s*helper|\bnanny\b|au\s*pair|\bmetapelet\b|מטפלת|בייביסיטר|(?:watch|take|mind|sit with|hang(?: out)? with|play with|walk|entertain)\s+(?:my|the|our|a)\s+(?:kids?|baby|children|girls?|boys?|toddler|little|\d+\s*(?:kids|children|year))|gan\s*pick\s*-?up|pick(?:ing)?\s*up\s+(?:my|the|our)\s+(?:kids?|children|daughter|son|baby)|(?:sleeping|napping)\s+(?:baby|kids|children)/i;
+const SELFAD_RE = /\b(?:i'?m|i am|we are|we'?re)\s+(?:currently\s+|also\s+)?available\b|\bavailable\s+(?:today|tonight|tomorrow|this|to|for)\b|\blooking for (?:babysitting|work|a job|jobs|hours)\b|\bseminary girls?\b.*\b(?:available|looking)\b/i;
+function isBabysit(text, chatName) {
+  const t = String(text || '');
+  if (BABYSIT_RE.test(t)) return true;
+  if (isJobChat(chatName) || /babysit|sitter/i.test(String(chatName || ''))) return SELFAD_RE.test(t);
+  return false;
+}
+async function ensureBabysitThread() {
+  if (global._babysitOk) return true;
+  const item = { id: BABYSIT_ID, dedupeKey: BABYSIT_ID, source: 'whatsapp', group: 'All groups', author: 'Chutznik',
+    title: 'Babysitting in Jerusalem — requests & sitters available',
+    memo: 'One running thread for every babysitting request and every sitter offering herself, from all the groups. Each comment is one message, newest at the bottom, with the number to contact.',
+    types: ['Jobs'], status: 'public', created: Date.now() - 1000, comments: [] };
+  try {
+    const r = await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', items: [item] }) });
+    if (r.ok) global._babysitOk = true;
+  } catch (e) {}
+  return !!global._babysitOk;
+}
+function babysitLine(m, chatName) {
+  let content = commentTextOf(m) || stripEmoji(m.body || '').trim();
+  if (!content) return '';
+  const inText = phonesInText(content);
+  if (!inText.length) {
+    if (m.phone) content += '\n📞 ' + m.phone;
+    else content += '\n📞 no number given — reply to ' + (m.sender || 'her') + ' in “' + chatName + '”';
+  }
+  return content.slice(0, 2000);
+}
+async function sendBabysit(cl, chatName) {
+  const msgs = cl.kind === 'combined' ? [cl.q, ...cl.answers] : cl.msgs;
+  if (!await ensureBabysitThread()) return false;
+  let sent = 0;
+  for (const m of msgs) {
+    const key = 'bs_' + contentKey(m.body || '');
+    if (SEEN.has(key)) continue;
+    const content = babysitLine(m, chatName);
+    if (!content || content.length < 4) continue;
+    const ok = await sendComment({ post: BABYSIT_ID }, Object.assign({}, m, { _content: content }));
+    if (ok) { SEEN.add(key); sent++; }
+  }
+  if (sent) { saveSeen(); log('   👶 ' + sent + ' babysitting message(s) added to the shared thread'); }
+  return sent > 0;
 }
 
 // ── Build the final Chutznik post from a cluster ─────────────────────────────
@@ -1114,6 +1197,26 @@ function rememberPosted(post, msg, cluster) {
     savePosted();
   } catch (e) {}
 }
+// Earlier posts that went out without a contact, whose poster we can now put
+// a number to (the member list arrived later): tell the site the number.
+async function backfillContacts() {
+  let n = 0;
+  for (const [id, e] of Object.entries(POSTED)) {
+    if (e.contactDone) continue;
+    let phone = e.phone || '';
+    if (!phone && /@lid$/i.test(String(e.jid || ''))) phone = phoneForLid(e.jid);
+    if (!phone) continue;
+    e.phone = phone;
+    try {
+      const r = await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
+        body: JSON.stringify({ file: 'updates', action: 'contact', id, phone }) });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok) { e.contactDone = true; if (j.changed) n++; }
+    } catch (err) {}
+  }
+  savePosted();
+  if (n) log('📞 contact number filled in on ' + n + ' earlier post(s)');
+}
 function israelHour() {
   try { return Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: 'numeric', hour12: false }).format(new Date())); }
   catch (e) { return new Date().getHours(); }
@@ -1205,6 +1308,8 @@ async function flush() {
     for (const cl of clusters) {
       try {
         if (cl.kind === 'comment') { await sendComment(cl.target, cl.msg); continue; }
+        const firstMsg = cl.kind === 'combined' ? cl.q : (cl.msgs && cl.msgs[0]);
+        if (firstMsg && isBabysit(firstMsg.body, chatName)) { await sendBabysit(cl, chatName); continue; }
         const post = await buildPost(cl, chatName);
         const msgIds = post._msgIds || []; delete post._msgIds;
         if (SEEN.has(post.dedupeKey)) {
@@ -1305,7 +1410,11 @@ async function start() {
   sock.ev.on('creds.update', saveCreds);
   sock.ev.on('connection.update', (u) => {
     if (u.qr) { console.log('\n📱 Scan with WhatsApp → Settings → Linked devices → Link a device:\n'); qrcode.generate(u.qr, { small: true }); }
-    if (u.connection === 'open') log('✅ Connected. Watching ALL groups. History for the last ' + HOURS + 'h arrives on its own; live messages are sent within ~' + FLUSH_MINUTES + ' min.');
+    if (u.connection === 'open') {
+      log('✅ Connected. Watching ALL groups. History for the last ' + HOURS + 'h arrives on its own; live messages are sent within ~' + FLUSH_MINUTES + ' min.');
+      setTimeout(async () => { await refreshLids(sock); await backfillContacts(); }, 8000);
+      if (!global._lidTimer) global._lidTimer = setInterval(async () => { try { await refreshLids(global._sock); await backfillContacts(); } catch (e) {} }, 60 * 60 * 1000);
+    }
     if (u.connection === 'close') {
       const code = u.lastDisconnect?.error?.output?.statusCode;
       if (code === DisconnectReason.loggedOut) {
