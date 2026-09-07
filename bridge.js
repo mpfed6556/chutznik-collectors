@@ -37,7 +37,8 @@ const SEEN_FILE = path.join(__dirname, 'seen.json');
 let SEEN = new Set();
 try { SEEN = new Set(JSON.parse(fs.readFileSync(SEEN_FILE, 'utf8'))); } catch (e) {}
 const saveSeen = () => { try { fs.writeFileSync(SEEN_FILE, JSON.stringify([...SEEN].slice(-30000))); } catch (e) {} };
-const log = (s) => console.log(new Date().toLocaleTimeString() + '  ' + s);
+const LOG_RING = [];
+const log = (s) => { console.log(new Date().toLocaleTimeString() + '  ' + s); try { logKeep(String(s)); } catch (e) {} };
 log('engine: Baileys (direct protocol, no browser) · v' + require('@whiskeysockets/baileys/package.json').version);
 log('config: site=' + SITE + ' · key=' + (INGEST_KEY ? INGEST_KEY.slice(0,6) + '… (' + INGEST_KEY.length + ' chars)' : '❗ MISSING — check .env') + ' · send every ' + FLUSH_MINUTES + ' min · history ' + HOURS + 'h');
 
@@ -1320,6 +1321,71 @@ log('📣 poster notes: ' + NOTIFY_MODE + (NOTIFY_MODE !== 'off' ? ' · ' + (NOT
 
 // ── Buffering: collect per-chat, flush every FLUSH_MINUTES ───────────────────
 const buffers = new Map(); // chatName → msgs[]
+// ── Self-update ──────────────────────────────────────────────────────────────
+// Every 10 minutes the bridge looks at its own newest version on GitHub. When
+// it differs, it checks that the new file parses, keeps a copy of the current
+// one (bridge.prev.js), swaps, flushes what it holds and exits -- pm2 brings
+// it straight back up on the new code. package.json changes trigger npm
+// install first. This is what lets fixes land without anyone typing on the
+// droplet.
+const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
+let _updating = false;
+async function selfUpdate() {
+  if (_updating) return; _updating = true;
+  try {
+    const r = await fetch(SELF_RAW + 'bridge.js?t=' + Date.now(), { headers: { 'Cache-Control': 'no-cache' } });
+    if (!r.ok) return;
+    const code = await r.text();
+    if (code.length < 20000 || !/^\/\/|^'use strict'|^const |^#!/.test(code)) return;
+    const cur = fs.readFileSync(__filename, 'utf8');
+    if (code === cur) return;
+    const tmp = path.join(__dirname, 'bridge.next.js');
+    fs.writeFileSync(tmp, code);
+    try { require('child_process').execFileSync(process.execPath, ['--check', tmp], { stdio: 'ignore' }); }
+    catch (e) { log('⬆️  update skipped: the new bridge.js does not parse'); try { fs.unlinkSync(tmp); } catch (e2) {} return; }
+    // dependencies, if they changed
+    try {
+      const pr = await fetch(SELF_RAW + 'package.json?t=' + Date.now());
+      if (pr.ok) {
+        const pkg = await pr.text();
+        const mine = fs.existsSync(path.join(__dirname, 'package.json')) ? fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8') : '';
+        if (pkg.trim() && pkg !== mine) {
+          fs.writeFileSync(path.join(__dirname, 'package.json'), pkg);
+          log('⬆️  package.json changed — npm install');
+          try { require('child_process').execSync('npm install --omit=dev --no-audit --no-fund', { cwd: __dirname, stdio: 'ignore', timeout: 180000 }); } catch (e) { log('npm install failed: ' + (e && e.message)); }
+        }
+      }
+    } catch (e) {}
+    try { fs.copyFileSync(__filename, path.join(__dirname, 'bridge.prev.js')); } catch (e) {}
+    fs.renameSync(tmp, __filename);
+    log('⬆️  new bridge version downloaded — restarting');
+    try { await flush(); } catch (e) {}
+    setTimeout(() => process.exit(0), 1500);
+  } catch (e) {} finally { _updating = false; }
+}
+setInterval(selfUpdate, 10 * 60 * 1000);
+setTimeout(selfUpdate, 90 * 1000);
+
+// ── Status heartbeat ─────────────────────────────────────────────────────────
+// Every 10 minutes the last log lines and a few counters go to the site's data
+// store (bridge-status.json on the data branch), so the bridge can be checked
+// without logging in to the droplet.
+function logKeep(s) { LOG_RING.push(new Date().toISOString().slice(11, 19) + ' ' + s); if (LOG_RING.length > 120) LOG_RING.shift(); }
+async function sendStatus() {
+  try {
+    const status = {
+      at: new Date().toISOString(), version: (fs.statSync(__filename).mtime || '').toString(), pid: process.pid, up: Math.round(process.uptime()),
+      connected: !!(global._sock && global._sock.user), me: global._sock && global._sock.user ? String(global._sock.user.id || '').split(':')[0] : '',
+      lids: Object.keys(LIDS).length, seen: SEEN.size, posted: Object.keys(POSTED).length, notifyMode: NOTIFY_MODE,
+      log: LOG_RING.slice(-80),
+    };
+    await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
+      body: JSON.stringify({ file: 'updates', action: 'status', status }) });
+  } catch (e) {}
+}
+setInterval(sendStatus, 10 * 60 * 1000);
+setTimeout(sendStatus, 30 * 1000);
+
 async function flush() {
   const waiting = [...buffers.values()].reduce((n, a) => n + a.length, 0);
   if (!waiting) return;
