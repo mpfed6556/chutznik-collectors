@@ -260,7 +260,8 @@ async function buildUpdateItem(raw) {
     const t = await translateToEnglish(body);
     body = t || '';
   }
-  const summary = summarizeEnglish(body) || summarizeEnglish(title);
+  body = String(body || '').replace(BOARD_LABEL, ' ').trim();
+  const summary = summarizeEnglish(body) || summarizeEnglish(String(title || '').replace(BOARD_LABEL, ' '));
   // ── Jobs from the job boards go live on their own -- but only jobs an
   //    English speaker can do, and only remote or Jerusalem-based ones
   //    (Miriam, 4 Sep 2026). Anything else from a job board is dropped.
@@ -307,6 +308,9 @@ async function buildUpdateItem(raw) {
       dedupeKey: fingerprint(raw.link, raw.title),
     };
   }
+  // a classifieds board (Janglo and the like) gives us rentals and jobs; its
+  // news, items for sale and events are not for the site
+  if (org.classifieds) { log('  classifieds item skipped: "' + String(raw.title || '').slice(0, 60) + '"'); return null; }
   return {
     source: 'official-updates',
     group: org.name,
@@ -324,11 +328,22 @@ async function buildUpdateItem(raw) {
 }
 // A classifieds item that is an apartment for rent → Rental, with beds/price/term
 // pulled from the text and the board's "For Rent Sep 07, 2026" prefix removed.
+// The board's own "For Rent Sep 07, 2026" label sits in front of EVERY item it
+// lists -- news, a couch, a matinee -- so it is stripped before anything is
+// judged. A rental needs housing words AND renting words in the listing
+// itself, must not be a sale, and must be in the Jerusalem area.
+const BOARD_LABEL = /\b(?:for rent|for sale|wanted|jobs?|services?|events?)\s+[A-Z][a-z]{2}\s+\d{1,2},\s*\d{4}\s*/gi;
+const JLM_AREA = /\b(jerusalem|yerushalayim|jlm|j-lm|beit shemesh|bet shemesh|rbs|ramat beit shemesh|efrat|gush etzion|modi'?in|ma'?ale adumim|givat ze'?ev|beitar|betar illit|mevaseret|har nof|ramat eshkol|rechavia|rehavia|nachlaot|katamon|baka|talpiot|arnona|german colony|old city|french hill|ramot|gilo|har homa|pisgat ze'?ev|sanhedria|romema|geula|abu tor|malha|kiryat (?:moshe|yovel)|bayit vegan|givat shaul|mea shearim|shaarei chesed|talbiya|yemin moshe|musrara|nayot|beit hakerem)\b|ירושלים|בית שמש/i;
 function rentalFrom(rawText, title, body, raw) {
-  const t = String(rawText || '') + ' ' + String(title || '') + ' ' + String(body || '');
-  const isRental = /\bfor rent\b|\brental\b|\bsublet\b|\bapartment\b|\bapt\b|\bflat\b|\b\d\s*(?:br|bdrm|bedroom|rooms?)\b|דירה|להשכרה/i.test(t)
+  const t = (String(rawText || '') + ' ' + String(title || '') + ' ' + String(body || '')).replace(BOARD_LABEL, ' ');
+  const housing = /\b(apartment|apt|flat|unit|penthouse|studio|cottage|villa|duplex|house|room for rent|\d(?:\.5)?\s*(?:br|bdrm|bedrooms?|rooms?))\b|דירה/i.test(t);
+  const renting = /\bfor rent\b|\brent(?:al|ed|ing)?\b|\bsublet\b|\bper month\b|\/\s*month\b|\bmonthly\b|\bnis\s*(?:per|a|\/)\s*month|\b(?:sukkos|sukkot|succos|pesach|passover|rosh hashan|yom kippur|holidays?|chag|short[- ]term|per night|nightly)\b|להשכרה/i.test(t)
+    || /\b\d{1,2},\d{3}\s*(?:nis|₪)\b|(?:nis|₪)\s*\d{1,2},\d{3}\b/i.test(t);   // a monthly-scale price on a listing is a rental
+  const sale = /\bfor sale\b|\bsale\b|\bbuy\b|\bpurchase\b|\d,\d{3},\d{3}|\bmillion\b|\burban renewal\b|\bproject at\b|\btama\b/i.test(t);
+  const isRental = housing && renting && !sale
     && !/\b(job|hiring|position|vacanc|salary|employ)\b/i.test(String(raw.title || ''));
   if (!isRental) return null;
+  if (!JLM_AREA.test(t)) return null;
   const facts = {};
   const beds = t.match(/(\d)(?:\.5)?\s*(?:br|bdrm|bedrooms?)\b/i) || t.match(/(\d)(?:\.5)?\s*rooms?\b/i);
   if (beds) { let n = parseInt(beds[1], 10); if (/rooms?/i.test(beds[0]) && n > 1) n = n - 1; if (n >= 0 && n <= 20) facts.beds = n; }
@@ -339,7 +354,7 @@ function rentalFrom(rawText, title, body, raw) {
   facts.priceMode = short && (/night/i.test(t) || (facts.price && Number(facts.price) < 3000)) ? 'night' : 'month';
   const jlm = /\b(jerusalem|yerushalayim|jlm)\b|ירושלים/i.test(t);
   const area = jlm ? 'Jerusalem & Surrounding' : '';
-  let clean = String(title || '').replace(/^\s*for rent\s+[A-Z][a-z]{2}\s+\d{1,2},\s*\d{4}\s*/i, '').replace(/^\s*for rent[:\s-]*/i, '').trim();
+  let clean = String(title || '').replace(BOARD_LABEL, '').replace(/^\s*for rent[:\s-]*/i, '').trim();
   if (!clean) clean = String(title || '');
   return { facts, area, title: clean.slice(0, 150) };
 }

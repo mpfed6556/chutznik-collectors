@@ -316,10 +316,11 @@
       "page": "https://janglo.net/",
       "types": [
         "Jobs",
-        "Items / Questions"
+        "Rental"
       ],
       "lang": "en",
-      "enabled": true
+      "enabled": true,
+      "classifieds": true
     },
     {
       "name": "Gvahim",
