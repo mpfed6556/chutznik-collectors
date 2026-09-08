@@ -1238,7 +1238,19 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
 // at most NOTIFY_DAILY a day (default 25); 60–150 s between notes; one note
 // per person per day; never to Miriam's own numbers; and anyone who replies
 // STOP is never messaged -- or posted -- again.
-const NOTIFY_MODE = String(process.env.NOTIFY_MODE || 'off').toLowerCase();
+let NOTIFY_MODE = String(process.env.NOTIFY_MODE || 'off').toLowerCase();
+// Remote settings: bridge-settings.json on the site's data branch overrides
+// the .env, so a switch (dry → live) needs no one at the droplet.
+async function pullSettings() {
+  try {
+    const r = await fetch(SITE + '/api/live-data?type=settings'); if (!r.ok) return;
+    const j = await r.json(); if (!j || typeof j !== 'object') return;
+    if (j.NOTIFY_MODE && ['off', 'dry', 'live'].includes(String(j.NOTIFY_MODE).toLowerCase()) && String(j.NOTIFY_MODE).toLowerCase() !== NOTIFY_MODE) {
+      NOTIFY_MODE = String(j.NOTIFY_MODE).toLowerCase(); log('⚙️  poster notes mode is now: ' + NOTIFY_MODE + ' (from the site settings)');
+    }
+  } catch (e) {}
+}
+setInterval(pullSettings, 5 * 60 * 1000); setTimeout(pullSettings, 20 * 1000);
 const NOTIFY_AUTO = String(process.env.NOTIFY_AUTO || '0') === '1';
 const NOTIFY_DAILY = Number(process.env.NOTIFY_DAILY || 25);
 const NOTIFY_FROM = Number(process.env.NOTIFY_FROM_HOUR || 8), NOTIFY_TO = Number(process.env.NOTIFY_TO_HOUR || 22);
@@ -1357,10 +1369,8 @@ async function notifyPosters() {
   } catch (e) { log('📣 notify: ' + (e && e.message)); }
   finally { _notifyBusy = false; }
 }
-if (NOTIFY_MODE !== 'off') {
-  setInterval(notifyPosters, 3 * 60 * 1000);
-  setTimeout(notifyPosters, 45 * 1000);
-}
+setInterval(notifyPosters, 3 * 60 * 1000);
+setTimeout(notifyPosters, 45 * 1000);
 log('📣 poster notes: ' + NOTIFY_MODE + (NOTIFY_MODE !== 'off' ? ' · ' + (NOTIFY_AUTO ? 'every public post' : 'only posts flagged with 📣 on the site') + ' · max ' + NOTIFY_DAILY + '/day · ' + NOTIFY_FROM + ':00–' + NOTIFY_TO + ':00 Israel time' : ' (NOTIFY_MODE=dry to rehearse, live to send)'));
 
 // ── Buffering: collect per-chat, flush every FLUSH_MINUTES ───────────────────
