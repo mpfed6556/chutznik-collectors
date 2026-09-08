@@ -137,13 +137,15 @@ const SOURCES = [
       const nd = $('#__NEXT_DATA__').text();
       const occurrence = (arr) => {   // the next occurrence from an event's date entries
         const now = Date.now(); let best = null, bestTime = '';
+        const day = (v) => String(v || '').slice(0, 10);   // "2026-09-08" or "2026-09-08T14:00:00.000Z" → the day
+        const hm = (v) => { const m = String(v || '').match(/(\d{1,2}):(\d{2})/); return m ? m[1].padStart(2, '0') + ':' + m[2] + ':00' : ''; };
         for (const d of (Array.isArray(arr) ? arr : [])) { if (!d || typeof d !== 'object' || !d.startDate) continue;
-          const st = new Date(d.startDate + 'T' + (d.startTime || '00:00:00')); if (isNaN(st)) continue;
-          const en = d.endDate ? new Date(d.endDate + 'T' + (d.endTime || '23:59:00')) : new Date(st.getTime() + 3 * 3600e3);
+          const st = new Date(day(d.startDate) + 'T' + (hm(d.startTime) || '00:00:00')); if (isNaN(st)) continue;
+          const en = d.endDate ? new Date(day(d.endDate) + 'T' + (hm(d.endTime) || '23:59:00')) : new Date(st.getTime() + 3 * 3600e3);
           if (en.getTime() < now - 864e5) continue;
           if (en.getTime() - st.getTime() > 4 * 864e5 || (d.repeats && d.repeats !== 'no')) continue;   // a run or a weekly repeat is an attraction
           const cand = st.getTime() < now - 864e5 ? new Date(new Date().setHours(0, 0, 0, 0)) : st;
-          if (!best || cand < best) { best = cand; bestTime = (d.startTime || '').slice(0, 5); } }
+          if (!best || cand < best) { best = cand; bestTime = hm(d.startTime).slice(0, 5); } }
         return { date: best, time: bestTime && bestTime !== '00:00' ? bestTime : '' };
       };
       const cardsOf = (j) => { const pp = (j && j.props && j.props.pageProps) || {}; const lc = pp.listingCards; return Array.isArray(lc) ? lc : (lc && Array.isArray(lc.data) ? lc.data : []); };
@@ -167,7 +169,7 @@ const SOURCES = [
           const link = /^https?:/.test(c.url || '') ? c.url : (pathOrSlug ? new URL(pathOrSlug.startsWith('/') ? pathOrSlug : '/events/' + pathOrSlug, 'https://www.itraveljerusalem.com').href : '');
           if (!link || seenPath.has(link)) continue; seenPath.add(link);
           const slug = link.split('/').filter(Boolean).pop();
-          const key = 'ev_' + fp(link + '|' + title); if (SEEN.has(key)) { continue; }
+          const key = 'ev2_' + fp(link + '|' + title); if (SEEN.has(key)) { continue; }
           // the card carries its own dates (startDate/endDate/startTime/endTime); older cards had a date array
           let arr = Array.isArray(c.date) ? c.date : (c.startDate ? [{ startDate: c.startDate, endDate: c.endDate || '', startTime: c.startTime || '', endTime: c.endTime || '', repeats: 'no' }] : null);
           let desc = strip(c.excerpt || c.body || ''), place = strip(c.address || (c.location && (c.location.name || c.location.title || (typeof c.location === 'string' ? c.location : ''))) || '');
@@ -227,7 +229,7 @@ async function run(seenSet, statusObj, force) {
     samples[src.name] = raws.slice(0, 5).map((r) => ({ title: r.title, date: r.date && !isNaN(r.date) ? r.date.toISOString().slice(0, 10) : null, time: r.time, link: r.link, raw: r._raw }));
     for (const r of raws) {
       if (!r.title || !r.link) continue;
-      const key = 'ev_' + fp(r.link + '|' + r.title); if (SEEN.has(key)) continue;
+      const key = 'ev2_' + fp(r.link + '|' + r.title); if (SEEN.has(key)) continue;
       const d = r.date && !isNaN(r.date) ? r.date : null;
       if (d && d.getTime() < Date.now() - 2 * 864e5) { SEEN.add(key); continue; }        // already over
       // an article, a recording, a dvar Torah: not an event — only things with a
