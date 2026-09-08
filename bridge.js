@@ -1292,6 +1292,11 @@ const savePosted = () => { try {
   fs.writeFileSync(POSTED_FILE, JSON.stringify(POSTED));
 } catch (e) {} };
 const saveOptout = () => { try { fs.writeFileSync(OPTOUT_FILE, JSON.stringify([...OPTOUT])); } catch (e) {} };
+// everyone who ever got a "your post is up" note — each person hears from us once
+const TOLD_FILE = path.join(__dirname, 'told.json');
+let TOLD = new Set(); try { TOLD = new Set(JSON.parse(fs.readFileSync(TOLD_FILE, 'utf8'))); } catch (e) {}
+for (const e of Object.values(POSTED)) if (e && e.sentLive) { const k = optKey(e); if (k) TOLD.add(k); }
+const saveTold = () => { try { fs.writeFileSync(TOLD_FILE, JSON.stringify([...TOLD])); } catch (e) {} };
 function optKey(m) { return String((m && (m.phone || m.jid)) || '').replace(/\D/g, '').slice(-9) || ''; }
 function isOptedOut(m) { const k = optKey(m); return !!k && OPTOUT.has(k); }
 function rememberPosted(post, msg, cluster) {
@@ -1338,8 +1343,7 @@ function noteText(entry, postId) {
   const title = String(entry.title || '').slice(0, 70);
   return hi + " I'm Miriam from Chutznik. Your message in *" + (entry.chat || 'the group') + "*"
     + (title ? ' — "' + title + '" —' : '') + " is now up on chutznik.org, where English-speaking women in Israel look for exactly this:\n" + link
-    + "\n\nIf someone contacts you through it, that's how they found you 😊"
-    + "\n(Reply STOP if I should stop messaging u.)";
+    + "\n\nIf someone contacts you through it, that's how they found you 😊";
 }
 let _notifyBusy = false, _lastUpdSha = '';
 async function notifyPosters() {
@@ -1376,7 +1380,9 @@ async function notifyPosters() {
       if (!who) { e.notified = true; e.skipped = 'no number'; continue; }
       if (OPTOUT.has(who)) { e.notified = true; e.skipped = 'opted out'; continue; }
       if (MY_NUMBERS.some(n => n.endsWith(who) || who.endsWith(n.slice(-9)))) { e.notified = true; e.skipped = 'own number'; continue; }
-      if (NOTIFY_STATE.people[who]) { continue; }   // already told this person today; another day
+      // one note per person, ever (Miriam, 8 Sep 2026): whoever was already
+      // told about one post is never messaged about another
+      if (NOTIFY_STATE.people[who] || TOLD.has(who)) { e.notified = true; e.skipped = 'already told'; continue; }
       const text = noteText(e, postId);
       if (NOTIFY_MODE === 'dry') {
         // a rehearsal: say what would go, once, and leave the post waiting for live mode
@@ -1389,6 +1395,7 @@ async function notifyPosters() {
         catch (err) { log('📣 notify failed → ' + (e.phone || e.jid) + ': ' + (err && err.message)); e.tries = (e.tries || 0) + 1; if (e.tries >= 3) e.notified = true; continue; }
       }
       e.notified = true; e.sentLive = true; e.notifiedAt = Date.now(); NOTIFY_STATE.sent++; NOTIFY_STATE.people[who] = true;
+      TOLD.add(who); saveTold();
       savePosted();
       if (NOTIFY_MODE === 'live') {
         try { await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
