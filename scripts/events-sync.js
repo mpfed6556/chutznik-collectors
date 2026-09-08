@@ -133,31 +133,52 @@ const SOURCES = [
       let r; try { r = await get(u); } catch (e) { STATUS[this.name] = 'unreachable ' + e; return []; }
       if (!r.ok) { STATUS[this.name] = 'HTTP ' + r.status; return []; }
       const $ = cheerio.load(r.text); const items = [];
-      // 1) Next.js data island
+      // 1) Next.js data island: the listing cards (Strapi events), page by page
       const nd = $('#__NEXT_DATA__').text();
-      if (nd) { try { const j = JSON.parse(nd); const found = []; (function walk(o, depth) { if (!o || depth > 12) return; if (Array.isArray(o)) { for (const x of o) walk(x, depth + 1); return; } if (typeof o !== 'object') return;
-          if ((o.title || o.name) && (o.slug || o.url || o.link) && (o.startDate || o.start_date || o.date || o.dates || o.eventDate)) found.push(o); for (const k of Object.keys(o)) walk(o[k], depth + 1); })(j, 0);
-        const hosts = [...new Set((nd.match(/https?:\\?\/\\?\/[a-z0-9.\-]+(?:\\?\/[a-z0-9._\-]+){0,3}/gi) || []).map((x) => x.replace(/\\\//g, '/')).filter((x) => !/itraveljerusalem\.com\/(events|_next|list)|w3\.org|schema\.org|google|facebook|instagram/i.test(x)))].slice(0, 12);
-        const now = Date.now();
-        for (const e of found.slice(0, 40)) {
-          const title = strip(e.title || e.name); const link = /^https?:/.test(e.url || e.link || '') ? (e.url || e.link) : ('https://www.itraveljerusalem.com/events/' + (e.slug || ''));
-          const arr = Array.isArray(e.date) ? e.date : (Array.isArray(e.dates) ? e.dates : []);
-          // the next occurrence: a date entry that has not ended yet (an open run counts from today)
-          let best = null, bestTime = '';
-          for (const d of arr) { if (!d || typeof d !== 'object') continue; const st = d.startDate ? new Date(d.startDate + 'T' + (d.startTime || '00:00:00')) : null; if (!st || isNaN(st)) continue;
-            const en = d.endDate ? new Date(d.endDate + 'T' + (d.endTime || '23:59:00')) : new Date(st.getTime() + 3 * 3600e3);
-            if (en.getTime() < now - 864e5) continue;
-            // a run of weeks or a weekly repeat is an attraction, not a day's event
-            if (en.getTime() - st.getTime() > 4 * 864e5 || (d.repeats && d.repeats !== 'no')) continue;
-            const cand = st.getTime() < now - 864e5 ? new Date(new Date().setHours(0, 0, 0, 0)) : st;
-            if (!best || cand < best) { best = cand; bestTime = (d.startTime || '').slice(0, 5); } }
-          items.push({ title, link, desc: strip(e.description || e.summary || e.excerpt || e.shortDescription || ''), date: best, time: bestTime && bestTime !== '00:00' ? bestTime : '', place: strip(e.location && (e.location.name || e.location.title || (typeof e.location === 'string' ? e.location : '')) || e.venue || e.address || ''), published: Date.now(),
-            _raw: (arr.length + ' date entries; first: ' + JSON.stringify(arr[0] || null).slice(0, 220) + ' · keys: ' + Object.keys(e).slice(0, 30).join(',')).slice(0, 500) }); }
-        { const apiStrs = [...new Set((nd.match(/"[^"]{0,80}(?:api|graphql|strapi)[^"]{0,80}"/gi) || []))].slice(0, 8).join(' ');
-          const pp = (j.props && j.props.pageProps) || {}; const lc = pp.listingCards; const first = Array.isArray(lc) ? lc[0] : (lc && typeof lc === 'object' ? (Array.isArray(lc.data) ? lc.data[0] : lc) : null);
-          STATUS[this.name + ' hints'] = 'listingCards: ' + (Array.isArray(lc) ? lc.length + ' cards' : typeof lc) + ' · first: ' + JSON.stringify(first).slice(0, 900) + ' · pagination: ' + JSON.stringify(pp.listingCardsPagination).slice(0, 200) + ' · total ' + pp.total + ' more ' + JSON.stringify(pp.more).slice(0, 100) + ' · buildId ' + j.buildId + ' · api strings: ' + apiStrs; }
-        if (items.length) { STATUS[this.name] = 'ok via __NEXT_DATA__ (' + items.length + ')'; return items; }
-        STATUS[this.name] = '__NEXT_DATA__ present but no events found · keys: ' + Object.keys(j.props && j.props.pageProps || {}).join(',') + ' · ' + snippet(nd, /event/i);
+      const occurrence = (arr) => {   // the next occurrence from an event's date entries
+        const now = Date.now(); let best = null, bestTime = '';
+        for (const d of (Array.isArray(arr) ? arr : [])) { if (!d || typeof d !== 'object' || !d.startDate) continue;
+          const st = new Date(d.startDate + 'T' + (d.startTime || '00:00:00')); if (isNaN(st)) continue;
+          const en = d.endDate ? new Date(d.endDate + 'T' + (d.endTime || '23:59:00')) : new Date(st.getTime() + 3 * 3600e3);
+          if (en.getTime() < now - 864e5) continue;
+          if (en.getTime() - st.getTime() > 4 * 864e5 || (d.repeats && d.repeats !== 'no')) continue;   // a run or a weekly repeat is an attraction
+          const cand = st.getTime() < now - 864e5 ? new Date(new Date().setHours(0, 0, 0, 0)) : st;
+          if (!best || cand < best) { best = cand; bestTime = (d.startTime || '').slice(0, 5); } }
+        return { date: best, time: bestTime && bestTime !== '00:00' ? bestTime : '' };
+      };
+      const cardsOf = (j) => { const pp = (j && j.props && j.props.pageProps) || {}; const lc = pp.listingCards; return Array.isArray(lc) ? lc : (lc && Array.isArray(lc.data) ? lc.data : []); };
+      if (nd) { try {
+        const j = JSON.parse(nd); let cards = cardsOf(j); const pp = (j.props && j.props.pageProps) || {}; const pg = pp.listingCardsPagination || {};
+        // the other pages
+        for (let p = 2; p <= Math.min(Number(pg.pageCount) || 1, 4); p++) {
+          try { const rr = await get('https://www.itraveljerusalem.com/_next/data/' + j.buildId + '/en/list/events.json?page=' + p); let jj = null;
+            if (rr.ok && rr.text.trim().startsWith('{')) jj = JSON.parse(rr.text);
+            else { const r2 = await get('https://www.itraveljerusalem.com/list/events?page=' + p); const t2 = cheerio.load(r2.text)('#__NEXT_DATA__').text(); if (t2) jj = JSON.parse(t2); }
+            if (jj) { const jjn = jj.pageProps ? { props: { pageProps: jj.pageProps } } : jj; cards = cards.concat(cardsOf(jjn)); }
+          } catch (e) {}
+          await sleep(400);
+        }
+        STATUS[this.name + ' hints'] = cards.length + ' cards · card keys: ' + Object.keys(cards[0] || {}).join(',').slice(0, 400) + ' · buildId ' + j.buildId;
+        let fetched = 0;
+        for (const c of cards.slice(0, 40)) {
+          const title = strip(c.name || c.title); if (!title) continue;
+          const slug = c.slug || (c.listing && c.listing.slug) || ''; const link = /^https?:/.test(c.url || '') ? c.url : ('https://www.itraveljerusalem.com/events/' + slug);
+          if (!slug && !c.url) continue;
+          const key = 'ev_' + fp(link + '|' + title); if (SEEN.has(key)) { continue; }
+          let arr = Array.isArray(c.date) ? c.date : null, desc = strip(c.excerpt || c.body || ''), place = strip(c.address || (c.location && (c.location.name || c.location.title)) || '');
+          if (!arr && fetched < 12) {   // the card has no dates: read the event's own page
+            fetched++;
+            try { const rr = await get(link); const t = cheerio.load(rr.text)('#__NEXT_DATA__').text(); if (t) { const jj = JSON.parse(t); let ev = null;
+              (function walk(o, depth) { if (ev || !o || depth > 10) return; if (Array.isArray(o)) { for (const x of o) walk(x, depth + 1); return; } if (typeof o !== 'object') return; if (Array.isArray(o.date) && (o.name || o.title) && (o.slug === slug || !slug)) { ev = o; return; } for (const k of Object.keys(o)) walk(o[k], depth + 1); })(jj, 0);
+              if (ev) { arr = ev.date; desc = desc || strip(ev.excerpt || ev.body || ''); place = place || strip(ev.address || ''); } } } catch (e) {}
+            await sleep(400);
+          }
+          if (!arr) continue;                       // could not read its dates this time: try again next round
+          const occ = occurrence(arr);
+          items.push({ title, link, desc: desc.slice(0, 500), date: occ.date, time: occ.time, place, published: Date.now(), _raw: (arr ? arr.length + ' dates; first ' + JSON.stringify(arr[0]).slice(0, 160) : 'no dates on card') });
+        }
+        if (items.length) { STATUS[this.name] = 'ok via listing cards (' + items.length + ' new of ' + cards.length + ')'; return items; }
+        if (cards.length) { STATUS[this.name] = 'all ' + cards.length + ' cards already seen'; return []; }
       } catch (e) { STATUS[this.name] = '__NEXT_DATA__ unreadable: ' + e; } }
       // 2) JSON-LD
       $('script[type="application/ld+json"]').each((i, el) => { try { const j = JSON.parse($(el).text()); const arr = Array.isArray(j) ? j : (j['@graph'] || [j]);
