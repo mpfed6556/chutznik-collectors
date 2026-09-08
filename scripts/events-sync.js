@@ -61,7 +61,7 @@ function timeIn(text) { const m = String(text || '').match(/\b(\d{1,2}(?::\d{2})
 // ── the sources ─────────────────────────────────────────────────────────────
 // each returns [{ title, link, desc, date (Date|null), time, place, published }]
 const SOURCES = [
-  { name: 'Reconnect Shiurim', group: 'Reconnect Shiurim', types: ['Events', 'Spiritual'], area: 'Jerusalem & Surrounding',
+  { name: 'Reconnect Shiurim', group: 'Reconnect Shiurim', types: ['Events', 'Spiritual'], area: 'Jerusalem & Surrounding', datedOnly: true,
     async collect() {
       // WooCommerce: the product feed (each shiur is a product, its date is in the name)
       const tries = ['https://reconnectshiurim.com/?post_type=product&feed=rss2', 'https://reconnectshiurim.com/product/feed/', 'https://reconnectshiurim.com/feed/'];
@@ -85,7 +85,8 @@ const SOURCES = [
       STATUS[this.name] = 'nothing parsed · ' + snippet(last);
       return [];
     } },
-  { name: 'The Kotel', group: 'Western Wall Heritage Foundation', types: ['Events', 'Spiritual'], area: 'Jerusalem & Surrounding',
+  { name: 'The Kotel', group: 'Western Wall Heritage Foundation', types: ['Events', 'Spiritual'], area: 'Jerusalem & Surrounding', datedOnly: true,
+    eventWords: /\b(event|ceremony|celebration|gathering|prayer service|selichot|slichot|birkat|birkas|kohanim|hakhel|priestly|tour|concert|festival|lighting|hachnasat|siyum|tefilla|tefillah|program|programme|evening|night of|register|registration|tickets?|join us|invited|will take place|will be held)\b/i,
     async collect() {
       const tries = ['https://thekotel.org/en/tag/%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-en/feed/', 'https://thekotel.org/en/feed/'];
       let items = [], last = '';
@@ -126,7 +127,7 @@ const SOURCES = [
       if (!STATUS[this.name]) STATUS[this.name] = 'unreachable · ' + snippet(last);
       return [];
     } },
-  { name: 'iTravelJerusalem', group: 'iTravelJerusalem (city events calendar)', types: ['Events', 'Community'], area: 'Jerusalem & Surrounding',
+  { name: 'iTravelJerusalem', group: 'iTravelJerusalem (city events calendar)', types: ['Events', 'Community'], area: 'Jerusalem & Surrounding', datedOnly: true,
     async collect() {
       const u = 'https://www.itraveljerusalem.com/list/events';
       let r; try { r = await get(u); } catch (e) { STATUS[this.name] = 'unreachable ' + e; return []; }
@@ -136,8 +137,11 @@ const SOURCES = [
       const nd = $('#__NEXT_DATA__').text();
       if (nd) { try { const j = JSON.parse(nd); const found = []; (function walk(o, depth) { if (!o || depth > 12) return; if (Array.isArray(o)) { for (const x of o) walk(x, depth + 1); return; } if (typeof o !== 'object') return;
           if ((o.title || o.name) && (o.slug || o.url || o.link) && (o.startDate || o.start_date || o.date || o.dates || o.eventDate)) found.push(o); for (const k of Object.keys(o)) walk(o[k], depth + 1); })(j, 0);
-        for (const e of found.slice(0, 25)) { const title = strip(e.title || e.name); const link = /^https?:/.test(e.url || e.link || '') ? (e.url || e.link) : ('https://www.itraveljerusalem.com/events/' + (e.slug || '')); const dt = e.startDate || e.start_date || e.date || e.eventDate || (Array.isArray(e.dates) && e.dates[0]);
-          items.push({ title, link, desc: strip(e.description || e.summary || e.excerpt || ''), date: dt ? new Date(dt) : null, time: e.time || e.startTime || '', place: strip(e.location && (e.location.name || e.location) || e.venue || ''), published: Date.now() }); }
+        const pick = (v) => { if (!v) return null; if (typeof v === 'string' || typeof v === 'number') return v; if (Array.isArray(v)) return pick(v[0]); if (typeof v === 'object') return pick(v.start || v.startDate || v.date || v.from || v.value || Object.values(v)[0]); return null; };
+        for (const e of found.slice(0, 25)) { const title = strip(e.title || e.name); const link = /^https?:/.test(e.url || e.link || '') ? (e.url || e.link) : ('https://www.itraveljerusalem.com/events/' + (e.slug || '')); const rawDt = e.startDate || e.start_date || e.date || e.eventDate || e.dates; const dt = pick(rawDt);
+          let d = null; if (dt) { d = typeof dt === 'number' ? new Date(dt < 1e11 ? dt * 1000 : dt) : (dateIn(String(dt)) || new Date(dt)); if (d && isNaN(d)) d = null; }
+          const dateKeys = Object.keys(e).filter((k) => /date|time|when|start|end|day/i.test(k)).map((k) => k + '=' + JSON.stringify(e[k]).slice(0, 80)).join(' ');
+          items.push({ title, link, desc: strip(e.description || e.summary || e.excerpt || ''), date: d, time: e.time || e.startTime || '', place: strip(e.location && (e.location.name || e.location) || e.venue || ''), published: Date.now(), _raw: dateKeys.slice(0, 300) }); }
         if (items.length) { STATUS[this.name] = 'ok via __NEXT_DATA__ (' + items.length + ')'; return items; }
         STATUS[this.name] = '__NEXT_DATA__ present but no events found · keys: ' + Object.keys(j.props && j.props.pageProps || {}).join(',') + ' · ' + snippet(nd, /event/i);
       } catch (e) { STATUS[this.name] = '__NEXT_DATA__ unreadable: ' + e; } }
@@ -180,12 +184,16 @@ async function run(seenSet, statusObj, force) {
   for (const src of SOURCES) {
     let raws = [];
     try { raws = await src.collect(); } catch (e) { STATUS[src.name] = 'failed: ' + (e && e.message); }
-    samples[src.name] = raws.slice(0, 5).map((r) => ({ title: r.title, date: r.date && !isNaN(r.date) ? r.date.toISOString().slice(0, 10) : null, time: r.time, link: r.link }));
+    samples[src.name] = raws.slice(0, 5).map((r) => ({ title: r.title, date: r.date && !isNaN(r.date) ? r.date.toISOString().slice(0, 10) : null, time: r.time, link: r.link, raw: r._raw }));
     for (const r of raws) {
       if (!r.title || !r.link) continue;
       const key = 'ev_' + fp(r.link + '|' + r.title); if (SEEN.has(key)) continue;
       const d = r.date && !isNaN(r.date) ? r.date : null;
       if (d && d.getTime() < Date.now() - 2 * 864e5) { SEEN.add(key); continue; }        // already over
+      // an article, a recording, a dvar Torah: not an event — only things with a
+      // date (and, for a news feed, event words) reach the site
+      if (src.datedOnly && !d) { SEEN.add(key); continue; }
+      if (src.eventWords && !src.eventWords.test(r.title + ' ' + (r.desc || ''))) { SEEN.add(key); continue; }
       let title = r.title, desc = r.desc || '';
       if (hasHebrew(title)) { const t = await translate(title); if (t) title = t; }
       if (hasHebrew(desc)) { const t = await translate(desc.slice(0, 400)); desc = t || ''; }
