@@ -1446,6 +1446,7 @@ async function syncExtras() {
         fs.renameSync(tmp, dst);
       } else { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.writeFileSync(dst, buf); }
       n++;
+      if (/events-sync/.test(rel)) setTimeout(() => { try { eventsRound(); } catch (e) {} }, 5000);   // a new collector runs at once
     } catch (e) {}
   }
   if (n) log('⬆️  ' + n + ' helper file(s) updated');
