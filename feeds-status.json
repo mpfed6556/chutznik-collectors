@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-08T14:05:25.160Z",
+  "lastRun": "2026-09-08T17:58:01.916Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -46,7 +46,6 @@
     "Metropoline": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Post": "no feed, no scannable items, nothing in the news last 48h",
     "Kol Zchut (All Rights)": "blocked: robots.txt unreachable — skipping to be safe",
-    "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Beit Shemesh Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
@@ -62,6 +61,121 @@
     "Moovit": "ok via RSS (6 items)",
     "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
-    "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found"
+    "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
+    "_events": {
+      "lastRun": "2026-09-08T17:58:01.915Z",
+      "sent": 21,
+      "sources": {
+        "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
+        "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
+        "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
+        "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId cz0Gd6DbWMHXf_qtum9kd",
+        "iTravelJerusalem": "ok via listing cards (20 new of 40)"
+      },
+      "samples": {
+        "Reconnect Shiurim": [
+          {
+            "title": "Elul: A New Perspective (August 24, 2026)",
+            "date": "2026-08-24",
+            "time": "",
+            "link": "https://reconnectshiurim.com/product/elul-a-new-perspective-august-24-2026/"
+          },
+          {
+            "title": "Elul: How to Choose the Right Kabbalah (August 31, 2026)",
+            "date": "2026-08-31",
+            "time": "",
+            "link": "https://reconnectshiurim.com/product/elul-how-to-choose-the-right-kabbalah-august-31-2026/"
+          },
+          {
+            "title": "Teshuva: Can I Really Rewrite the Past? (September 7, 2026)",
+            "date": "2026-09-07",
+            "time": "",
+            "link": "https://reconnectshiurim.com/product/teshuva-can-i-really-rewrite-the-past-september-7-2026/"
+          },
+          {
+            "title": "Four Types of Conflict Resolution",
+            "date": null,
+            "time": "",
+            "link": "https://reconnectshiurim.com/product/four-types-of-conflict-resolution/"
+          },
+          {
+            "title": "Listening and The Four Family Types",
+            "date": null,
+            "time": "",
+            "link": "https://reconnectshiurim.com/product/listening-and-the-four-family-types/"
+          }
+        ],
+        "The Kotel": [
+          {
+            "title": "Prayers to the Western Wall from 140 countries: “For My House shall be called a house of prayer for all peoples.”",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157648/"
+          },
+          {
+            "title": "Inner Work – Rosh Hashanah 5787",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157613/"
+          },
+          {
+            "title": "Environmental Responsibility – Parashat Nitzavim – Vayelech",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157483/"
+          },
+          {
+            "title": "Foreign Minister of North Macedonia: “The significance of Jerusalem for world civilization is of immense importance”",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157433/"
+          },
+          {
+            "title": "The Power of Joy – Parashat Ki Tavo",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157422/"
+          }
+        ],
+        "Jerusalem Municipality": [],
+        "iTravelJerusalem": [
+          {
+            "title": "Jerusalem Selichot Tour with Tali Yehoshua",
+            "date": "2026-09-08",
+            "time": "17:00",
+            "link": "https://www.itraveljerusalem.com/event/tali-yehoshua-slihot-tour",
+            "raw": "1 dates; first {\"startDate\":\"2026-09-08T14:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"17:00\",\"endTime\":\"19:00\",\"repeats\":\"no\"}"
+          },
+          {
+            "title": "Hummus Workshop & Dinner at Abraham Jerusalem",
+            "date": "2026-09-08",
+            "time": "17:30",
+            "link": "https://www.itraveljerusalem.com/event/hummus-workshop-abraham-hostel",
+            "raw": "1 dates; first {\"startDate\":\"2026-09-08T14:30:00.000Z\",\"endDate\":\"\",\"startTime\":\"17:30\",\"endTime\":\"19:30\",\"repeats\":\"no\"}"
+          },
+          {
+            "title": "Selichot tour in Nachlaot and the Haredi neighborhoods",
+            "date": "2026-09-08",
+            "time": "17:30",
+            "link": "https://www.itraveljerusalem.com/event/israel-2-go-slichot-at-mea-shearim",
+            "raw": "1 dates; first {\"startDate\":\"2026-09-08T14:30:00.000Z\",\"endDate\":\"\",\"startTime\":\"17:30\",\"endTime\":\"20:00\",\"repeats\":\"no\"}"
+          },
+          {
+            "title": "Yamishuk Selichot: Taste Mahane Yehuda during Selichot nights at your own pace",
+            "date": "2026-09-08",
+            "time": "20:00",
+            "link": "https://www.itraveljerusalem.com/event/yami-shuk-slichot",
+            "raw": "1 dates; first {\"startDate\":\"2026-09-08T17:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"20:00\",\"endTime\":\"23:59\",\"repeats\":\"no\"}"
+          },
+          {
+            "title": "Hallelujah - The Night Show",
+            "date": "2026-09-08",
+            "time": "20:15",
+            "link": "https://www.itraveljerusalem.com/event/city-of-david-night-show",
+            "raw": "1 dates; first {\"startDate\":\"2026-09-08T17:15:00.000Z\",\"endDate\":\"\",\"startTime\":\"20:15\",\"endTime\":\"21:00\",\"repeats\":\"no\"}"
+          }
+        ]
+      }
+    }
   }
 }
