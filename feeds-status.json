@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-08T21:04:03.373Z",
+  "lastRun": "2026-09-08T23:25:14.686Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -17,10 +17,10 @@
     "Meuhedet": "no feed, no scannable items, nothing in the news last 48h",
     "Clalit": "blocked: robots.txt unreachable — skipping to be safe",
     "Maccabi": "no feed, no scannable items, nothing in the news last 48h",
-    "Leumit": "blocked: robots.txt unreachable — skipping to be safe",
+    "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -63,14 +63,14 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-08T21:04:03.372Z",
-      "sent": 1,
+      "lastRun": "2026-09-08T23:25:14.685Z",
+      "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId cz0Gd6DbWMHXf_qtum9kd",
-        "iTravelJerusalem": "ok via listing cards (1 new of 40)"
+        "iTravelJerusalem": "40 cards, nothing new (20 distinct)"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -138,15 +138,7 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [
-          {
-            "title": "Family Tuesdays at the Israel Museum",
-            "date": "2026-09-15",
-            "time": "16:00",
-            "link": "https://www.itraveljerusalem.com/event/family-tuesdays-israel-museum",
-            "raw": "1 dates; first {\"startDate\":\"2026-09-15T13:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"16:00\",\"endTime\":\"19:30\",\"repeats\":\"no\"}"
-          }
-        ]
+        "iTravelJerusalem": []
       }
     }
   }
