@@ -1422,9 +1422,35 @@ const buffers = new Map(); // chatName → msgs[]
 // droplet.
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
+// the helper files that ride along with bridge.js (the daily sheet, its fonts)
+const EXTRA_FILES = ['scripts/events-lib.js', 'scripts/today-pdf.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png'];
+async function syncExtras() {
+  let n = 0;
+  for (const rel of EXTRA_FILES) {
+    try {
+      const dst = path.join(__dirname, rel);
+      const bin = /\.(ttf|png|jpg|webp)$/i.test(rel);
+      if (bin && fs.existsSync(dst)) continue;                       // binaries: fetched once
+      const r = await fetch(SELF_RAW + rel + '?t=' + Date.now(), { headers: { 'Cache-Control': 'no-cache' } });
+      if (!r.ok) continue;
+      const buf = Buffer.from(await r.arrayBuffer());
+      if (!buf.length) continue;
+      if (!bin && fs.existsSync(dst) && fs.readFileSync(dst).equals(buf)) continue;
+      if (!bin && /\.js$/.test(rel)) {
+        const tmp = dst + '.next';
+        fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.writeFileSync(tmp, buf);
+        try { require('child_process').execFileSync(process.execPath, ['--check', tmp], { stdio: 'ignore' }); } catch (e) { try { fs.unlinkSync(tmp); } catch (e2) {} continue; }
+        fs.renameSync(tmp, dst);
+      } else { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.writeFileSync(dst, buf); }
+      n++;
+    } catch (e) {}
+  }
+  if (n) log('⬆️  ' + n + ' helper file(s) updated');
+}
 async function selfUpdate() {
   if (_updating) return; _updating = true;
   try {
+    try { await syncExtras(); } catch (e) {}
     const r = await fetch(SELF_RAW + 'bridge.js?t=' + Date.now(), { headers: { 'Cache-Control': 'no-cache' } });
     if (!r.ok) return;
     const code = await r.text();
@@ -1477,6 +1503,40 @@ async function sendStatus() {
 }
 setInterval(sendStatus, 10 * 60 * 1000);
 setTimeout(sendStatus, 30 * 1000);
+
+// ── "TODAY in Jerusalem" — the day's events as a clickable PDF, to Miriam's
+//    own WhatsApp each morning there are more than 3 (Miriam, 8 Sep 2026).
+//    She posts it on her status; every event has a Read-more button.
+const TODAY_FILE = path.join(__dirname, 'today-sent.json');
+const TODAY_MIN_EVENTS = Number(process.env.TODAY_MIN_EVENTS || 4);   // "more than 3"
+const TODAY_HOUR = Number(process.env.TODAY_HOUR || 7);              // from 7:00 Israel time
+let _todayBusy = false;
+async function todaySheet() {
+  if (_todayBusy) return; _todayBusy = true;
+  try {
+    const day = todayKey();
+    let sent = {}; try { sent = JSON.parse(fs.readFileSync(TODAY_FILE, 'utf8')) || {}; } catch (e) {}
+    if (sent[day]) return;
+    const hour = israelHour();
+    if (hour < TODAY_HOUR || hour >= 13) return;          // mornings only; after 13:00 the day is half gone
+    const sock = global._sock; if (!sock || !sock.user) return;
+    const T = require('./scripts/today-pdf.js');
+    const { events, pdf } = await T.makeTodaySheet(SITE);
+    if (events.length < TODAY_MIN_EVENTS) { if (!sent['_checked_' + day]) { log('📅 today: ' + events.length + ' event(s) — under ' + TODAY_MIN_EVENTS + ', no sheet'); sent['_checked_' + day] = true; fs.writeFileSync(TODAY_FILE, JSON.stringify(sent)); } return; }
+    if (!pdf) return;
+    const me = String(sock.user.id || '').split(':')[0].split('@')[0];
+    const jid = (MY_NUMBERS[0] || me) + '@s.whatsapp.net';
+    const nice = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Jerusalem', weekday: 'long', month: 'long', day: 'numeric' });
+    await sock.sendMessage(jid, { document: pdf, mimetype: 'application/pdf', fileName: 'Today-in-Jerusalem-' + day + '.pdf',
+      caption: '📅 *TODAY in Jerusalem* — ' + nice + '\n' + events.length + ' events, each with a Read-more button to its post. Ready for your status — powered by chutznik.org' });
+    sent[day] = Date.now(); for (const k of Object.keys(sent)) if (k.startsWith('_checked_')) delete sent[k];
+    fs.writeFileSync(TODAY_FILE, JSON.stringify(sent));
+    log('📅 today sheet sent to ' + jid + ' (' + events.length + ' events)');
+  } catch (e) { log('📅 today sheet: ' + (e && e.message)); }
+  finally { _todayBusy = false; }
+}
+setInterval(todaySheet, 15 * 60 * 1000);
+setTimeout(todaySheet, 90 * 1000);
 
 async function flush() {
   const waiting = [...buffers.values()].reduce((n, a) => n + a.length, 0);
