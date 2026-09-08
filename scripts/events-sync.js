@@ -137,11 +137,21 @@ const SOURCES = [
       const nd = $('#__NEXT_DATA__').text();
       if (nd) { try { const j = JSON.parse(nd); const found = []; (function walk(o, depth) { if (!o || depth > 12) return; if (Array.isArray(o)) { for (const x of o) walk(x, depth + 1); return; } if (typeof o !== 'object') return;
           if ((o.title || o.name) && (o.slug || o.url || o.link) && (o.startDate || o.start_date || o.date || o.dates || o.eventDate)) found.push(o); for (const k of Object.keys(o)) walk(o[k], depth + 1); })(j, 0);
-        const pick = (v) => { if (!v) return null; if (typeof v === 'string' || typeof v === 'number') return v; if (Array.isArray(v)) return pick(v[0]); if (typeof v === 'object') return pick(v.start || v.startDate || v.date || v.from || v.value || Object.values(v)[0]); return null; };
-        for (const e of found.slice(0, 25)) { const title = strip(e.title || e.name); const link = /^https?:/.test(e.url || e.link || '') ? (e.url || e.link) : ('https://www.itraveljerusalem.com/events/' + (e.slug || '')); const rawDt = e.startDate || e.start_date || e.date || e.eventDate || e.dates; const dt = pick(rawDt);
-          let d = null; if (dt) { d = typeof dt === 'number' ? new Date(dt < 1e11 ? dt * 1000 : dt) : (dateIn(String(dt)) || new Date(dt)); if (d && isNaN(d)) d = null; }
-          const dateKeys = Object.keys(e).filter((k) => /date|time|when|start|end|day/i.test(k)).map((k) => k + '=' + JSON.stringify(e[k]).slice(0, 80)).join(' ');
-          items.push({ title, link, desc: strip(e.description || e.summary || e.excerpt || ''), date: d, time: e.time || e.startTime || '', place: strip(e.location && (e.location.name || e.location) || e.venue || ''), published: Date.now(), _raw: dateKeys.slice(0, 300) }); }
+        const hosts = [...new Set((nd.match(/https?:\\?\/\\?\/[a-z0-9.\-]+(?:\\?\/[a-z0-9._\-]+){0,3}/gi) || []).map((x) => x.replace(/\\\//g, '/')).filter((x) => !/itraveljerusalem\.com\/(events|_next|list)|w3\.org|schema\.org|google|facebook|instagram/i.test(x)))].slice(0, 12);
+        const now = Date.now();
+        for (const e of found.slice(0, 40)) {
+          const title = strip(e.title || e.name); const link = /^https?:/.test(e.url || e.link || '') ? (e.url || e.link) : ('https://www.itraveljerusalem.com/events/' + (e.slug || ''));
+          const arr = Array.isArray(e.date) ? e.date : (Array.isArray(e.dates) ? e.dates : []);
+          // the next occurrence: a date entry that has not ended yet (an open run counts from today)
+          let best = null, bestTime = '';
+          for (const d of arr) { if (!d || typeof d !== 'object') continue; const st = d.startDate ? new Date(d.startDate + 'T' + (d.startTime || '00:00:00')) : null; if (!st || isNaN(st)) continue;
+            const en = d.endDate ? new Date(d.endDate + 'T' + (d.endTime || '23:59:00')) : new Date(st.getTime() + 3 * 3600e3);
+            if (en.getTime() < now - 864e5) continue;
+            const cand = st.getTime() < now - 864e5 ? new Date(new Date().setHours(0, 0, 0, 0)) : st;
+            if (!best || cand < best) { best = cand; bestTime = (d.startTime || '').slice(0, 5); } }
+          items.push({ title, link, desc: strip(e.description || e.summary || e.excerpt || e.shortDescription || ''), date: best, time: bestTime && bestTime !== '00:00' ? bestTime : '', place: strip(e.location && (e.location.name || e.location.title || (typeof e.location === 'string' ? e.location : '')) || e.venue || e.address || ''), published: Date.now(),
+            _raw: (arr.length + ' date entries; first: ' + JSON.stringify(arr[0] || null).slice(0, 220) + ' · keys: ' + Object.keys(e).slice(0, 30).join(',')).slice(0, 500) }); }
+        if (!global._itjHosts) { global._itjHosts = true; STATUS[this.name + ' hints'] = 'pageProps keys: ' + Object.keys(j.props && j.props.pageProps || {}).join(',') + ' · hosts: ' + hosts.join(' '); }
         if (items.length) { STATUS[this.name] = 'ok via __NEXT_DATA__ (' + items.length + ')'; return items; }
         STATUS[this.name] = '__NEXT_DATA__ present but no events found · keys: ' + Object.keys(j.props && j.props.pageProps || {}).join(',') + ' · ' + snippet(nd, /event/i);
       } catch (e) { STATUS[this.name] = '__NEXT_DATA__ unreadable: ' + e; } }
@@ -208,7 +218,8 @@ async function run(seenSet, statusObj, force) {
     await sleep(600);
   }
   const report = { lastRun: new Date().toISOString(), sent, sources: {}, samples };
-  for (const src of SOURCES) { report.sources[src.name] = STATUS[src.name] || '—'; delete STATUS[src.name]; }
+  for (const k of Object.keys(STATUS)) if (SOURCES.some((src) => k.startsWith(src.name))) { report.sources[k] = STATUS[k]; delete STATUS[k]; }
+  for (const src of SOURCES) if (!report.sources[src.name]) report.sources[src.name] = '—';
   statusObj._events = report;
   log('=== events sync done — ' + sent + ' new ===');
   return sent;
