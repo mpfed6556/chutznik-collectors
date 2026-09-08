@@ -160,12 +160,17 @@ const SOURCES = [
         }
         STATUS[this.name + ' hints'] = cards.length + ' cards · card keys: ' + Object.keys(cards[0] || {}).join(',').slice(0, 400) + ' · buildId ' + j.buildId;
         let fetched = 0;
-        for (const c of cards.slice(0, 40)) {
+        const seenPath = new Set();
+        for (const c of cards.slice(0, 60)) {
           const title = strip(c.name || c.title); if (!title) continue;
-          const slug = c.slug || (c.listing && c.listing.slug) || ''; const link = /^https?:/.test(c.url || '') ? c.url : ('https://www.itraveljerusalem.com/events/' + slug);
-          if (!slug && !c.url) continue;
+          const pathOrSlug = c.urlPath || c.slug || (c.listing && c.listing.slug) || '';
+          const link = /^https?:/.test(c.url || '') ? c.url : (pathOrSlug ? new URL(pathOrSlug.startsWith('/') ? pathOrSlug : '/events/' + pathOrSlug, 'https://www.itraveljerusalem.com').href : '');
+          if (!link || seenPath.has(link)) continue; seenPath.add(link);
+          const slug = link.split('/').filter(Boolean).pop();
           const key = 'ev_' + fp(link + '|' + title); if (SEEN.has(key)) { continue; }
-          let arr = Array.isArray(c.date) ? c.date : null, desc = strip(c.excerpt || c.body || ''), place = strip(c.address || (c.location && (c.location.name || c.location.title)) || '');
+          // the card carries its own dates (startDate/endDate/startTime/endTime); older cards had a date array
+          let arr = Array.isArray(c.date) ? c.date : (c.startDate ? [{ startDate: c.startDate, endDate: c.endDate || '', startTime: c.startTime || '', endTime: c.endTime || '', repeats: 'no' }] : null);
+          let desc = strip(c.excerpt || c.body || ''), place = strip(c.address || (c.location && (c.location.name || c.location.title || (typeof c.location === 'string' ? c.location : ''))) || '');
           if (!arr && fetched < 12) {   // the card has no dates: read the event's own page
             fetched++;
             try { const rr = await get(link); const t = cheerio.load(rr.text)('#__NEXT_DATA__').text(); if (t) { const jj = JSON.parse(t); let ev = null;
@@ -178,7 +183,7 @@ const SOURCES = [
           items.push({ title, link, desc: desc.slice(0, 500), date: occ.date, time: occ.time, place, published: Date.now(), _raw: (arr ? arr.length + ' dates; first ' + JSON.stringify(arr[0]).slice(0, 160) : 'no dates on card') });
         }
         if (items.length) { STATUS[this.name] = 'ok via listing cards (' + items.length + ' new of ' + cards.length + ')'; return items; }
-        if (cards.length) { STATUS[this.name] = 'all ' + cards.length + ' cards already seen'; return []; }
+        if (cards.length) { STATUS[this.name] = cards.length + ' cards, nothing new (' + seenPath.size + ' distinct)'; return []; }
       } catch (e) { STATUS[this.name] = '__NEXT_DATA__ unreadable: ' + e; } }
       // 2) JSON-LD
       $('script[type="application/ld+json"]').each((i, el) => { try { const j = JSON.parse($(el).text()); const arr = Array.isArray(j) ? j : (j['@graph'] || [j]);
