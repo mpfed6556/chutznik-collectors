@@ -1423,7 +1423,7 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/events-lib.js', 'scripts/today-pdf.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png'];
+const EXTRA_FILES = ['scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/events-sync.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png'];
 async function syncExtras() {
   let n = 0;
   for (const rel of EXTRA_FILES) {
@@ -1496,6 +1496,7 @@ async function sendStatus() {
       connected: !!(global._sock && global._sock.user), me: global._sock && global._sock.user ? String(global._sock.user.id || '').split(':')[0] : '',
       lids: Object.keys(LIDS).length, seen: SEEN.size, posted: Object.keys(POSTED).length, notifyMode: NOTIFY_MODE,
       log: LOG_RING.slice(-80),
+      events: global._eventsReport || null,
     };
     await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
       body: JSON.stringify({ file: 'updates', action: 'status', status }) });
@@ -1537,6 +1538,31 @@ async function todaySheet() {
 }
 setInterval(todaySheet, 15 * 60 * 1000);
 setTimeout(todaySheet, 90 * 1000);
+
+// ── What's on in Jerusalem: the events sources (Reconnect Shiurim, the Kotel,
+//    the municipality, iTravelJerusalem) are read from here every 2 hours too —
+//    the droplet is in Israel and always on. Report goes out with the status.
+const EV_SEEN_FILE = path.join(__dirname, 'seen-events.json');
+let _evBusy = false;
+async function eventsRound() {
+  if (_evBusy) return; _evBusy = true;
+  try {
+    process.env.INGEST_URL = process.env.INGEST_URL || INGEST_URL; process.env.INGEST_KEY = process.env.INGEST_KEY || INGEST_KEY;
+    const modPath = path.join(__dirname, 'scripts', 'events-sync.js');
+    if (!fs.existsSync(modPath)) return;
+    delete require.cache[require.resolve(modPath)];
+    const ev = require(modPath);
+    let seen = new Set(); try { seen = new Set(JSON.parse(fs.readFileSync(EV_SEEN_FILE, 'utf8'))); } catch (e) {}
+    const st = {};
+    const n = await ev.run(seen, st, true);
+    fs.writeFileSync(EV_SEEN_FILE, JSON.stringify([...seen].slice(-20000)));
+    global._eventsReport = st._events || st;
+    log('📆 events round: ' + n + ' new · ' + Object.entries((st._events || {}).sources || {}).map(([k, v]) => k + ': ' + String(v).slice(0, 60)).join(' | '));
+  } catch (e) { log('📆 events round failed: ' + (e && e.message)); global._eventsReport = { error: String(e && e.message) }; }
+  finally { _evBusy = false; }
+}
+setInterval(eventsRound, 2 * 60 * 60 * 1000);
+setTimeout(eventsRound, 3 * 60 * 1000);
 
 async function flush() {
   const waiting = [...buffers.values()].reduce((n, a) => n + a.length, 0);
