@@ -417,6 +417,9 @@ async function main() {
     }
   } catch (e) { log('logo publish failed: ' + e.message); }
 
+  // What's on in Jerusalem (events-sync.js): its own round every 2 hours,
+  // remembered in the same memory file, reported under "_events"
+  try { await require('./events-sync.js').run(SEEN, STATUS, false); } catch (e) { STATUS._events = { error: String(e && e.message) }; log('events sync failed: ' + (e && e.message)); }
   fs.writeFileSync(SEEN_FILE, JSON.stringify(Array.from(SEEN).slice(-30000)));
   fs.writeFileSync(STATUS_FILE, JSON.stringify({ lastRun: new Date().toISOString(), orgs: STATUS }, null, 2));
   log('=== Done — ' + queued + ' new item(s) queued for admin review. Per-org status written to feeds-status.json ===');
