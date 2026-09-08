@@ -1561,7 +1561,7 @@ async function eventsRound() {
     const n = await ev.run(seen, st, true);
     fs.writeFileSync(EV_SEEN_FILE, JSON.stringify([...seen].slice(-20000)));
     global._eventsReport = st._events || st;
-    log('📆 events round: ' + n + ' new · ' + Object.entries((st._events || {}).sources || {}).map(([k, v]) => k + ': ' + String(v).slice(0, 60)).join(' | '));
+    log('📆 events round (' + (ev.VERSION || '?') + '): ' + n + ' new · ' + Object.entries((st._events || {}).sources || {}).map(([k, v]) => k + ': ' + String(v).slice(0, 60)).join(' | '));
   } catch (e) { log('📆 events round failed: ' + (e && e.message)); global._eventsReport = { error: String(e && e.message) }; }
   finally { _evBusy = false; }
 }

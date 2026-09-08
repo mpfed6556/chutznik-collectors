@@ -256,7 +256,7 @@ async function run(seenSet, statusObj, force) {
   log('=== events sync done — ' + sent + ' new ===');
   return sent;
 }
-module.exports = { run, SOURCES };
+module.exports = { run, SOURCES, VERSION: 'ev-2026-09-08d' };
 
 if (require.main === module) {
   // standalone: node events-sync.js  (needs INGEST_URL / INGEST_KEY)
