@@ -932,25 +932,50 @@ function looksLikeJob(text) {
 // as a comment on the same thread, in the sender's name, with her number.
 const BABYSIT_ID = 'wa_BABYSIT';
 const BABYSIT_RE = /babysit|baby-?sitt?|mother'?s?\s*helper|\bnanny\b|au\s*pair|\bmetapelet\b|מטפלת|בייביסיטר|(?:watch|take|mind|sit with|hang(?: out)? with|play with|walk|entertain)\s+(?:my|the|our|a)\s+(?:kids?|baby|children|girls?|boys?|toddler|little|\d+\s*(?:kids|children|year))|gan\s*pick\s*-?up|pick(?:ing)?\s*up\s+(?:my|the|our)\s+(?:kids?|children|daughter|son|baby)|(?:sleeping|napping)\s+(?:baby|kids|children)/i;
-const SELFAD_RE = /\b(?:i'?m|i am|we are|we'?re)\s+(?:currently\s+|also\s+)?available\b|\bavailable\s+(?:today|tonight|tomorrow|this|to|for)\b|\blooking for (?:babysitting|work|a job|jobs|hours)\b|\bseminary girls?\b.*\b(?:available|looking)\b/i;
+const SELFAD_RE = /\b(?:i'?m|i am|we are|we'?re)\s+(?:currently\s+|also\s+)?available\b|\bavailable\s+(?:today|tonight|tomorrow|this|to|for)\b|\blooking for (?:babysitting|cleaning|work|a job|jobs|hours)\b|\bseminary girls?\b.*\b(?:available|looking)\b/i;
+// ── Cleaners: the same idea, a second shared thread (Miriam, 8 Sep 2026) ────
+const CLEAN_ID = 'wa_CLEANERS';
+const CLEAN_RE = /\bclean(?:er|ers|ing)\b|\bclean(?:ing)? (?:lady|ladies|help|woman|women|girl|person|job|jobs|work)\b|house ?keep(?:er|ers|ing)|\bmaid\b|\bozeret\b|עוזרת(?:\s*בית)?|מנק[הה]|נ?ניקיון|נקיון|house ?help|domestic help|\bhelp (?:with|around) the house\b|\bhousework\b|\bironing\b|\bkitchen help\b|\bfolding laundry\b|\borganiz(?:ing|er)\s+(?:help|my|the|your)\b/i;
+const NOT_CLEAN_RE = /dry[- ]?clean|carpet|upholster|window[- ]clean|clean(?:ing)? (?:fee|included|supplies|products?|robot|machine)|\bfor sale\b|\bvacuum\b|\bteeth\b|clean eating|\bclean (?:apartment|apt|flat|room|house|unit|condition)\b|\bgutter|\bduct|\bsofa clean|\bcouch/i;
+const THREAD_DEFS = {
+  [BABYSIT_ID]: { title: 'Babysitting in Jerusalem — requests & sitters available',
+    memo: 'One running thread for every babysitting request and every sitter offering herself, from all the groups. Each comment is one message, newest at the bottom, with the number to contact.' },
+  [CLEAN_ID]: { title: 'Cleaners in Jerusalem — requests & cleaners available',
+    memo: 'One running thread for everyone looking for cleaning help and every cleaner (or cleaning service) offering, from all the groups. Each comment is one message, newest at the bottom, with the number to contact.' },
+};
 function isBabysit(text, chatName) {
   const t = String(text || '');
   if (BABYSIT_RE.test(t)) return true;
-  if (isJobChat(chatName) || /babysit|sitter/i.test(String(chatName || ''))) return SELFAD_RE.test(t);
+  if (isJobChat(chatName) || /babysit|sitter/i.test(String(chatName || ''))) return SELFAD_RE.test(t) && !CLEAN_RE.test(t);
   return false;
 }
-async function ensureBabysitThread() {
-  if (global._babysitOk) return true;
-  const item = { id: BABYSIT_ID, dedupeKey: BABYSIT_ID, source: 'whatsapp', group: 'All groups', author: 'Chutznik',
-    title: 'Babysitting in Jerusalem — requests & sitters available',
-    memo: 'One running thread for every babysitting request and every sitter offering herself, from all the groups. Each comment is one message, newest at the bottom, with the number to contact.',
+function isCleaner(text, chatName) {
+  const t = String(text || '');
+  if (isRentalChat(chatName) && !/cleaning lady|ozeret|עוזרת/i.test(t)) return false;
+  if (NOT_CLEAN_RE.test(t) && !/cleaning lady|ozeret|עוזרת/i.test(t)) return false;
+  if (CLEAN_RE.test(t)) return true;
+  if (/clean/i.test(String(chatName || ''))) return SELFAD_RE.test(t);
+  return false;
+}
+// which shared thread a message belongs to, if any
+function threadFor(text, chatName) {
+  if (isBabysit(text, chatName)) return BABYSIT_ID;
+  if (isCleaner(text, chatName)) return CLEAN_ID;
+  return '';
+}
+async function ensureThread(id) {
+  global._threadOk = global._threadOk || {};
+  if (global._threadOk[id]) return true;
+  const def = THREAD_DEFS[id]; if (!def) return false;
+  const item = { id, dedupeKey: id, source: 'whatsapp', group: 'All groups', author: 'Chutznik', title: def.title, memo: def.memo,
     types: ['Jobs'], status: 'public', created: Date.now() - 1000, comments: [] };
   try {
     const r = await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', items: [item] }) });
-    if (r.ok) global._babysitOk = true;
+    if (r.ok) global._threadOk[id] = true;
   } catch (e) {}
-  return !!global._babysitOk;
+  return !!global._threadOk[id];
 }
+async function ensureBabysitThread() { return ensureThread(BABYSIT_ID); }
 function babysitLine(m, chatName) {
   let content = commentTextOf(m) || stripEmoji(m.body || '').trim();
   if (!content) return '';
@@ -961,19 +986,20 @@ function babysitLine(m, chatName) {
   }
   return content.slice(0, 2000);
 }
-async function sendBabysit(cl, chatName) {
+async function sendBabysit(cl, chatName, threadId) {
+  const tid = threadId || BABYSIT_ID;
   const msgs = cl.kind === 'combined' ? [cl.q, ...cl.answers] : cl.msgs;
-  if (!await ensureBabysitThread()) return false;
+  if (!await ensureThread(tid)) return false;
   let sent = 0;
   for (const m of msgs) {
-    const key = 'bs_' + contentKey(m.body || '');
+    const key = (tid === CLEAN_ID ? 'cl_' : 'bs_') + contentKey(m.body || '');
     if (SEEN.has(key)) continue;
     const content = babysitLine(m, chatName);
     if (!content || content.length < 4) continue;
-    const ok = await sendComment({ post: BABYSIT_ID }, Object.assign({}, m, { _content: content }));
+    const ok = await sendComment({ post: tid }, Object.assign({}, m, { _content: content }));
     if (ok) { SEEN.add(key); sent++; }
   }
-  if (sent) { saveSeen(); log('   👶 ' + sent + ' babysitting message(s) added to the shared thread'); }
+  if (sent) { saveSeen(); log('   ' + (tid === CLEAN_ID ? '🧹' : '👶') + ' ' + sent + (tid === CLEAN_ID ? ' cleaning' : ' babysitting') + ' message(s) added to the shared thread'); }
   return sent > 0;
 }
 
@@ -1322,7 +1348,9 @@ async function notifyPosters() {
   try {
     const day = todayKey();
     if (NOTIFY_STATE.day !== day) NOTIFY_STATE = { day, sent: 0, people: {} };
-    const pending = Object.entries(POSTED).filter(([, e]) => !e.notified && e.jid);
+    // still to do: never told, or only "told" in a dry run (the site is the
+    // source of truth — a post Miriam flagged that the site never saw notified)
+    const pending = Object.entries(POSTED).filter(([, e]) => e.jid && (!e.notified || (!e.sentLive && !e.skipped)));
     if (!pending.length) return;
     // what the site says about each post: status, and whether Miriam pressed 📣
     let info = {};
@@ -1338,8 +1366,9 @@ async function notifyPosters() {
     if (hour < NOTIFY_FROM || hour >= NOTIFY_TO) return;
     for (const [postId, e] of pending) {
       const u = info[String(postId)];
-      if (u && u.notified) { e.notified = true; e.notifiedAt = u.notified; continue; }   // the site already knows
+      if (u && u.notified) { e.notified = true; e.sentLive = true; e.notifiedAt = u.notified; continue; }   // the site already knows
       const flagged = !!(u && u.notify);
+      if (e.notified && !flagged) continue;   // marked in an earlier dry run and not flagged: nothing to do
       const isPublic = e.public || (u && u.status === 'public');
       if (!flagged && !(NOTIFY_AUTO && isPublic)) continue;
       if (NOTIFY_STATE.sent >= NOTIFY_DAILY) { log('📣 notify: daily limit reached (' + NOTIFY_DAILY + ')'); return; }
@@ -1350,14 +1379,16 @@ async function notifyPosters() {
       if (NOTIFY_STATE.people[who]) { continue; }   // already told this person today; another day
       const text = noteText(e, postId);
       if (NOTIFY_MODE === 'dry') {
-        log('📣 notify (dry run) → ' + (e.phone || e.jid) + ' [' + (e.name || '?') + ']: ' + text.replace(/\n/g, ' / ').slice(0, 220));
+        // a rehearsal: say what would go, once, and leave the post waiting for live mode
+        if (!e.dryLogged) { e.dryLogged = true; savePosted(); log('📣 notify (dry run, NOT sent) → ' + (e.phone || e.jid) + ' [' + (e.name || '?') + ']: ' + text.replace(/\n/g, ' / ').slice(0, 220)); }
+        continue;
       } else {
         const sock = global._sock;
         if (!sock) return;
         try { await sock.sendMessage(e.jid, { text }); log('📣 notify → ' + (e.phone || e.jid) + ' [' + (e.name || '?') + ']: "' + e.title.slice(0, 50) + '"'); }
         catch (err) { log('📣 notify failed → ' + (e.phone || e.jid) + ': ' + (err && err.message)); e.tries = (e.tries || 0) + 1; if (e.tries >= 3) e.notified = true; continue; }
       }
-      e.notified = true; e.notifiedAt = Date.now(); NOTIFY_STATE.sent++; NOTIFY_STATE.people[who] = true;
+      e.notified = true; e.sentLive = true; e.notifiedAt = Date.now(); NOTIFY_STATE.sent++; NOTIFY_STATE.people[who] = true;
       savePosted();
       if (NOTIFY_MODE === 'live') {
         try { await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
@@ -1454,7 +1485,8 @@ async function flush() {
       try {
         if (cl.kind === 'comment') { await sendComment(cl.target, cl.msg); continue; }
         const firstMsg = cl.kind === 'combined' ? cl.q : (cl.msgs && cl.msgs[0]);
-        if (firstMsg && isBabysit(firstMsg.body, chatName)) { await sendBabysit(cl, chatName); continue; }
+        const tid = firstMsg ? threadFor(firstMsg.body, chatName) : '';
+        if (tid) { await sendBabysit(cl, chatName, tid); continue; }
         const post = await buildPost(cl, chatName);
         const msgIds = post._msgIds || []; delete post._msgIds;
         if (SEEN.has(post.dedupeKey)) {
