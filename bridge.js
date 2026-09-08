@@ -49,6 +49,33 @@ log('config: site=' + SITE + ' · key=' + (INGEST_KEY ? INGEST_KEY.slice(0,6) + 
 
 // ── OCR (lazy-loaded; heavy) ─────────────────────────────────────────────────
 let ocrWorkerP = null;
+// OCR of a flyer is often noise ("- | 6 | - ה | שא Ee| = ="). Keep it only
+// when most of it is real words: letters-only words of 3+ characters, few
+// stray symbols, a sensible average word length.
+function readsLikeText(t) {
+  const s = String(t || '').trim();
+  if (s.length < 20) return false;
+  const words = s.split(/\s+/);
+  const wordy = words.filter(w => /^[A-Za-z\u0590-\u05FF][A-Za-z\u0590-\u05FF'’-]{2,}[.,!?:]?$/.test(w)).length;
+  const junk = (s.match(/[|\\\/=~^_{}\[\]<>*#@]/g) || []).length;
+  const avg = words.reduce((n, w) => n + w.length, 0) / words.length;
+  return wordy / words.length >= 0.6 && junk <= words.length * 0.08 && avg >= 3 && avg <= 12;
+}
+// Hebrew → English, best effort (a free service; when it is over quota the
+// Hebrew stays, which is still better than nothing).
+const hasHebrew = (t) => /[\u0590-\u05FF]/.test(String(t || ''));
+async function toEnglish(text) {
+  const q = String(text || '').slice(0, 480);
+  if (!q || !hasHebrew(q)) return '';
+  try {
+    const r = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(q) + '&langpair=he|en', { headers: { 'User-Agent': 'chutznik-bridge' } });
+    if (!r.ok) return '';
+    const j = await r.json();
+    const out = j && j.responseData && j.responseData.translatedText ? String(j.responseData.translatedText) : '';
+    if (out && !hasHebrew(out) && !/MYMEMORY|QUOTA|INVALID|PLEASE/i.test(out)) return out.trim();
+  } catch (e) {}
+  return '';
+}
 async function ocrImage(base64) {
   if (!OCR) return '';
   try {
@@ -59,7 +86,7 @@ async function ocrImage(base64) {
     const worker = await ocrWorkerP;
     const { data } = await worker.recognize(Buffer.from(base64, 'base64'));
     const text = (data.text || '').replace(/\s+/g, ' ').trim();
-    return text.length > 8 ? text.substring(0, 500) : '';
+    return readsLikeText(text) ? text.substring(0, 500) : '';
   } catch (e) { log('   OCR skipped: ' + (e && e.message)); return ''; }
 }
 
@@ -1020,6 +1047,10 @@ async function buildPost(cluster, chatName) {
     if (fromImg) memo += '\n\nFrom the attached image: ' + fromImg;
   }
   if (!memo || memo.length < 3) memo = summarize(cleanBody(first.body, contacts), 900) || title;
+  // English on the site: a Hebrew message is translated (best effort); the
+  // Hebrew original stays underneath so nothing is lost
+  if (hasHebrew(memo)) { const en = await toEnglish(memo); if (en) memo = en + '\n\n— ' + memo.slice(0, 400); }
+  if (hasHebrew(title)) { const en = await toEnglish(title); if (en) title = en.slice(0, 150); }
 
   const allText = msgs.map(m => m.body).join(' ') + ' ' + ocrTexts.join(' ')
     + ' ' + msgs.flatMap(m => (m.cards || []).map(c => c.name)).join(' ')
