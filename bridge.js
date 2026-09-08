@@ -1367,6 +1367,9 @@ async function notifyPosters() {
       info = global._updInfo || {};
     } catch (e) {}
     const hour = israelHour();
+    const flaggedN = pending.filter(([id]) => info[String(id)] && info[String(id)].notify && !info[String(id)].notified).length;
+    const sig = pending.length + '/' + flaggedN + '/' + NOTIFY_MODE + '/' + Object.keys(info).length;
+    if (sig !== global._notifySig) { global._notifySig = sig; log('📣 notify check: ' + pending.length + ' remembered post(s) still to tell, ' + flaggedN + ' flagged on the site (site list: ' + Object.keys(info).length + ' items) · ' + hour + ':00 Israel'); }
     if (hour < NOTIFY_FROM || hour >= NOTIFY_TO) return;
     for (const [postId, e] of pending) {
       const u = info[String(postId)];
@@ -1437,7 +1440,7 @@ async function syncExtras() {
       if (!buf.length) continue;
       if (!bin && fs.existsSync(dst) && fs.readFileSync(dst).equals(buf)) continue;
       if (!bin && /\.js$/.test(rel)) {
-        const tmp = dst + '.next';
+        const tmp = dst.replace(/\.js$/, '') + '.next.js';   // keep the .js so `node --check` reads it as a script
         fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.writeFileSync(tmp, buf);
         try { require('child_process').execFileSync(process.execPath, ['--check', tmp], { stdio: 'ignore' }); } catch (e) { try { fs.unlinkSync(tmp); } catch (e2) {} continue; }
         fs.renameSync(tmp, dst);
