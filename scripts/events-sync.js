@@ -182,6 +182,9 @@ const SOURCES = [
           }
           if (!arr) continue;                       // could not read its dates this time: try again next round
           const occ = occurrence(arr);
+          // not for this community: anything on Shabbos, and nightlife
+          if (occ.date && occ.date.getDay() === 6) { SEEN.add(key); continue; }
+          if (/\b(saturday|shabbat market|pride|nightclub|club night|dj set|bar crawl|cocktail|beer festival|wine tasting)\b/i.test(title + ' ' + desc)) { SEEN.add(key); continue; }
           items.push({ title, link, desc: desc.slice(0, 500), date: occ.date, time: occ.time, place, published: Date.now(), _raw: (arr ? arr.length + ' dates; first ' + JSON.stringify(arr[0]).slice(0, 160) : 'no dates on card') });
         }
         if (items.length) { STATUS[this.name] = 'ok via listing cards (' + items.length + ' new of ' + cards.length + ')'; return items; }
@@ -256,7 +259,7 @@ async function run(seenSet, statusObj, force) {
   log('=== events sync done — ' + sent + ' new ===');
   return sent;
 }
-module.exports = { run, SOURCES, VERSION: 'ev-2026-09-08d' };
+module.exports = { run, SOURCES, VERSION: 'ev-2026-09-08e' };
 
 if (require.main === module) {
   // standalone: node events-sync.js  (needs INGEST_URL / INGEST_KEY)

@@ -94,6 +94,8 @@ function collectEvents(){
     try{
       const types=(p.types||[]).map(t=>String(t).toLowerCase());
       if(types.includes('rental')||types.includes('jobs')||threadKind(p)) continue;
+      // a magazine ad (opening hours, "valid to 31.12") is not a happening unless it was filed as an event
+      if(String(p.source||'')==='magazine' && !types.includes('events')) continue;
       const title=String(p.title||''); const memo=String(p.memo||'').replace(/<[^>]+>/g,' ');
       const text=title+'\n'+memo;
       if(EV_NOT.test(title)) continue;
