@@ -153,8 +153,9 @@ const SOURCES = [
             if (!best || cand < best) { best = cand; bestTime = (d.startTime || '').slice(0, 5); } }
           items.push({ title, link, desc: strip(e.description || e.summary || e.excerpt || e.shortDescription || ''), date: best, time: bestTime && bestTime !== '00:00' ? bestTime : '', place: strip(e.location && (e.location.name || e.location.title || (typeof e.location === 'string' ? e.location : '')) || e.venue || e.address || ''), published: Date.now(),
             _raw: (arr.length + ' date entries; first: ' + JSON.stringify(arr[0] || null).slice(0, 220) + ' · keys: ' + Object.keys(e).slice(0, 30).join(',')).slice(0, 500) }); }
-        if (!global._itjHosts) { global._itjHosts = true; const pp = (j.props && j.props.pageProps) || {}; const lc = pp.listingCards; const first = Array.isArray(lc) ? lc[0] : (lc && typeof lc === 'object' ? (Array.isArray(lc.data) ? lc.data[0] : lc) : null);
-          STATUS[this.name + ' hints'] = 'listingCards: ' + (Array.isArray(lc) ? lc.length + ' cards' : typeof lc) + ' · first: ' + JSON.stringify(first).slice(0, 900) + ' · pagination: ' + JSON.stringify(pp.listingCardsPagination).slice(0, 200) + ' · total ' + pp.total + ' more ' + JSON.stringify(pp.more).slice(0, 100); }
+        { const apiStrs = [...new Set((nd.match(/"[^"]{0,80}(?:api|graphql|strapi)[^"]{0,80}"/gi) || []))].slice(0, 8).join(' ');
+          const pp = (j.props && j.props.pageProps) || {}; const lc = pp.listingCards; const first = Array.isArray(lc) ? lc[0] : (lc && typeof lc === 'object' ? (Array.isArray(lc.data) ? lc.data[0] : lc) : null);
+          STATUS[this.name + ' hints'] = 'listingCards: ' + (Array.isArray(lc) ? lc.length + ' cards' : typeof lc) + ' · first: ' + JSON.stringify(first).slice(0, 900) + ' · pagination: ' + JSON.stringify(pp.listingCardsPagination).slice(0, 200) + ' · total ' + pp.total + ' more ' + JSON.stringify(pp.more).slice(0, 100) + ' · buildId ' + j.buildId + ' · api strings: ' + apiStrs; }
         if (items.length) { STATUS[this.name] = 'ok via __NEXT_DATA__ (' + items.length + ')'; return items; }
         STATUS[this.name] = '__NEXT_DATA__ present but no events found · keys: ' + Object.keys(j.props && j.props.pageProps || {}).join(',') + ' · ' + snippet(nd, /event/i);
       } catch (e) { STATUS[this.name] = '__NEXT_DATA__ unreadable: ' + e; } }
