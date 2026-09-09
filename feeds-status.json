@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-09T11:54:28.150Z",
+  "lastRun": "2026-09-09T16:27:25.748Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -18,9 +18,9 @@
     "Clalit": "blocked: robots.txt unreachable — skipping to be safe",
     "Maccabi": "no feed, no scannable items, nothing in the news last 48h",
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
-    "Ben Gurion Airport": "blocked: robots.txt unreachable — skipping to be safe",
+    "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -63,8 +63,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-09T11:54:28.149Z",
-      "sent": 1,
+      "lastRun": "2026-09-09T16:27:25.747Z",
+      "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
