@@ -308,23 +308,10 @@ async function buildUpdateItem(raw) {
       dedupeKey: fingerprint(raw.link, raw.title),
     };
   }
-  // a classifieds board (Janglo and the like) gives us rentals and jobs; its
-  // news, items for sale and events are not for the site
-  if (org.classifieds) { log('  classifieds item skipped: "' + String(raw.title || '').slice(0, 60) + '"'); return null; }
-  return {
-    source: 'official-updates',
-    group: org.name,
-    author: org.name,
-    title: ('' + title).slice(0, 150),
-    memo: (summary + '\n\nRead the full update: ' + raw.link).slice(0, 1200),
-    types: orgTypes,
-    area: '',
-    communities: [],
-    contactWebsite: raw.link,
-    created: (Date.parse(raw.published)||Date.now()),
-    status: 'pending',
-    dedupeKey: fingerprint(raw.link, raw.title),
-  };
+  // Nothing but rentals and jobs comes from these feeds any more (Miriam,
+  // 9 Sep 2026): no organisation news, no articles, no announcements.
+  log('  news/update skipped (only rentals and jobs are collected): "' + String(raw.title || '').slice(0, 60) + '"');
+  return null;
 }
 // A classifieds item that is an apartment for rent → Rental, with beds/price/term
 // pulled from the text and the board's "For Rent Sep 07, 2026" prefix removed.
