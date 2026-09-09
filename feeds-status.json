@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-09T06:37:41.616Z",
+  "lastRun": "2026-09-09T11:54:28.150Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -18,9 +18,9 @@
     "Clalit": "blocked: robots.txt unreachable — skipping to be safe",
     "Maccabi": "no feed, no scannable items, nothing in the news last 48h",
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
-    "Ben Gurion Airport": "page HTTP 404",
+    "Ben Gurion Airport": "blocked: robots.txt unreachable — skipping to be safe",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -40,7 +40,7 @@
     "AllJobs": "blocked: robots.txt disallows this path",
     "Drushim": "ok via page-scan (4 items) — no RSS found",
     "Jerusalem Light Rail (Cfir)": "no feed, no scannable items, nothing in the news last 48h",
-    "JET Jerusalem Transportation": "ok via RSS (1 items)",
+    "JET Jerusalem Transportation": "blocked: robots.txt unreachable — skipping to be safe",
     "Tel Aviv Light Rail (Dankal)": "blocked: robots.txt unreachable — skipping to be safe",
     "Kavim": "blocked: robots.txt unreachable — skipping to be safe",
     "Metropoline": "no feed, no scannable items, nothing in the news last 48h",
@@ -63,8 +63,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-09T06:37:41.615Z",
-      "sent": 0,
+      "lastRun": "2026-09-09T11:54:28.149Z",
+      "sent": 1,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
@@ -119,6 +119,12 @@
             "link": "https://thekotel.org/en/157613/"
           },
           {
+            "title": "Sukkot 2026 – Birkat Kohanim (Priestly Blessing)",
+            "date": "2026-09-28",
+            "time": "8:45",
+            "link": "https://thekotel.org/en/157667/"
+          },
+          {
             "title": "Environmental Responsibility – Parashat Nitzavim – Vayelech",
             "date": null,
             "time": "",
@@ -129,12 +135,6 @@
             "date": null,
             "time": "",
             "link": "https://thekotel.org/en/157433/"
-          },
-          {
-            "title": "The Power of Joy – Parashat Ki Tavo",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157422/"
           }
         ],
         "Jerusalem Municipality": [],
