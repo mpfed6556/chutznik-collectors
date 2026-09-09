@@ -1429,7 +1429,9 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/events-sync.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png'];
+const EXTRA_FILES = ['scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/events-sync.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+  'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
+  'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png'];
 async function syncExtras() {
   let n = 0;
   for (const rel of EXTRA_FILES) {
