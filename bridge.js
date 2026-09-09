@@ -1274,6 +1274,8 @@ async function pullSettings() {
     if (j.NOTIFY_MODE && ['off', 'dry', 'live'].includes(String(j.NOTIFY_MODE).toLowerCase()) && String(j.NOTIFY_MODE).toLowerCase() !== NOTIFY_MODE) {
       NOTIFY_MODE = String(j.NOTIFY_MODE).toLowerCase(); log('⚙️  poster notes mode is now: ' + NOTIFY_MODE + ' (from the site settings)');
     }
+    // who gets the daily TODAY sheet (numbers with country code, no +)
+    if (Array.isArray(j.TODAY_TO)) { const list = j.TODAY_TO.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._todayTo || [])) { global._todayTo = list; log('⚙️  TODAY sheet goes to: ' + (list.join(', ') || '(own number)')); } }
   } catch (e) {}
 }
 setInterval(pullSettings, 5 * 60 * 1000); setTimeout(pullSettings, 20 * 1000);
@@ -1530,13 +1532,22 @@ async function todaySheet() {
     if (events.length < TODAY_MIN_EVENTS) { if (!sent['_checked_' + day]) { log('📅 today: ' + events.length + ' event(s) — under ' + TODAY_MIN_EVENTS + ', no sheet'); sent['_checked_' + day] = true; fs.writeFileSync(TODAY_FILE, JSON.stringify(sent)); } return; }
     if (!pdf) return;
     const me = String(sock.user.id || '').split(':')[0].split('@')[0];
-    const jid = (MY_NUMBERS[0] || me) + '@s.whatsapp.net';
+    const to = (global._todayTo && global._todayTo.length) ? global._todayTo : [MY_NUMBERS[0] || me];
     const nice = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Jerusalem', weekday: 'long', month: 'long', day: 'numeric' });
-    await sock.sendMessage(jid, { document: pdf, mimetype: 'application/pdf', fileName: 'Today-in-Jerusalem-' + day + '.pdf',
-      caption: '📅 *TODAY in Jerusalem* — ' + nice + '\n' + events.length + ' events, each with a Read-more button to its post. Ready for your status — powered by chutznik.org' });
+    const okTo = [];
+    for (const num of to) {
+      const jid = num + '@s.whatsapp.net';
+      try {
+        await sock.sendMessage(jid, { document: pdf, mimetype: 'application/pdf', fileName: 'Today-in-Jerusalem-' + day + '.pdf',
+          caption: '📅 *TODAY in Jerusalem* — ' + nice + '\n' + events.length + ' events, each with a Read-more button to its post. Ready for your status — powered by chutznik.org' });
+        okTo.push(num);
+      } catch (e) { log('📅 today sheet to ' + num + ' failed: ' + (e && e.message)); }
+      await new Promise((r) => setTimeout(r, 4000));
+    }
+    if (!okTo.length) return;
     sent[day] = Date.now(); for (const k of Object.keys(sent)) if (k.startsWith('_checked_')) delete sent[k];
     fs.writeFileSync(TODAY_FILE, JSON.stringify(sent));
-    log('📅 today sheet sent to ' + jid + ' (' + events.length + ' events)');
+    log('📅 today sheet sent to ' + okTo.join(', ') + ' (' + events.length + ' events)');
   } catch (e) { log('📅 today sheet: ' + (e && e.message)); }
   finally { _todayBusy = false; }
 }
