@@ -23,12 +23,41 @@ const EV_DAYS={sunday:0,sun:0,monday:1,mon:1,tuesday:2,tue:2,tues:2,wednesday:3,
 function evDate(y,m,d){ const x=new Date(y,m,d); return isNaN(x)?null:x; }
 function evKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 // All dates a text talks about, relative to when it was written.
+// ── Hebrew dates (Miriam, 9 Sep 2026): "17 Tishrei", "י"ז תשרי", "Elul 12" —
+//    read through the browser's Hebrew calendar, so "Monday 17 Tishrei" lands
+//    on the right Monday and every calendar cell can show its Hebrew date.
+const HEB_MONTHS={tishrei:'tishrei',tishri:'tishrei',heshvan:'cheshvan',cheshvan:'cheshvan',marcheshvan:'cheshvan',marheshvan:'cheshvan',kislev:'kislev',tevet:'tevet',teves:'tevet',shevat:'shevat',shvat:'shevat',adar:'adar',adari:'adar1',adar1:'adar1',adarii:'adar2',adar2:'adar2',nisan:'nisan',nissan:'nisan',iyar:'iyar',iyyar:'iyar',sivan:'sivan',tamuz:'tamuz',tammuz:'tamuz',av:'av',menachemav:'av',elul:'elul',ellul:'elul',
+  'תשרי':'tishrei','חשון':'cheshvan','חשוון':'cheshvan','מרחשון':'cheshvan','מרחשוון':'cheshvan','כסלו':'kislev','כסליו':'kislev','טבת':'tevet','שבט':'shevat','אדר':'adar','ניסן':'nisan','אייר':'iyar','סיון':'sivan','סיוון':'sivan','תמוז':'tamuz','אב':'av','אלול':'elul'};
+const HEB_NICE={tishrei:'Tishrei',cheshvan:'Cheshvan',kislev:'Kislev',tevet:'Teves',shevat:'Shevat',adar:'Adar',adar1:'Adar I',adar2:'Adar II',nisan:'Nisan',iyar:'Iyar',sivan:'Sivan',tamuz:'Tamuz',av:'Av',elul:'Elul'};
+function hebNormMonth(x){ const k=String(x||'').toLowerCase().replace(/[^a-z\u05d0-\u05ea]/g,''); return HEB_MONTHS[k]||''; }
+function hebParts(d){ try{ const ps=new Intl.DateTimeFormat('en-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(d); const g=(t)=>(ps.find(x=>x.type===t)||{}).value||''; return {day:Number(g('day')), month:hebNormMonth(g('month'))||g('month').toLowerCase(), year:Number(g('year'))}; }catch(e){ return null; } }
+function hebLabel(d,withYear){ const h=hebParts(d); if(!h) return ''; return h.day+' '+(HEB_NICE[h.month]||h.month)+(withYear?' '+h.year:''); }
+let _hebTable=null, _hebTableAt=0;
+function hebTable(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  if(_hebTable && Date.now()-_hebTableAt<6*3600e3) return _hebTable;
+  const t={}; const d=new Date(today); d.setDate(d.getDate()-120);
+  for(let i=0;i<560;i++){ const h=hebParts(d); if(h){ const k=h.month+'-'+h.day; (t[k]=t[k]||[]).push(new Date(d)); } d.setDate(d.getDate()+1); }
+  _hebTable=t; _hebTableAt=Date.now(); return t;
+}
+function gematria(str){ const v={'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,'כ':20,'ל':30}; let n=0; for(const ch of String(str).replace(/["׳״']/g,'')){ if(v[ch]==null) return 0; n+=v[ch]; } return n; }
+function hebDatesIn(text, base){
+  const t=String(text||''); const out=[]; const tbl=hebTable();
+  const pick=(month,day)=>{ if(!month||!day||day<1||day>30) return; const list=tbl[month+'-'+day]||[]; const from=base.getTime()-30*864e5; const d=list.find(x=>x.getTime()>=from)||list[0]; if(d && !out.some(x=>x.getTime()===d.getTime())) out.push(d); };
+  const mon='(tishrei|tishri|cheshvan|heshvan|marcheshvan|marheshvan|kislev|tevet|teves|shevat|shvat|adar(?:\\s*(?:i{1,2}|[12]|aleph|bet))?|nisan|nissan|iyy?ar|sivan|tam+uz|av|elul|ellul)';
+  let m; const r1=new RegExp('\\b(\\d{1,2})(?:st|nd|rd|th)?\\s*(?:of\\s+)?'+mon+'\\b','gi'); while((m=r1.exec(t))) pick(hebNormMonth(m[2]), Number(m[1]));
+  const r2=new RegExp('\\b'+mon+'\\s+(\\d{1,2})\\b(?!\\s*(?:am|pm|:))','gi'); while((m=r2.exec(t))) pick(hebNormMonth(m[1]), Number(m[2]));
+  const r3=/(?:^|[\s(,])([\u05d0-\u05ea]["׳״']?[\u05d0-\u05ea]?["׳״']?)\s*ב?(תשרי|חשון|חשוון|מרחשון|מרחשוון|כסלו|כסליו|טבת|שבט|אדר|ניסן|אייר|סיון|סיוון|תמוז|אב|אלול)(?![\u05d0-\u05ea])/g; while((m=r3.exec(t))) pick(hebNormMonth(m[2]), gematria(m[1]));
+  return out;
+}
 function evDatesIn(text, created){
   const t=String(text||'').replace(/\s+/g,' ');
   const base=new Date(created||Date.now()); base.setHours(0,0,0,0);
   const out=[]; const add=(d)=>{ if(!d) return; if(!out.some(x=>x.getTime()===d.getTime())) out.push(d); };
   const yearFix=(d)=>{ if(!d) return d; if(d.getTime()<base.getTime()-45*864e5) d=new Date(d.getFullYear()+1,d.getMonth(),d.getDate()); return d; };
   let m;
+  // a Hebrew date settles it: no guessing from the weekday
+  try{ const hd=hebDatesIn(t, base); if(hd.length){ hd.forEach(add); return out.slice(0,8); } }catch(e){}
   // "Sept 11", "September 11-13", "Sep 11th, 12th", "11 September", "12,13,14 Sept"
   const mon='(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)';
   const re1=new RegExp('\\b'+mon+'\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?![a-z:\\d])((?:\\s*(?:[,&/-]|\\band\\b)\\s*(?:and\\s+)?\\d{1,2}(?:st|nd|rd|th)?(?![a-z:\\d]))*)(?:,?\\s*(20\\d\\d))?','gi');

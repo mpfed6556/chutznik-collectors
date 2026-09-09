@@ -1274,6 +1274,7 @@ async function pullSettings() {
     if (j.NOTIFY_MODE && ['off', 'dry', 'live'].includes(String(j.NOTIFY_MODE).toLowerCase()) && String(j.NOTIFY_MODE).toLowerCase() !== NOTIFY_MODE) {
       NOTIFY_MODE = String(j.NOTIFY_MODE).toLowerCase(); log('⚙️  poster notes mode is now: ' + NOTIFY_MODE + ' (from the site settings)');
     }
+    if (Array.isArray(j.SKIP_CHATS)) { const list = j.SKIP_CHATS.map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._skipChats || [])) { global._skipChats = list; log('⚙️  chats skipped: ' + list.join(' | ')); } }
     // who gets the daily TODAY sheet (numbers with country code, no +)
     if (Array.isArray(j.TODAY_TO)) { const list = j.TODAY_TO.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._todayTo || [])) { global._todayTo = list; log('⚙️  TODAY sheet goes to: ' + (list.join(', ') || '(own number)')); } }
   } catch (e) {}
@@ -1669,6 +1670,7 @@ async function handleMessages(sock, messages, label) {
       if (ts && ts < myCutoff) continue;                    // older than the window
       SEEN.add(mid);
       if (EXCLUDE.includes(name.toLowerCase())) continue;
+      if ((global._skipChats || []).some((x) => x && name.toLowerCase().includes(String(x).toLowerCase()))) continue;   // chats Miriam does not want read at all
       const it = await intake(sock, m, name);
       if (!it.body && !it.media) continue;
       if (isOptedOut(it)) continue;                          // asked us not to post her messages
