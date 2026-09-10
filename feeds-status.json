@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-10T17:21:00.774Z",
+  "lastRun": "2026-09-10T19:56:31.666Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -63,14 +63,14 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-10T17:21:00.773Z",
-      "sent": 0,
+      "lastRun": "2026-09-10T19:56:31.665Z",
+      "sent": 1,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId cz0Gd6DbWMHXf_qtum9kd",
-        "iTravelJerusalem": "40 cards, nothing new (20 distinct)"
+        "iTravelJerusalem": "ok via listing cards (1 new of 40)"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -138,7 +138,15 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": []
+        "iTravelJerusalem": [
+          {
+            "title": "Selichot in the Old City",
+            "date": "2026-09-15",
+            "time": "21:30",
+            "link": "https://www.itraveljerusalem.com/event/forgiveness-tour-tod",
+            "raw": "1 dates; first {\"startDate\":\"2026-09-15T18:30:00.000Z\",\"endDate\":\"\",\"startTime\":\"21:30\",\"endTime\":\"23:30\",\"repeats\":\"no\"}"
+          }
+        ]
       }
     }
   }
