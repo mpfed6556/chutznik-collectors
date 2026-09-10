@@ -1339,14 +1339,32 @@ function israelHour() {
 }
 function todayKey() { try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(new Date()); } catch (e) { return new Date().toISOString().slice(0, 10); } }
 let NOTIFY_STATE = { day: '', sent: 0, people: {} };
+// The note itself (Miriam's wording, 10 Sep 2026). Three words is enough for
+// the person to recognise their own message without repeating it back at them.
+const NOTE_STOP = new Set(['a', 'an', 'the', 'for', 'to', 'in', 'of', 'and', 'my', 'our', 'is', 'are', 'on', 'at', 'with', 'looking', 'wanted', 'available', 'avail']);
+const NOTE_TAIL = new Set(['term', 'avail', 'available', 'needed', 'urgent', 'asap', 'now', 'please', 'pls', 'here', 'new']);
+function threeWords(entry) {
+  const raw = String(entry.title || entry.memo || '')
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, ' ')
+    .replace(/[*_~`"'()\[\]{}<>|]/g, ' ')
+    .replace(/[.,;:!?\/\\-]+/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+  // the two shapes that come up over and over, said the way a person would
+  const bd = raw.match(/(\d+)\s*(?:bdrm|bdr|bedroom|bed|br)\b/i);
+  if (bd) return bd[1] + ' bedroom apartment';
+  const term = raw.match(/\b(short|long)\s*[- ]?\s*term\b/i);
+  if (term) return term[1].toLowerCase() + ' term rental';
+  let w = raw.split(' ').filter(Boolean);
+  while (w.length && NOTE_STOP.has(w[0].toLowerCase())) w.shift();
+  w = w.slice(0, 3);
+  while (w.length && (NOTE_STOP.has(w[w.length - 1].toLowerCase()) || NOTE_TAIL.has(w[w.length - 1].toLowerCase()))) w.pop();
+  return w.join(' ').toLowerCase();
+}
 function noteText(entry, postId) {
-  const first = String(entry.name || '').trim().split(/\s+/)[0] || '';
-  const hi = first && /^[A-Za-z\u0590-\u05FF][\w'.\-\u0590-\u05FF]*$/.test(first) ? 'Hi ' + first + '! 👋' : 'Hi! 👋';
   const link = SITE + '/#post/up_' + postId;
-  const title = String(entry.title || '').slice(0, 70);
-  return hi + " I'm Miriam from Chutznik. Your message in *" + (entry.chat || 'the group') + "*"
-    + (title ? ' — "' + title + '" —' : '') + " is now up on chutznik.org, where English-speaking women in Israel look for exactly this:\n" + link
-    + "\n\nIf someone contacts you through it, that's how they found you 😊";
+  const what = threeWords(entry);
+  return 'hi, I just posted your message about your ' + (what || 'message')
+    + ' here so more people can see it. feel free to add info;)\n' + link;
 }
 let _notifyBusy = false, _lastUpdSha = '';
 async function notifyPosters() {
