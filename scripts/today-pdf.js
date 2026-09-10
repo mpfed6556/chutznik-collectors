@@ -1,4 +1,4 @@
-// ── "Happening Now in Jerusalem" — a clickable one-page PDF of the day's events ──
+// ── "Happening Today in Jerusalem" — a clickable one-page PDF of the day's events ──
 // Built from the same calendar logic as chutznik.org/calendar (events-lib.js), and
 // laid out to match the Chutznik daily template: watercolour Jerusalem background,
 // the logo and date up top, then one card per event. Every card links to its post,
@@ -11,19 +11,19 @@ const L = require('./events-lib.js');
 
 const F = (n) => path.join(__dirname, '..', 'fonts', n);
 const FONTS = { B: F('PlayfairDisplay-Bold.ttf'), P: F('PlayfairDisplay-Regular.ttf'), R: F('Lora-Regular.ttf'), RB: F('Lora-Bold.ttf'), H: F('FrankRuhlLibre-Bold.ttf'), U: F('DejaVuSans.ttf') };
-const LOGO = F('logo.png');
-const BG_BASE = F('bg-base.png'), BG_TOP = F('bg-top.png'), BG_BOT = F('bg-bot.png');
+const BG_BASE = F('bg2-base.png'), BG_TL = F('bg2-tl.png'), BG_TR = F('bg2-tr.png'), BG_BOT = F('bg2-bot.png');
 
 // ── the page, in the template's own pixels ──────────────────────────────────
-const W = 1054;                 // page width
-const PAD = 44;                 // card left edge
-const CARD_R = 1010;            // card right edge
-const CARD_H = 124, GAP = 15;   // card box and the space between cards
-const FIRST_Y = 550;            // top of the first card
-const BOT_ART = 255;            // the skyline strip along the bottom
-const TAIL = 265;               // space kept under the last card
+const W = 1024;                 // page width
+const PAD = 56;                 // card left edge
+const CARD_R = 968;             // card right edge
+const CARD_H = 119, GAP = 13;   // card box and the space between cards
+const FIRST_Y = 589;            // top of the first card
+const BOT_ART = 291;            // the skyline, the logo and chutznik.org
+const TAIL = 300;               // space kept under the last card
 
-const INK = { word: '#4a1410', org: '#7a4a2c', title: '#8c3f12', date: '#1c1008', heb: '#7c3312', rule: '#dcbb96', time: '#171717', card: '#14161b', divider: '#dcb28e' };
+const INK = { title: '#6b2a0c', title2: '#a3541a', date: '#16100b', heb: '#5a2410', rule: '#d9b48c',
+              pill: '#7a2c0c', sun: '#eba43c', time: '#151515', card: '#14161b', divider: '#e2a179', chev: '#c07a4a' };
 
 // bar / pastel circle / glyph, per kind of event — the calendar's own colours
 const KIND = {
@@ -65,6 +65,12 @@ function icon(doc, name, cx, cy, size, color, weight) {
     else doc.path(p).stroke();
   }
   doc.restore();
+}
+
+function chevron(doc, cx, cy, size, color, weight) {
+  const h = size / 2;
+  doc.save().lineWidth(weight || 2.6).strokeColor(color).lineCap('round').lineJoin('round')
+     .moveTo(cx - h * 0.45, cy - h).lineTo(cx + h * 0.45, cy).lineTo(cx - h * 0.45, cy + h).stroke().restore();
 }
 
 // ── dates ───────────────────────────────────────────────────────────────────
@@ -132,64 +138,76 @@ async function fetchTodayEvents(site) {
 // ── the sheet itself → Buffer ───────────────────────────────────────────────
 function buildTodayPdf({ site, today, events }) {
   const H = Math.max(1180, FIRST_Y + events.length * (CARD_H + GAP) - GAP + TAIL);
-  const doc = new PDFDocument({ size: [W, H], margin: 0, info: { Title: 'Happening Now in Jerusalem — Chutznik', Author: 'Chutznik' } });
+  const doc = new PDFDocument({ size: [W, H], margin: 0, info: { Title: 'Happening Today in Jerusalem — Chutznik', Author: 'Chutznik' } });
   const chunks = []; doc.on('data', (c) => chunks.push(c));
   const done = new Promise((res) => doc.on('end', () => res(Buffer.concat(chunks))));
   for (const k of Object.keys(FONTS)) { try { doc.registerFont(k, FONTS[k]); } catch (e) {} }
   const font = (k, s) => doc.font(hasHebrew(s) ? 'U' : k);
 
-  // paper: the warm field, the Old City up in the corner, the skyline along the foot
+  // paper: the warm field, the branch and the Old City up top, the skyline
+  // (with the logo and chutznik.org) along the foot
   doc.rect(0, 0, W, H).fill('#fdf6ea');
   try { doc.image(BG_BASE, 0, 0, { width: W, height: H }); } catch (e) {}
-  try { doc.image(BG_TOP, W - 414, 0, { width: 414 }); } catch (e) {}
+  try { doc.image(BG_TL, 0, 0, { width: 470 }); } catch (e) {}
+  try { doc.image(BG_TR, W - 404, 0, { width: 404 }); } catch (e) {}
   try { doc.image(BG_BOT, 0, H - BOT_ART, { width: W }); } catch (e) {}
+  doc.link(392, H - 74, 240, 50, site);          // the wordmark at the foot
 
-  // header — logo, wordmark, the day
-  try { doc.image(LOGO, 58, 34, { width: 106, height: 106 }); } catch (e) {}
-  doc.font('B').fontSize(63).fillColor(INK.word).text('Chutznik', 194, 50, { lineBreak: false });
-  doc.font('R').fontSize(26).fillColor(INK.org).text('chutznik.org', 199, 119, { lineBreak: false, link: site });
-
-  doc.font('B').fontSize(75).fillColor(INK.title)
-     .text('Happening Now', 48, 172, { lineBreak: false })
-     .text('in Jerusalem', 48, 258, { lineBreak: false });
+  // the day
+  doc.font('B').fontSize(74).fillColor(INK.title).text('Happening Today', 75, 150, { lineBreak: false });
+  doc.font('B').fontSize(74).fillColor(INK.title).text('in ', 75, 240, { lineBreak: false });
+  const inW = doc.widthOfString('in ');
+  doc.font('B').fontSize(74).fillColor(INK.title2).text('Jerusalem', 75 + inW, 240, { lineBreak: false });
 
   const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
   const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  doc.font('B').fontSize(43).fillColor(INK.date).text(dayName + ', ' + dateStr, 50, 362, { lineBreak: false });
-  hebrewLine(doc, hebrewDate(today), 340, 418, 31, INK.heb);
+  doc.font('B').fontSize(43).fillColor(INK.date).text(dayName + ', ' + dateStr, 86, 347, { lineBreak: false });
+  hebrewLine(doc, hebrewDate(today), 358, 404, 30, INK.heb);
 
-  // "Click an event to learn more", with a little sun and a rule running to the edge
-  const capY = 486;
-  icon(doc, 'sun', 62, capY + 18, 34, '#f0a437', 2.4);
+  // a sprig between two hairlines
+  const dy = 466;
+  doc.lineWidth(1.6).strokeColor(INK.rule).moveTo(438, dy).lineTo(492, dy).stroke().moveTo(534, dy).lineTo(730, dy).stroke();
+  doc.save().translate(513, dy).lineWidth(1.7).strokeColor('#7d8c5a');
+  doc.moveTo(-2, 10).lineTo(2, -14).stroke();
+  doc.ellipse(-9, -4, 9, 5.5).fillAndStroke('#9db06f', '#7d8c5a');
+  doc.ellipse(9, -11, 9, 5.5).fillAndStroke('#9db06f', '#7d8c5a');
+  doc.restore();
+
+  // "Click an event to learn more", in its soft capsule
   const cap = 'Click an event to learn more';
-  doc.font('B').fontSize(40).fillColor(INK.title).text(cap, 96, capY, { lineBreak: false });
+  doc.font('B').fontSize(36);
   const capW = doc.widthOfString(cap);
-  doc.moveTo(96 + capW + 26, capY + 20).lineTo(CARD_R, capY + 20).lineWidth(2).stroke(INK.rule);
+  const ph = 68, pw = capW + 158, px = Math.round(W / 2 - pw / 2), py = 500, pm = py + ph / 2;
+  doc.save().opacity(0.62).roundedRect(px, py, pw, ph, ph / 2).fill('#fff6e9').restore();
+  doc.save().opacity(0.5).roundedRect(px, py, pw, ph, ph / 2).lineWidth(1.4).stroke('#eed9bd').restore();
+  icon(doc, 'sun', px + 52, pm, 40, INK.sun, 2.8);
+  doc.font('B').fontSize(36).fillColor(INK.pill).text(cap, px + 92, py + 15, { lineBreak: false });
+  chevron(doc, px + 92 + capW + 26, pm, 19, INK.pill, 3);
 
   // one card per event
   let y = FIRST_Y;
   for (const e of events) {
     const url = site + '/post/' + encodeURIComponent(String(e.id));
     const k = KIND[e.kind] || KIND.meet;
-    doc.save().opacity(0.94).roundedRect(PAD, y, CARD_R - PAD, CARD_H, 18).fill('#ffffff').restore();
-    doc.roundedRect(PAD, y, 11, CARD_H, 5).fill(k.bar);
+    const mid = y + CARD_H / 2;
+    doc.save().opacity(0.96).roundedRect(PAD, y, CARD_R - PAD, CARD_H, 22).fill('#ffffff').restore();
+    doc.roundedRect(PAD, y, 16, CARD_H, 8).fill(k.bar);
 
-    // pastel circle + glyph
-    doc.circle(120, y + CARD_H / 2, 31).fill(k.pale);
-    icon(doc, k.icon, 120, y + CARD_H / 2, 34, k.ink, 2.1);
+    doc.circle(141, mid, 42).fill(k.pale);
+    icon(doc, k.icon, 141, mid, 44, k.ink, 2.2);
 
-    // the time, centred in its own column, then a hairline, then the title
     const tl = timeLabel(e.time);
-    doc.font('B').fontSize(tl === 'all day' ? 32 : 36).fillColor(INK.time)
-       .text(tl, 176, y + CARD_H / 2 - (tl === 'all day' ? 21 : 24), { width: 168, align: 'center', lineBreak: false });
-    doc.moveTo(353, y + 32).lineTo(353, y + CARD_H - 32).lineWidth(1.6).stroke(INK.divider);
+    const ts = tl === 'all day' ? 32 : 37;
+    doc.font('B').fontSize(ts).fillColor(INK.time).text(tl, 185, mid - ts * 0.62, { width: 177, align: 'center', lineBreak: false });
+    doc.moveTo(378, y + 30).lineTo(378, y + CARD_H - 30).lineWidth(2).stroke(INK.divider);
 
     const title = clean(e.full || e.title) || 'Event';
-    const tw = 990 - 398;
+    const tw = 901 - 431;
     font('R', title).fontSize(29);
-    const th = Math.min(doc.heightOfString(title, { width: tw, lineGap: 4 }), 84);
-    doc.fillColor(INK.card).text(title, 398, y + (CARD_H - th) / 2 - 2, { width: tw, height: 84, ellipsis: true, lineGap: 4 });
+    const th = Math.min(doc.heightOfString(title, { width: tw, lineGap: 4 }), 82);
+    doc.fillColor(INK.card).text(title, 431, mid - th / 2 - 2, { width: tw, height: 82, ellipsis: true, lineGap: 4 });
 
+    chevron(doc, 934, mid, 20, INK.chev, 2.6);
     doc.link(PAD, y, CARD_R - PAD, CARD_H, url);
     y += CARD_H + GAP;
   }

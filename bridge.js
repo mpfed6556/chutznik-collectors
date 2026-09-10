@@ -1431,7 +1431,8 @@ let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
 const EXTRA_FILES = ['scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/events-sync.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
-  'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png'];
+  'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
+  'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
 async function syncExtras() {
   let n = 0;
   for (const rel of EXTRA_FILES) {
