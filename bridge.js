@@ -33,6 +33,12 @@ function isJobChat(name){ const n = String(name || '').toLowerCase(); return /\b
 const RENTAL_CHATS = (process.env.RENTAL_CHATS || '').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
 function isRentalChat(name){ const n = String(name || '').toLowerCase(); return /\brent|real ?estate|\bapartments?\b|\bapts?\b|\bdira|\bdirot|\bsublet|\bhousing\b|\bflats?\b|\brealty\b|\bproperties\b|\bproperty\b|\baccommodation|\bvacation\b|\bsukkos? (?:rentals?|apartments?)|נדל|דירות|דירה|השכרה|סאבלט/.test(n) || RENTAL_CHATS.includes(n); }
 const RENT_HINT = /\b(apartment|apt|flat|dira|unit|penthouse|studio|rooms?|bdrms?|bedrooms?|beds?|sublet|rent(?:al)?|furnished|balcony|porch|elevator|floor|sukkah|chagim|sukkos|sukkot|pesach|yom tov|short[- ]term|long[- ]term|per month|per night|a month|a night|nis|shekel)\b|₪|\$\s?\d|\d\s?\$|\/\s*(?:month|night|mo)\b/i;
+// The "Apt test" feed (Miriam, 10 Sep 2026): a private chat where every photo
+// she sends becomes its OWN post under Items, published straight away, with a
+// short title and body taken from the caption she writes for that picture.
+// These are Israeli store items (e.g. Shaarei Revacha). APT_TEST_CHATS overrides.
+const APT_CHATS = (process.env.APT_TEST_CHATS || 'apt test').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+function isAptTestChat(name){ const n = String(name||'').trim().toLowerCase(); return APT_CHATS.some(x => x && (n === x || n.includes(x))); }
 const HOURS = Number(process.env.HISTORY_HOURS || 48);
 // Job sources may look further back (JOBS_HISTORY_HOURS, e.g. 168 for a week):
 // job chats and the jobs mailbox use this window instead of HISTORY_HOURS.
@@ -1004,6 +1010,42 @@ async function sendBabysit(cl, chatName, threadId) {
 }
 
 // ── Build the final Chutznik post from a cluster ─────────────────────────────
+// One store item, one post. The caption she writes for the picture is the
+// description; the first strong line of it becomes the title. Published at
+// once, under Items. Hebrew is translated with the original kept underneath.
+async function buildAptItem(m, chatName, capFallback) {
+  const tag = String(m.id || (Date.now() + '' + Math.random())).replace(/[^a-zA-Z0-9]/g, '').slice(-16);
+  const bodyRaw = (String(m.body || '').trim()) || (capFallback || '');
+  const attachments = []; let ocr = '';
+  if (m.media) {
+    const url = await uploadImage(m.media.base64, m.media.mime, 'apt' + tag, 0);
+    if (url) attachments.push({ url, name: 'photo.jpg' });
+    if (!bodyRaw) { const t = await ocrImage(m.media.base64); if (t) ocr = t; }
+  }
+  const contacts = { phones: phonesInText(bodyRaw), emails: emailsInText(bodyRaw), urls: urlsInText(bodyRaw) };
+  let body = cleanBody(bodyRaw, contacts) || cleanBody(ocr, contacts);
+  let title = smartTitle(body, 'item', chatName);
+  if (!title || /^From /.test(title)) title = 'Item';
+  let memo = summarize(body, 700) || title;
+  if (hasHebrew(title)) { const en = await toEnglish(title); if (en) title = en.slice(0, 150); }
+  if (hasHebrew(memo)) { const en = await toEnglish(memo); if (en) memo = en + '\n\n— ' + memo.slice(0, 400); }
+  return {
+    id: 'wa_apt' + tag,
+    source: 'aptitem',
+    group: chatName,
+    title: stripEmoji(title).slice(0, 150),
+    memo,
+    types: ['Items / Questions'],
+    author: chatName,
+    contactPhone: contacts.phones[0] || '',
+    contactWebsite: contacts.urls[0] || '',
+    status: 'public',
+    attachments,
+    created: m.ts || Date.now(),
+    dedupeKey: 'wa_apt' + tag,   // one key per photo, so every picture is its own post
+  };
+}
+
 async function buildPost(cluster, chatName) {
   const msgs = cluster.kind === 'combined' ? [cluster.q, ...cluster.answers] : cluster.msgs;
   const first = msgs[0];
@@ -1608,6 +1650,25 @@ async function flush() {
     if (!msgs.length) continue;
     buffers.set(chatName, []);
     msgs.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    // The "Apt test" feed: every photo becomes its own Item post, published at
+    // once. A text-only line just before a photo captions it if the photo has none.
+    if (isAptTestChat(chatName)) {
+      const nPhotos = msgs.filter((m) => m.media).length;
+      log('🛍️  ' + chatName + ': ' + msgs.length + ' msg(s) → ' + nPhotos + ' item post(s)');
+      let lastCap = '';
+      for (const m of msgs) {
+        const cap = String(m.body || '').trim();
+        if (cap) lastCap = cap;
+        if (!m.media) continue;                 // text-only line: held as the next photo's caption
+        try {
+          const post = await buildAptItem(m, chatName, cap ? '' : lastCap);
+          if (SEEN.has(post.dedupeKey)) continue;
+          const ok = await sendToQueue(post);
+          if (ok) { SEEN.add(post.dedupeKey); saveSeen(); }
+        } catch (e) { log('   apt item failed: ' + (e && e.message)); }
+      }
+      continue;
+    }
     const clusters = clusterThreads(msgs);
     const nPosts = clusters.filter(c => c.kind !== 'comment').length, nCmts = clusters.length - nPosts;
     log('📦 ' + chatName + ': ' + msgs.length + ' msg(s) → ' + nPosts + ' post(s)' + (nCmts ? ' + ' + nCmts + ' comment(s) on earlier posts' : ''));
