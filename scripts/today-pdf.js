@@ -151,7 +151,7 @@ function buildTodayPdf({ site, today, events }) {
   try { doc.image(BG_TL, 0, 0, { width: 470 }); } catch (e) {}
   try { doc.image(BG_TR, W - 404, 0, { width: 404 }); } catch (e) {}
   try { doc.image(BG_BOT, 0, H - BOT_ART, { width: W }); } catch (e) {}
-  doc.link(392, H - 74, 240, 50, site);          // the wordmark at the foot
+  doc.link(392, H - 74, 240, 50, site + '/israel');   // the wordmark at the foot
 
   // the day
   doc.font('B').fontSize(74).fillColor(INK.title).text('Happening Today', 75, 150, { lineBreak: false });
@@ -187,7 +187,7 @@ function buildTodayPdf({ site, today, events }) {
   // one card per event
   let y = FIRST_Y;
   for (const e of events) {
-    const url = site + '/post/' + encodeURIComponent(String(e.id));
+    const url = site + '/israel/post/' + encodeURIComponent(String(e.id));
     const k = KIND[e.kind] || KIND.meet;
     const mid = y + CARD_H / 2;
     doc.save().opacity(0.96).roundedRect(PAD, y, CARD_R - PAD, CARD_H, 22).fill('#ffffff').restore();

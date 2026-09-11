@@ -1409,7 +1409,7 @@ function threeWords(entry) {
   return w.join(' ').toLowerCase();
 }
 function noteText(entry, postId) {
-  const link = SITE + '/#post/up_' + postId;
+  const link = SITE + '/israel/#post/up_' + postId;
   const what = threeWords(entry);
   return 'hi, I just posted your message about your ' + (what || 'message')
     + ' here so more people can see it. feel free to add info;)\n' + link;
