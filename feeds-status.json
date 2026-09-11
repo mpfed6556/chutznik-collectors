@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-10T22:27:11.134Z",
+  "lastRun": "2026-09-11T00:29:19.583Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -63,7 +63,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-10T22:27:11.133Z",
+      "lastRun": "2026-09-11T00:29:19.582Z",
       "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
