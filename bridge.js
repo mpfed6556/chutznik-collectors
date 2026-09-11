@@ -928,9 +928,13 @@ async function sendComment(target, m) {
 // ── Is this message actually a job? ─────────────────────────────────────────
 const JOB_RE = /\b(hiring|jobs?|position|opening|vacanc\w*|employ\w*|salary|per hour|an hour|hourly|nis|shekel|shifts?|part[- ]?time|full[- ]?time|remote|work from home|resume|cv|apply|wanted|needed|seeking|looking to hire|looking for (?:a |an |some(?:one|body) |girls? |woman |lady |help|cleaner|babysit|tutor|teacher|driver|secretary|assistant|nanny|worker|staff|counsel)|available (?:to|for) (?:work|babysit|help|clean|tutor)|(?:i'?m|we'?re|we are) available)\b|₪/i;
 const NOT_JOB_RE = /\b(this (?:chat|group)|the (?:chat|group)|admins?|rules|clog|will be (?:deleted|removed)|please (?:do not|don'?t)|reminder|welcome to|group description|shop our|% off|discount|sale\b|our (?:store|shop|website|collection)|order now|free delivery|delivery available|in stock|new arrivals|gift|shoes|dresses|boutique|honey dish|simanim)\b/i;
+// A tzedaka appeal, a fundraiser, a medical campaign: never a job, whatever
+// group it arrived in (Miriam, 11 Sep 2026)
+const APPEAL_RE = /\b(appeal|tzedak\w*|tzedok\w*|charity|charidy|gofundme|rayze|jgive|donat(?:e|ion|ions) (?:to|for|now|here|today|generously)|please (?:donate|give|help)|help (?:us|her|him|them|the \w+ family) (?:pay|cover|afford|continue|raise)|chesed fund|hachnosas kallah|hachnasat kallah|medical (?:bills|treatments?|expenses)|cancer|chemo|dialysis|in the (?:zechus|merit) of|refuah shl\w+|yeshuah|tehillim|mi shebeirach|a devoted (?:mother|father|wife|husband)|mother of \d+|father of \d+|widow|orphans?|yesomim|almanah)\b/i;
+function isAppeal(text) { return APPEAL_RE.test(String(text || '')); }
 function looksLikeJob(text) {
   const t = String(text || '');
-  return JOB_RE.test(t) && !NOT_JOB_RE.test(t);
+  return JOB_RE.test(t) && !NOT_JOB_RE.test(t) && !isAppeal(t);
 }
 
 // ── Babysitting: one running thread instead of a post per message ───────────
@@ -1155,11 +1159,13 @@ async function buildPost(cluster, chatName) {
   if (kind !== 'rental' && isRentalChat(chatName) && RENT_HINT.test(allText)) { kind = 'rental'; title = rentalTitle(first.body + ' ' + allText); }
   const jobChat = isJobChat(chatName);
   if (jobChat && kind !== 'rental' && looksLikeJob(allText)) kind = 'job';
+  if (isAppeal(allText) && kind !== 'rental') kind = 'appeal';
   // A rental is a Rental. The generic classifier was tagging plenty of them
   // "Items / Questions", which is why apartments showed up under questions.
   let types = categoriesFor(allText, kind);
   if (kind === 'rental') types = ['Rental'];
   if (kind === 'job') types = ['Jobs'];
+  if (kind === 'appeal') types = ['Chesed'];
   if (!Array.isArray(types) || !types.length) types = ['Community'];
 
   // Structured rental fields, so the site's filters treat this like a form post.
