@@ -1,10 +1,10 @@
 {
-  "lastRun": "2026-09-12T16:15:18.911Z",
+  "lastRun": "2026-09-12T18:32:22.560Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
     "Population & Immigration Authority": "page HTTP 403",
-    "Ministry of Interior": "no feed, no scannable items, nothing in the news last 48h",
+    "Ministry of Interior": "page HTTP 403",
     "Ministry of Health": "page HTTP 403",
     "gov.il News": "page HTTP 403",
     "Tax Authority": "page HTTP 403",
@@ -20,14 +20,14 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
+    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Electric Corporation": "blocked: robots.txt unreachable — skipping to be safe",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
@@ -63,7 +63,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-12T16:15:18.910Z",
+      "lastRun": "2026-09-12T18:32:22.559Z",
       "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
