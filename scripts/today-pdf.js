@@ -138,7 +138,7 @@ async function fetchTodayEvents(site) {
 // ── the sheet itself → Buffer ───────────────────────────────────────────────
 function buildTodayPdf({ site, today, events }) {
   const H = Math.max(1180, FIRST_Y + events.length * (CARD_H + GAP) - GAP + TAIL);
-  const doc = new PDFDocument({ size: [W, H], margin: 0, info: { Title: 'Happening Today in Jerusalem — Chutznik', Author: 'Chutznik' } });
+  const doc = new PDFDocument({ size: [W, H], margin: 0, font: FONTS.R, info: { Title: 'Happening Today in Jerusalem — Chutznik', Author: 'Chutznik' } });
   const chunks = []; doc.on('data', (c) => chunks.push(c));
   const done = new Promise((res) => doc.on('end', () => res(Buffer.concat(chunks))));
   for (const k of Object.keys(FONTS)) { try { doc.registerFont(k, FONTS[k]); } catch (e) {} }
