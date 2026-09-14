@@ -1585,7 +1585,7 @@ setTimeout(sendStatus, 30 * 1000);
 //    own WhatsApp each morning there are more than 3 (Miriam, 8 Sep 2026).
 //    She posts it on her status; every event has a Read-more button.
 const TODAY_FILE = path.join(__dirname, 'today-sent.json');
-const TODAY_MIN_EVENTS = Number(process.env.TODAY_MIN_EVENTS || 4);   // "more than 3"
+const TODAY_MIN_EVENTS = Number(process.env.TODAY_MIN_EVENTS || 1);   // every morning there's anything on (was 4 — Miriam, 14 Sep 2026)
 const TODAY_HOUR = Number(process.env.TODAY_HOUR || 7);              // from 7:00 Israel time
 let _todayBusy = false;
 async function todaySheet() {
