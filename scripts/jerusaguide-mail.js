@@ -13,7 +13,7 @@
 //
 // .env:  JG_MODE=off|dry|live   (off = built but not running — the default)
 //        JG_GROUP=jerusaguide@googlegroups.com
-//        JG_FROM="Chutznik <hello@chutznik.org>"   JG_REPLY_TO=miriam@chutznik.org
+//        JG_FROM="Chutznik <info@chutznik.org>"   JG_REPLY_TO=info@chutznik.org   (from and replies: info@)
 //        RESEND_API_KEY=…  (the same key the site uses; else Gmail SMTP through nodemailer)
 //        JG_HOURS=48 (how far back to look)   JG_DAILY=25 (at most, per day)
 'use strict';
@@ -23,8 +23,8 @@ const path = require('path');
 const MODE = String(process.env.JG_MODE || 'off').toLowerCase();
 const GROUP = String(process.env.JG_GROUP || 'jerusaguide@googlegroups.com').toLowerCase();
 const GROUP_KEY = GROUP.split('@')[0];                       // "jerusaguide"
-const FROM = process.env.JG_FROM || 'Chutznik <hello@chutznik.org>';
-const REPLY_TO = process.env.JG_REPLY_TO || process.env.ADMIN_EMAIL || 'miriam@chutznik.org';
+const FROM = process.env.JG_FROM || 'Chutznik <info@chutznik.org>';
+const REPLY_TO = process.env.JG_REPLY_TO || 'info@chutznik.org';
 const HOURS = Number(process.env.JG_HOURS || 48);
 const DAILY = Number(process.env.JG_DAILY || 25);
 const SITE = (process.env.JG_SITE || 'https://chutznik.org').replace(/\/$/, '');
@@ -65,7 +65,6 @@ function noteFor(c) {
   else if (rental && c.seek) text = 'hi! I saw you\'re looking for a rental on jerusaguide. there are tons listed here 👉 ' + SITE + '/israel/rental\nhatzlachah!';
   else if (!rental && !c.seek) text = 'hi! I saw you just posted a job on jerusaguide. there are people looking for work here 👉 ' + SITE + '\nhatzlachah!';
   else text = 'hi! I saw you\'re looking for work on jerusaguide. there are tons of jobs listed here 👉 ' + SITE + '/israel/jobs\nhatzlachah!';
-  text += '\n\n— Chutznik · the resource forum for English speakers in Jerusalem';
   const html = '<div style="font-family:Georgia,serif;font-size:16px;line-height:1.55;color:#3a2f27">'
     + text.split('\n').map(l => l.replace(/(https?:\/\/\S+)/g, '<a href="$1" style="color:#a8483f">$1</a>')).join('<br>')
     + '</div>';
