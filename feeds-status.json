@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-15T01:54:37.296Z",
+  "lastRun": "2026-09-15T07:37:00.407Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -16,7 +16,7 @@
     "Employment Service": "page HTTP 403",
     "Meuhedet": "no feed, no scannable items, nothing in the news last 48h",
     "Clalit": "blocked: robots.txt unreachable — skipping to be safe",
-    "Maccabi": "ok via page-scan (1 items) — no RSS found",
+    "Maccabi": "no feed, no scannable items, nothing in the news last 48h",
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
@@ -63,7 +63,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-15T01:54:37.295Z",
+      "lastRun": "2026-09-15T07:37:00.406Z",
       "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
