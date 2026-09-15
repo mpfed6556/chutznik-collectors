@@ -1297,6 +1297,20 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
   log('✉️  jobs mail: off (set GMAIL_USER and GMAIL_APP_PASSWORD in .env to turn it on)');
 }
 
+// ── Jerusaguide: one email to whoever posts or asks about a rental or a job ──
+//    (built 15 Sep 2026; JG_MODE=off in .env until Miriam is in the group —
+//    JG_MODE=dry rehearses in the log, JG_MODE=live sends. See scripts/jerusaguide-mail.js)
+(function () {
+  const modPath = path.join(__dirname, 'scripts', 'jerusaguide-mail.js');
+  const mode = String(process.env.JG_MODE || 'off').toLowerCase();
+  if (mode === 'off' || !fs.existsSync(modPath)) { log('📬 jerusaguide notes: off (JG_MODE=dry or live in .env to start)'); return; }
+  const JG = require(modPath);
+  const every = Number(process.env.JG_MINUTES || 10);
+  setTimeout(() => JG.run(log), 45 * 1000);
+  setInterval(() => JG.run(log), every * 60 * 1000);
+  log('📬 jerusaguide notes: ' + mode + ' · watching ' + (process.env.GMAIL_USER || '?') + ' for ' + (process.env.JG_GROUP || 'jerusaguide@googlegroups.com') + ' every ' + every + ' min');
+})();
+
 // ── "Your post is up on Chutznik" — a private WhatsApp note to the poster ────
 // Sent from this same WhatsApp account, moments after a post goes public
 // (automatically, or when Miriam presses Publish). Off until switched on:
@@ -1495,7 +1509,7 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/events-sync.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+const EXTRA_FILES = ['scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
