@@ -1856,7 +1856,10 @@ async function start() {
       setTimeout(start, 5000);
     }
   });
-  sock.ev.on('messaging-history.set', ({ messages }) => { handleMessages(sock, messages || [], 'history'); });
+  sock.ev.on('messaging-history.set', ({ messages, syncType, isLatest }) => {
+    try { const ms = (messages || []); const ts = ms.map((m) => Number(m.messageTimestamp || 0)).filter(Boolean); if (global._backfillSince) log('⏪ history arrived: ' + ms.length + ' message(s)' + (ts.length ? ', oldest ' + new Date(Math.min(...ts) * 1000).toISOString().slice(5, 16) : '') + (syncType ? ' (sync ' + syncType + ')' : '')); } catch (e) {}
+    handleMessages(sock, messages || [], 'history');
+  });
   sock.ev.on('messages.upsert', ({ messages, type }) => { handleMessages(sock, messages || [], type === 'notify' ? 'live' : 'history'); });
 }
 process.on('SIGINT', async () => { log('flushing before exit…'); await flush(); process.exit(0); });
