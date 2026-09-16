@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-16T01:28:12.031Z",
+  "lastRun": "2026-09-16T06:38:50.216Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -63,14 +63,14 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-16T01:28:12.030Z",
-      "sent": 1,
+      "lastRun": "2026-09-16T06:38:50.216Z",
+      "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId cz0Gd6DbWMHXf_qtum9kd",
-        "iTravelJerusalem": "ok via listing cards (1 new of 40)"
+        "iTravelJerusalem": "40 cards, nothing new (20 distinct)"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -138,15 +138,7 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [
-          {
-            "title": "Animals in Blocks | Sukkot 2026",
-            "date": "2026-09-22",
-            "time": "09:00",
-            "link": "https://www.itraveljerusalem.com/event/animals-in-cubes",
-            "raw": "1 dates; first {\"startDate\":\"2026-09-22T06:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"09:00\",\"endTime\":\"19:00\",\"repeats\":\"no\"}"
-          }
-        ]
+        "iTravelJerusalem": []
       }
     }
   }
