@@ -1800,7 +1800,21 @@ async function start() {
   });
   global._sock = sock;
   sock.ev.on('creds.update', saveCreds);
+  // Pairing by code instead of the QR (Miriam, 16 Sep 2026): start with
+  //   PAIR_PHONE=19295630370 node bridge.js
+  // and an 8-character code is printed; on the phone: Linked devices → Link a device → Link with phone number.
+  const pairPhone = String(process.env.PAIR_PHONE || '').replace(/\D/g, '');
+  let pairAsked = false;
   sock.ev.on('connection.update', (u) => {
+    if (u.qr && pairPhone && !state.creds.registered && !pairAsked) {
+      pairAsked = true;
+      setTimeout(async () => {
+        try { const code = await sock.requestPairingCode(pairPhone); const nice = String(code || '').replace(/(.{4})(?=.)/, '$1-');
+          console.log('\n🔗 Pairing code for +' + pairPhone + ':   ' + nice + '\n   WhatsApp → Settings → Linked devices → Link a device → "Link with phone number instead" → type the code.\n'); }
+        catch (e) { console.log('pairing code failed: ' + (e && e.message) + ' — the QR below still works'); qrcode.generate(u.qr, { small: true }); }
+      }, 2500);
+      return;
+    }
     if (u.qr) { console.log('\n📱 Scan with WhatsApp → Settings → Linked devices → Link a device:\n'); qrcode.generate(u.qr, { small: true }); }
     if (u.connection === 'open') {
       log('✅ Connected. Watching ALL groups. History for the last ' + HOURS + 'h arrives on its own; live messages are sent within ~' + FLUSH_MINUTES + ' min.');
