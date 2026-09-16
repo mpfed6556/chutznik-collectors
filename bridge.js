@@ -500,7 +500,7 @@ function rentalFeature(text) {
   return '';
 }
 
-const RENT_REQ_STRONG = /\b(?:i'?m|i am|we'?re|we are|my (?:family|parents|kids|daughter|son|friend)s?(?: and i)?)\s+(?:are\s+|is\s+)?looking\b|\bdoes anyone\b|\banyone (?:know|have|got|renting|subletting|has)\b|\biso\b|\bin search of\b|\bwanted\b|\bseeking\b|\blooking to rent\b|\bwant(?:ed|ing)? to rent\b|\bneed(?:ed|ing)? (?:a|an|to find) (?:apartment|apt|flat|place|room|dira|sublet)|\blooking for (?:a |an )?(?:apartment|apt|flat|place|room|dira|sublet|somewhere|something)\b.*?\b(?:budget|for (?:my|our|us|me)|we (?:are|need)|i (?:am|need))/;
+const RENT_REQ_STRONG = /\b(?:i'?m|i am|we'?re|we are|my (?:family|parents|kids|daughter|son|friend)s?(?: and i)?|(?:a |an |young )?(?:girl|boy|guy|woman|man|lady|couple|family|student|bochur|seminary girl|sem girl|someone|friend|client|newlyweds?)s?)\s+(?:are\s+|is\s+)?looking\b|\blooking to (?:join|share|move|find)\b|\bbudget\b|\bany leads\b|\bpm me\b|\bdoes anyone\b|\banyone (?:know|have|got|renting|subletting|has)\b|\biso\b|\bin search of\b|\bwanted\b|\bseeking\b|\blooking to rent\b|\bwant(?:ed|ing)? to rent\b|\bneed(?:ed|ing)? (?:a|an|to find) (?:apartment|apt|flat|place|room|dira|sublet)|\blooking for (?:a |an )?(?:apartment|apt|flat|place|room|dira|sublet|somewhere|something)\b.*?\b(?:budget|for (?:my|our|us|me)|we (?:are|need)|i (?:am|need))/;
 const RENT_REQ_WEAK   = /\blooking (?:for|to)\b|\bneed(?:ed|ing)?\s+(?:a|an|to|small|big|\d)/;
 const RENT_OFFER      = /\bfor rent\b|\bto let\b|\brent(?:ing)? out\b|\bnow renting\b|\bsublett?(?:ing)?\s+(?:my|our|a |an |available|avail)\b|\b(?:apartment|apt|flat|unit|room|dira|house|villa|penthouse|studio)\s+(?:is\s+)?(?:available|avail)\b|\bavailable (?:from|for|now|immediately|starting|over|during|this)\b|\bavail(?:able)? (?:from|for|now|immediately|starting|over|during|this)\b|\bfor sale\b|\bprice\s*:|\bfully furnished\b|\bcontact (?:me|us)\b|\bpm for (?:details|more|info)\b|\bdm for\b|\bbook(?:ing)? now\b|\bdon'?t miss\b|\bstunning\b|\bluxur(?:y|ious)\b|\bbrand[- ]new\b|\bnewly renovated\b|\bpanoramic\b|\bnew long term\b|\bentry (?:after|from|on)\b|\brealty\b|\bproperties\b|\/\s*month\b|per month\b|\/\s*night\b|per night\b|\bincludes\b|\bamenities\b/;
 function rentalIsWanted(low) {
@@ -1622,8 +1622,11 @@ async function todaySheet() {
     for (const num of to) {
       const jid = num + '@s.whatsapp.net';
       try {
-        await sock.sendMessage(jid, { document: pdf, mimetype: 'application/pdf', fileName: 'Today-in-Jerusalem-' + day + '.pdf',
-          caption: '📅 *TODAY in Jerusalem* — ' + nice + '\n' + events.length + ' events, each with a Read-more button to its post. Ready for your status — powered by chutznik.org' });
+        await Promise.race([
+          sock.sendMessage(jid, { document: pdf, mimetype: 'application/pdf', fileName: 'Today-in-Jerusalem-' + day + '.pdf',
+            caption: '📅 *TODAY in Jerusalem* — ' + nice + '\n' + events.length + ' events, each with a Read-more button to its post. Ready for your status — powered by chutznik.org' }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('send timed out')), 90000)),
+        ]);
         okTo.push(num);
       } catch (e) { log('📅 today sheet to ' + num + ' failed: ' + (e && e.message)); }
       await new Promise((r) => setTimeout(r, 4000));
@@ -1818,4 +1821,8 @@ async function start() {
   sock.ev.on('messages.upsert', ({ messages, type }) => { handleMessages(sock, messages || [], type === 'notify' ? 'live' : 'history'); });
 }
 process.on('SIGINT', async () => { log('flushing before exit…'); await flush(); process.exit(0); });
+// A stray error must never take the whole feed down (the bridge went quiet for a day, 15 Sep 2026):
+// log it, upload the status so it shows on the site, and carry on
+process.on('uncaughtException', (e) => { try { log('💥 uncaught: ' + (e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e)); } catch (x) {} });
+process.on('unhandledRejection', (e) => { try { log('💥 unhandled: ' + (e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e)); } catch (x) {} });
 start();
