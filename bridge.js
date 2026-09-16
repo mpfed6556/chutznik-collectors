@@ -1338,6 +1338,8 @@ async function pullSettings() {
       NOTIFY_MODE = String(j.NOTIFY_MODE).toLowerCase(); log('⚙️  poster notes mode is now: ' + NOTIFY_MODE + ' (from the site settings)');
     }
     if (Array.isArray(j.SKIP_CHATS)) { const list = j.SKIP_CHATS.map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._skipChats || [])) { global._skipChats = list; log('⚙️  chats skipped: ' + list.join(' | ')); } }
+    // BACKFILL_SINCE (ISO time): after an outage, ask WhatsApp for each group's older messages back to this time
+    if (j.BACKFILL_SINCE !== undefined) { const t = Date.parse(String(j.BACKFILL_SINCE || '')) || 0; if (t !== (global._backfillSince || 0)) { global._backfillSince = t; BACKFILL = { since: t, chats: {} }; saveBackfill(); log(t ? '⚙️  backfill: asking each group for its messages back to ' + new Date(t).toISOString() : '⚙️  backfill: off'); } }
     // who gets the daily TODAY sheet (numbers with country code, no +)
     if (Array.isArray(j.TODAY_TO)) { const list = j.TODAY_TO.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._todayTo || [])) { global._todayTo = list; log('⚙️  TODAY sheet goes to: ' + (list.join(', ') || '(own number)')); } }
   } catch (e) {}
@@ -1746,6 +1748,27 @@ setTimeout(nudgeDraftEmails, 20 * 1000);
 // ── Connection ───────────────────────────────────────────────────────────────
 const buffersPush = (name, it) => { if (!buffers.has(name)) buffers.set(name, []); buffers.get(name).push(it); };
 
+// ── Backfill after an outage (Miriam, 16 Sep 2026): WhatsApp only hands a newly
+//    paired device the odd recent message, so the bridge asks each group, on
+//    demand, for the messages before the first one it sees — round after round —
+//    until it is back at BACKFILL_SINCE (set in bridge-settings.json on the site).
+const BACKFILL_FILE = path.join(__dirname, 'backfill.json');
+let BACKFILL = { since: 0, chats: {} }; try { BACKFILL = JSON.parse(fs.readFileSync(BACKFILL_FILE, 'utf8')) || BACKFILL; } catch (e) {}
+const saveBackfill = () => { try { fs.writeFileSync(BACKFILL_FILE, JSON.stringify(BACKFILL)); } catch (e) {} };
+global._backfillSince = BACKFILL.since || 0;
+async function maybeBackfill(sock, m, ts) {
+  try {
+    const since = global._backfillSince || 0; if (!since || !ts || !m.key || !m.key.id) return;
+    const jid = m.key.remoteJid; const st = BACKFILL.chats[jid] || (BACKFILL.chats[jid] = { oldest: 0, rounds: 0, done: false });
+    if (st.done) return;
+    if (!st.oldest || ts < st.oldest) { st.oldest = ts; st.oldestKey = { remoteJid: jid, fromMe: !!m.key.fromMe, id: m.key.id }; }
+    if (st.oldest <= since) { st.done = true; saveBackfill(); return; }
+    if (st.rounds >= 8 || (st.askedAt && Date.now() - st.askedAt < 20000)) return;   // one request in flight at a time
+    st.rounds++; st.askedAt = Date.now(); saveBackfill();
+    await sock.fetchMessageHistory(100, st.oldestKey, st.oldest);
+    log('⏪ backfill: asked ' + (await groupName(sock, jid)) + ' for 100 messages before ' + new Date(st.oldest).toISOString().slice(5, 16) + ' (round ' + st.rounds + ')');
+  } catch (e) { try { log('⏪ backfill: ' + (e && e.message)); } catch (x) {} }
+}
 async function handleMessages(sock, messages, label) {
   const cutoff = Date.now() - HOURS * 3600 * 1000;
   let n = 0;
@@ -1772,7 +1795,8 @@ async function handleMessages(sock, messages, label) {
       if (SEEN.has(mid)) continue;
       const name = await groupName(sock, jid);
       // job chats get the longer look-back; everything else the normal window
-      const myCutoff = isJobChat(name) ? Date.now() - JOBS_HOURS * 3600 * 1000 : cutoff;
+      const myCutoff = Math.min(isJobChat(name) ? Date.now() - JOBS_HOURS * 3600 * 1000 : cutoff, global._backfillSince || Infinity);
+      if (global._backfillSince && ts) maybeBackfill(sock, m, ts);   // reach further back if we were away
       if (ts && ts < myCutoff) continue;                    // older than the window
       SEEN.add(mid);
       if (EXCLUDE.includes(name.toLowerCase())) continue;
