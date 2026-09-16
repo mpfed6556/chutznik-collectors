@@ -51,7 +51,7 @@ const saveSeen = () => { try { fs.writeFileSync(SEEN_FILE, JSON.stringify([...SE
 const LOG_RING = [];
 const log = (s) => { console.log(new Date().toLocaleTimeString() + '  ' + s); try { logKeep(String(s)); } catch (e) {} };
 log('engine: Baileys (direct protocol, no browser) · v' + require('@whiskeysockets/baileys/package.json').version);
-log('config: site=' + SITE + ' · key=' + (INGEST_KEY ? INGEST_KEY.slice(0,6) + '… (' + INGEST_KEY.length + ' chars)' : '❗ MISSING — check .env') + ' · send every ' + FLUSH_MINUTES + ' min · history ' + HOURS + 'h');
+log('config: site=' + SITE + ' · key=' + (INGEST_KEY ? INGEST_KEY.slice(0,6) + '… (' + INGEST_KEY.length + ' chars)' : '❗ MISSING — check .env') + ' · send within ' + (process.env.FLUSH_SECONDS || 8) + ' s · history ' + HOURS + 'h');
 
 // ── OCR (lazy-loaded; heavy) ─────────────────────────────────────────────────
 let ocrWorkerP = null;
@@ -1728,7 +1728,11 @@ async function flush() {
     }
   }
 }
-setInterval(flush, FLUSH_MINUTES * 60 * 1000);
+// Messages go to the site within seconds, not once a minute (Miriam, 17 Sep
+// 2026): the buffer is checked every few seconds; a flush never overlaps another.
+const FLUSH_MS = process.env.FLUSH_SECONDS ? Math.max(3, Number(process.env.FLUSH_SECONDS)) * 1000 : 8000;
+let _flushing = false;
+setInterval(async () => { if (_flushing) return; _flushing = true; try { await flush(); } catch (e) { try { log('flush: ' + (e && e.message)); } catch (x) {} } finally { _flushing = false; } }, FLUSH_MS);
 
 // ── Chutznik reply drafts → Miriam's inbox ──────────────────────────────────
 // The drafter writes suggested replies into drafts.json; the site emails each
@@ -1842,7 +1846,7 @@ async function start() {
     }
     if (u.qr) { console.log('\n📱 Scan with WhatsApp → Settings → Linked devices → Link a device:\n'); qrcode.generate(u.qr, { small: true }); }
     if (u.connection === 'open') {
-      log('✅ Connected. Watching ALL groups. History for the last ' + HOURS + 'h arrives on its own; live messages are sent within ~' + FLUSH_MINUTES + ' min.');
+      log('✅ Connected. Watching ALL groups. History for the last ' + HOURS + 'h arrives on its own; live messages reach the site within seconds.');
       setTimeout(async () => { await refreshLids(sock); await backfillContacts(); }, 8000);
       if (!global._lidTimer) global._lidTimer = setInterval(async () => { try { await refreshLids(global._sock); await backfillContacts(); } catch (e) {} }, 60 * 60 * 1000);
     }
