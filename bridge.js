@@ -1772,6 +1772,10 @@ function backfillOn(name) {
   const n = String(name || '').toLowerCase();
   return list.some((x) => n.includes(String(x).toLowerCase()));
 }
+// How many rounds of 100 messages a group may walk back. A catch-up across every
+// group stays short; a backfill aimed at named groups is allowed to go properly
+// deep, since it is only ever a handful of chats.
+function maxBackfillRounds() { return (global._backfillChats || []).length ? 40 : 8; }
 async function maybeBackfill(sock, m, ts, name) {
   try {
     const since = global._backfillSince || 0; if (!since || !ts || !m.key || !m.key.id) return;
@@ -1780,7 +1784,7 @@ async function maybeBackfill(sock, m, ts, name) {
     if (st.done) return;
     if (!st.oldest || ts < st.oldest) { st.oldest = ts; st.oldestKey = { remoteJid: jid, fromMe: !!m.key.fromMe, id: m.key.id }; }
     if (st.oldest <= since) { st.done = true; saveBackfill(); return; }
-    if (st.rounds >= 8 || (st.askedAt && Date.now() - st.askedAt < 20000)) return;   // one request in flight at a time
+    if (st.rounds >= maxBackfillRounds() || (st.askedAt && Date.now() - st.askedAt < 20000)) return;   // one request in flight at a time
     st.rounds++; st.askedAt = Date.now(); saveBackfill();
     await sock.fetchMessageHistory(100, st.oldestKey, st.oldest);
     log('⏪ backfill: asked ' + (await groupName(sock, jid)) + ' for 100 messages before ' + new Date(st.oldest).toISOString().slice(5, 16) + ' (round ' + st.rounds + ')');
@@ -1810,7 +1814,7 @@ async function nudgeBackfill() {
       const s2 = st || (BACKFILL.chats[jid] = { oldest: 0, rounds: 0, done: false });
       if (!s2.oldest) { const lk = LASTKEY[jid]; s2.oldest = lk.ts; s2.oldestKey = { remoteJid: jid, fromMe: !!lk.fromMe, id: lk.id }; }
       if (s2.oldest <= since) { s2.done = true; saveBackfill(); continue; }
-      if (s2.rounds >= 8 || (s2.askedAt && Date.now() - s2.askedAt < 20000)) continue;
+      if (s2.rounds >= maxBackfillRounds() || (s2.askedAt && Date.now() - s2.askedAt < 20000)) continue;
       s2.rounds++; s2.askedAt = Date.now(); saveBackfill();
       await sock.fetchMessageHistory(100, s2.oldestKey, s2.oldest);
       log('\u23ea backfill: nudged ' + name + ' for 100 messages before ' + new Date(s2.oldest).toISOString().slice(5, 16) + ' (round ' + s2.rounds + ')');
@@ -1847,15 +1851,19 @@ async function handleMessages(sock, messages, label) {
       // are brand-new arrivals -- so a group the bridge is already up to date on
       // could never start reaching back at all (see nudgeBackfill).
       if (ts && m.key && m.key.id) { const cur = LASTKEY[jid]; if (!cur || ts > cur.ts) { LASTKEY[jid] = { id: m.key.id, fromMe: !!m.key.fromMe, ts }; _lkDirty = true; } }
+      const name = await groupName(sock, jid);
+      // Walk the reach-back along BEFORE the already-seen check below. What comes
+      // back from a history request is mostly messages the bridge already knows,
+      // and if those are dropped first, the oldest-message mark never moves and
+      // the walk-back sticks on the same round for ever -- which is what it did.
+      if (global._backfillSince && ts) maybeBackfill(sock, m, ts, name);   // reach further back if we were away
       const mid = 'm_' + (m.key.id || '');
       if (SEEN.has(mid)) continue;
-      const name = await groupName(sock, jid);
       // job chats get the longer look-back; everything else the normal window
       // The backfill window only widens the look-back for the groups it covers;
       // every other group keeps its normal one, so a long reach-back into one
       // feed doesn't pull a week of everything else in with it.
       const myCutoff = Math.min(isJobChat(name) ? Date.now() - JOBS_HOURS * 3600 * 1000 : cutoff, (global._backfillSince && backfillOn(name)) ? global._backfillSince : Infinity);
-      if (global._backfillSince && ts) maybeBackfill(sock, m, ts, name);   // reach further back if we were away
       if (ts && ts < myCutoff) continue;                    // older than the window
       SEEN.add(mid);
       if (EXCLUDE.includes(name.toLowerCase())) continue;
