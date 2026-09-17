@@ -1786,6 +1786,39 @@ async function maybeBackfill(sock, m, ts, name) {
     log('⏪ backfill: asked ' + (await groupName(sock, jid)) + ' for 100 messages before ' + new Date(st.oldest).toISOString().slice(5, 16) + ' (round ' + st.rounds + ')');
   } catch (e) { try { log('⏪ backfill: ' + (e && e.message)); } catch (x) {} }
 }
+// The newest message key we have per group, kept on disk so it survives a
+// restart. Only used to give a reach-back something to count back from.
+const LASTKEY_FILE = path.join(__dirname, 'lastkey.json');
+let LASTKEY = {}; try { LASTKEY = JSON.parse(fs.readFileSync(LASTKEY_FILE, 'utf8')) || {}; } catch (e) {}
+let _lkDirty = false;
+setInterval(() => { if (!_lkDirty) return; _lkDirty = false; try { fs.writeFileSync(LASTKEY_FILE, JSON.stringify(LASTKEY)); } catch (e) {} }, 60 * 1000);
+
+// maybeBackfill only ever runs on a message the bridge has not seen before, so a
+// group it is already up to date on never starts reaching back -- nothing arrives
+// to set it off. When a backfill is aimed at named groups (BACKFILL_CHATS), nudge
+// those groups along on a timer instead of waiting for someone to post.
+async function nudgeBackfill() {
+  try {
+    const sock = global._sock, since = global._backfillSince || 0;
+    if (!sock || !since) return;
+    if (!(global._backfillChats || []).length) return;   // targeted backfills only
+    for (const jid of Object.keys(LASTKEY)) {
+      const st = BACKFILL.chats[jid];
+      if (st && st.done) continue;
+      const name = await groupName(sock, jid);
+      if (!backfillOn(name)) continue;
+      const s2 = st || (BACKFILL.chats[jid] = { oldest: 0, rounds: 0, done: false });
+      if (!s2.oldest) { const lk = LASTKEY[jid]; s2.oldest = lk.ts; s2.oldestKey = { remoteJid: jid, fromMe: !!lk.fromMe, id: lk.id }; }
+      if (s2.oldest <= since) { s2.done = true; saveBackfill(); continue; }
+      if (s2.rounds >= 8 || (s2.askedAt && Date.now() - s2.askedAt < 20000)) continue;
+      s2.rounds++; s2.askedAt = Date.now(); saveBackfill();
+      await sock.fetchMessageHistory(100, s2.oldestKey, s2.oldest);
+      log('\u23ea backfill: nudged ' + name + ' for 100 messages before ' + new Date(s2.oldest).toISOString().slice(5, 16) + ' (round ' + s2.rounds + ')');
+    }
+  } catch (e) { try { log('\u23ea backfill nudge: ' + (e && e.message)); } catch (x) {} }
+}
+setInterval(nudgeBackfill, 2 * 60 * 1000); setTimeout(nudgeBackfill, 60 * 1000);
+
 async function handleMessages(sock, messages, label) {
   const cutoff = Date.now() - HOURS * 3600 * 1000;
   let n = 0;
@@ -1808,6 +1841,12 @@ async function handleMessages(sock, messages, label) {
       }
       if (!m.message) continue;                             // protocol/empty
       const ts = Number(m.messageTimestamp || 0) * 1000;
+      // Remember the newest message key in each group, BEFORE the already-seen
+      // check below throws it away. A reach-back has to hand WhatsApp a real
+      // message to count back from, and without this the only ones we ever hold
+      // are brand-new arrivals -- so a group the bridge is already up to date on
+      // could never start reaching back at all (see nudgeBackfill).
+      if (ts && m.key && m.key.id) { const cur = LASTKEY[jid]; if (!cur || ts > cur.ts) { LASTKEY[jid] = { id: m.key.id, fromMe: !!m.key.fromMe, ts }; _lkDirty = true; } }
       const mid = 'm_' + (m.key.id || '');
       if (SEEN.has(mid)) continue;
       const name = await groupName(sock, jid);
