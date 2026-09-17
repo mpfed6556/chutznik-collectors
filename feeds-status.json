@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-17T11:55:08.098Z",
+  "lastRun": "2026-09-17T16:48:40.435Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -27,7 +27,7 @@
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
+    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Electric Corporation": "no feed, no scannable items, nothing in the news last 48h",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
@@ -63,7 +63,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-17T11:55:08.097Z",
+      "lastRun": "2026-09-17T16:48:40.434Z",
       "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
@@ -107,6 +107,12 @@
         ],
         "The Kotel": [
           {
+            "title": "“Go, Eat with Joy” – Yom Kippur",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157737/"
+          },
+          {
             "title": "Respect for Tradition – Parashat Ha’azinu",
             "date": null,
             "time": "",
@@ -129,12 +135,6 @@
             "date": "2026-09-28",
             "time": "8:45",
             "link": "https://thekotel.org/en/157667/"
-          },
-          {
-            "title": "Environmental Responsibility – Parashat Nitzavim – Vayelech",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157483/"
           }
         ],
         "Jerusalem Municipality": [],
