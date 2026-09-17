@@ -33,6 +33,12 @@ function isJobChat(name){ const n = String(name || '').toLowerCase(); return /\b
 const RENTAL_CHATS = (process.env.RENTAL_CHATS || '').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
 function isRentalChat(name){ const n = String(name || '').toLowerCase(); return /\brent|real ?estate|\bapartments?\b|\bapts?\b|\bdira|\bdirot|\bsublet|\bhousing\b|\bflats?\b|\brealty\b|\bproperties\b|\bproperty\b|\baccommodation|\bvacation\b|\bsukkos? (?:rentals?|apartments?)|נדל|דירות|דירה|השכרה|סאבלט/.test(n) || RENTAL_CHATS.includes(n); }
 const RENT_HINT = /\b(apartment|apt|flat|dira|unit|penthouse|studio|rooms?|bdrms?|bedrooms?|beds?|sublet|rent(?:al)?|furnished|balcony|porch|elevator|floor|sukkah|chagim|sukkos|sukkot|pesach|yom tov|short[- ]term|long[- ]term|per month|per night|a month|a night|nis|shekel)\b|₪|\$\s?\d|\d\s?\$|\/\s*(?:month|night|mo)\b/i;
+// ...but a PRICE on its own must never turn a message in a rental group into a
+// rental (Miriam, 17 Sep 2026): a lash-lift ad reading "240₪ instead of 310₪"
+// was filed as a Rental, auto-published, and handed the invented title
+// "Apartment avail in Jerusalem". Inferring a rental from the group now needs an
+// actual housing word; a shekel sign, "nis" or a yom tov on their own do not.
+const RENT_STRONG = /\b(apartments?|apt|flat|dira|dirot|penthouse|sublet|sublease|rent(?:al|als|ing)?|furnished|unfurnished|balcony|mirpeset|machsan|sukkah|bdrms?|bedrooms?|roommates?|tenants?|lease|short[- ]term|long[- ]term|per month|a month)\b|\b\d+\s*(?:rooms?|beds?)\b|\/\s*(?:month|mo)\b/i;
 // The "Apt test" feed (Miriam, 10 Sep 2026): a private chat where every photo
 // she sends becomes its OWN post under Items, published straight away, with a
 // short title and body taken from the caption she writes for that picture.
@@ -736,7 +742,7 @@ async function intake(sock, m, chatName) {
   let kind = classify(body, !!media);
   if ((cards.length || link) && (kind === 'chatter' || kind === 'info')) kind = 'answer';
   // in a rental group, a housing message is a Rental even without "for rent"
-  if (kind !== 'rental' && kind !== 'chatter' && kind !== 'question' && isRentalChat(chatName) && RENT_HINT.test(body) && body.length > 25) kind = 'rental';
+  if (kind !== 'rental' && kind !== 'chatter' && kind !== 'question' && isRentalChat(chatName) && RENT_STRONG.test(body) && body.length > 25) kind = 'rental';
   return { id: key.id || String(Date.now()+Math.random()), ts, chat: chatName, sender, phone, body, media, kind,
            quotedId, mentions, cards, link,
            // where a private "your post is up" note can be sent (real number first, privacy id as fallback)
@@ -1157,7 +1163,7 @@ async function buildPost(cluster, chatName) {
   // waits for Miriam like any other group message.
   // a housing request/offer in a rental group (asked as a question, with or
   // without replies) is a Rental too, with the structured rental title
-  if (kind !== 'rental' && isRentalChat(chatName) && RENT_HINT.test(allText)) { kind = 'rental'; title = rentalTitle(first.body + ' ' + allText); }
+  if (kind !== 'rental' && isRentalChat(chatName) && RENT_STRONG.test(allText)) { kind = 'rental'; title = rentalTitle(first.body + ' ' + allText); }
   const jobChat = isJobChat(chatName);
   if (jobChat && kind !== 'rental' && looksLikeJob(allText)) kind = 'job';
   if (isAppeal(allText) && kind !== 'rental') kind = 'appeal';
