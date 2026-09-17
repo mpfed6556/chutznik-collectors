@@ -1339,7 +1339,12 @@ async function pullSettings() {
     }
     if (Array.isArray(j.SKIP_CHATS)) { const list = j.SKIP_CHATS.map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._skipChats || [])) { global._skipChats = list; log('⚙️  chats skipped: ' + list.join(' | ')); } }
     // BACKFILL_SINCE (ISO time): after an outage, ask WhatsApp for each group's older messages back to this time
-    if (j.BACKFILL_SINCE !== undefined) { const t = Date.parse(String(j.BACKFILL_SINCE || '')) || 0; if (t !== (global._backfillSince || 0)) { global._backfillSince = t; BACKFILL = { since: t, chats: {} }; saveBackfill(); log(t ? '⚙️  backfill: asking each group for its messages back to ' + new Date(t).toISOString() : '⚙️  backfill: off'); } }
+    if (j.BACKFILL_SINCE !== undefined) { const t = Date.parse(String(j.BACKFILL_SINCE || '')) || 0; if (t !== (global._backfillSince || 0)) { global._backfillSince = t; BACKFILL = { since: t, chats: {} }; saveBackfill(); log(t ? '⚙️  backfill: asking ' + ((global._backfillChats || []).length ? (global._backfillChats || []).join(' | ') : 'each group') + ' for messages back to ' + new Date(t).toISOString() : '⚙️  backfill: off'); } }
+    // BACKFILL_CHATS (group names, or bits of them): reach back in THESE groups
+    // only. Empty/absent = every group, which is what an after-an-outage catch-up
+    // wants. Naming one group is for bringing in a single feed's past content
+    // without dragging a week of everything else into the review queue at once.
+    if (j.BACKFILL_CHATS !== undefined) { const list = (Array.isArray(j.BACKFILL_CHATS) ? j.BACKFILL_CHATS : []).map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._backfillChats || [])) { global._backfillChats = list; BACKFILL.chats = {}; saveBackfill(); log('⚙️  backfill limited to: ' + (list.join(' | ') || '(every group)')); } }
     // who gets the daily TODAY sheet (numbers with country code, no +)
     if (Array.isArray(j.TODAY_TO)) { const list = j.TODAY_TO.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._todayTo || [])) { global._todayTo = list; log('⚙️  TODAY sheet goes to: ' + (list.join(', ') || '(own number)')); } }
   } catch (e) {}
@@ -1760,9 +1765,17 @@ const BACKFILL_FILE = path.join(__dirname, 'backfill.json');
 let BACKFILL = { since: 0, chats: {} }; try { BACKFILL = JSON.parse(fs.readFileSync(BACKFILL_FILE, 'utf8')) || BACKFILL; } catch (e) {}
 const saveBackfill = () => { try { fs.writeFileSync(BACKFILL_FILE, JSON.stringify(BACKFILL)); } catch (e) {} };
 global._backfillSince = BACKFILL.since || 0;
-async function maybeBackfill(sock, m, ts) {
+// Is this group one the backfill is meant to reach into? No list = all of them.
+function backfillOn(name) {
+  const list = global._backfillChats || [];
+  if (!list.length) return true;
+  const n = String(name || '').toLowerCase();
+  return list.some((x) => n.includes(String(x).toLowerCase()));
+}
+async function maybeBackfill(sock, m, ts, name) {
   try {
     const since = global._backfillSince || 0; if (!since || !ts || !m.key || !m.key.id) return;
+    if (!backfillOn(name)) return;
     const jid = m.key.remoteJid; const st = BACKFILL.chats[jid] || (BACKFILL.chats[jid] = { oldest: 0, rounds: 0, done: false });
     if (st.done) return;
     if (!st.oldest || ts < st.oldest) { st.oldest = ts; st.oldestKey = { remoteJid: jid, fromMe: !!m.key.fromMe, id: m.key.id }; }
@@ -1799,8 +1812,11 @@ async function handleMessages(sock, messages, label) {
       if (SEEN.has(mid)) continue;
       const name = await groupName(sock, jid);
       // job chats get the longer look-back; everything else the normal window
-      const myCutoff = Math.min(isJobChat(name) ? Date.now() - JOBS_HOURS * 3600 * 1000 : cutoff, global._backfillSince || Infinity);
-      if (global._backfillSince && ts) maybeBackfill(sock, m, ts);   // reach further back if we were away
+      // The backfill window only widens the look-back for the groups it covers;
+      // every other group keeps its normal one, so a long reach-back into one
+      // feed doesn't pull a week of everything else in with it.
+      const myCutoff = Math.min(isJobChat(name) ? Date.now() - JOBS_HOURS * 3600 * 1000 : cutoff, (global._backfillSince && backfillOn(name)) ? global._backfillSince : Infinity);
+      if (global._backfillSince && ts) maybeBackfill(sock, m, ts, name);   // reach further back if we were away
       if (ts && ts < myCutoff) continue;                    // older than the window
       SEEN.add(mid);
       if (EXCLUDE.includes(name.toLowerCase())) continue;
