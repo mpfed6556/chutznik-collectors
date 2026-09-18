@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-17T22:50:00.937Z",
+  "lastRun": "2026-09-18T00:54:35.586Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,14 +20,14 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
+    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Electric Corporation": "no feed, no scannable items, nothing in the news last 48h",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
@@ -63,14 +63,14 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-17T22:50:00.936Z",
+      "lastRun": "2026-09-18T00:54:35.585Z",
       "sent": 1,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
-        "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId cz0Gd6DbWMHXf_qtum9kd",
-        "iTravelJerusalem": "ok via listing cards (1 new of 40)"
+        "iTravelJerusalem hints": "20 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId cz0Gd6DbWMHXf_qtum9kd",
+        "iTravelJerusalem": "ok via listing cards (1 new of 20)"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -140,11 +140,11 @@
         "Jerusalem Municipality": [],
         "iTravelJerusalem": [
           {
-            "title": "Jerusalem March 2026",
+            "title": "Birkat Hakohanim – the Priestly Blessing 2026",
             "date": "2026-09-28",
-            "time": "07:00",
-            "link": "https://www.itraveljerusalem.com/event/jerusalem-march",
-            "raw": "1 dates; first {\"startDate\":\"2026-09-28T04:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"07:00\",\"endTime\":\"16:00\",\"repeats\":\"no\"}"
+            "time": "09:30",
+            "link": "https://www.itraveljerusalem.com/event/birkat-hakohanim",
+            "raw": "1 dates; first {\"startDate\":\"2026-09-28T06:30:00.000Z\",\"endDate\":\"\",\"startTime\":\"09:30\",\"endTime\":\"10:30\",\"repeats\":\"no\"}"
           }
         ]
       }
