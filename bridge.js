@@ -106,12 +106,22 @@ async function ocrImage(base64) {
 async function uploadImage(base64, mime, tag, index) {
   try {
     const r = await fetch(SITE + '/api/save-attachment', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      // The site's write gate refuses anything that isn't a browser. The bridge
+      // is a server, so it identifies itself with the ingest key, the same way
+      // it does for /api/ingest-whatsapp — without this every photo was turned
+      // away with a 403 and thrown away here in silence, for twelve days.
+      headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' },
       body: JSON.stringify({ postId: 'wa_' + tag, index, mime: mime || 'image/jpeg', base64 }),
     });
     const j = await r.json().catch(() => ({}));
-    return (j && j.url) || '';
-  } catch (e) { return ''; }
+    if (!r.ok || !j || !j.url) {
+      // Never fail silently again: a photo that does not upload says so.
+      log('   📷 photo not saved (' + r.status + '): ' + String((j && j.error) || '').slice(0, 90));
+      return '';
+    }
+    return j.url;
+  } catch (e) { log('   📷 photo not saved: ' + (e && e.message ? e.message.slice(0, 90) : e)); return ''; }
 }
 
 // ── Send one finished post into the admin review queue ───────────────────────
