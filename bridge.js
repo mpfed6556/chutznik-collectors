@@ -883,6 +883,42 @@ function resolveParent(m, batchIndex) {
   return null;
 }
 
+// A photo sent on its own, right before or right after a person's own text
+// (the rental, then the picture of it as a second message), belongs to that
+// text: the photo joins the post instead of becoming a post of its own that is
+// nothing but the words read off the picture -- which left the real post with
+// no picture at all (Miriam, 18 Sep 2026: "ensure a pic is never missed").
+const PAIR_MS = 4 * 60 * 1000;
+const bareOf = (m) => !!(m && m.media) && stripEmoji(m.body || '').trim().length < 4;
+function pairPhotos(msgs) {
+  const out = [];
+  const held = new Map();   // text message id -> photos sent just BEFORE it, waiting to follow it
+  for (let i = 0; i < msgs.length; i++) {
+    const m = msgs[i];
+    if (m._attachTo) continue;                                    // already placed
+    if (bareOf(m)) {
+      // a text of hers just before this photo? the photo follows it
+      for (let j = out.length - 1; j >= 0 && j >= out.length - 4; j--) {
+        const t = out[j];
+        if (t.sender !== m.sender) break;
+        if (!bareOf(t) && (t.body || '').trim() && m.ts - t.ts < PAIR_MS) { m._attachTo = t.id; break; }
+      }
+      if (m._attachTo) { out.push(m); continue; }
+      // a text of hers just after? hold the photo and let it follow that text
+      for (let j = i + 1; j < msgs.length && j <= i + 3; j++) {
+        const t = msgs[j];
+        if (t.sender !== m.sender) break;
+        if (!bareOf(t) && (t.body || '').trim() && t.ts - m.ts < PAIR_MS) { m._attachTo = t.id; (held.get(t.id) || held.set(t.id, []).get(t.id)).push(m); break; }
+      }
+      if (!m._attachTo) out.push(m);
+      continue;
+    }
+    out.push(m);
+    for (const p of (held.get(m.id) || [])) out.push(p);
+  }
+  return out;
+}
+
 // Group a flush window into posts and comments.
 //  {kind:'combined', q, answers[]}  a question with its replies
 //  {kind:'single', msgs:[m]}         a rental, an ad, a recommendation on its own
@@ -890,7 +926,17 @@ function resolveParent(m, batchIndex) {
 function clusterThreads(msgs) {
   const out = [];
   const batchIndex = new Map();   // messageId → cluster in this batch
-  for (const m of msgs) {
+  for (const m of pairPhotos(msgs)) {
+    // a bare photo that belongs to a text in this batch rides along with it
+    if (m._attachTo) {
+      const c = batchIndex.get(m._attachTo);
+      if (c && c.kind !== 'sent') {
+        if (c.kind === 'combined') c.answers.push(m); else c.msgs.push(m);
+        batchIndex.set(m.id, c);
+        continue;
+      }
+      // its text went to a post we already sent, or was dropped: carry on as usual
+    }
     const hasStuff = (m.cards && m.cards.length) || m.link || m.media;
     const parent = resolveParent(m, batchIndex);
     if (m.kind === 'chatter' && !hasStuff && !parent) continue;
