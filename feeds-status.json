@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-19T21:45:17.891Z",
+  "lastRun": "2026-09-19T23:38:39.973Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -46,6 +46,7 @@
     "Metropoline": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Post": "no feed, no scannable items, nothing in the news last 48h",
     "Kol Zchut (All Rights)": "blocked: robots.txt unreachable — skipping to be safe",
+    "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Beit Shemesh Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
