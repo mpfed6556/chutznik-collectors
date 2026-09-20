@@ -1413,6 +1413,7 @@ async function pullSettings() {
     // without dragging a week of everything else into the review queue at once.
     if (j.BACKFILL_CHATS !== undefined) { const list = (Array.isArray(j.BACKFILL_CHATS) ? j.BACKFILL_CHATS : []).map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._backfillChats || [])) { global._backfillChats = list; BACKFILL.chats = {}; saveBackfill(); log('⚙️  backfill limited to: ' + (list.join(' | ') || '(every group)')); } }
     // who gets the daily TODAY sheet (numbers with country code, no +)
+    if (Array.isArray(j.RENTALS_TO)) { const list = j.RENTALS_TO.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._rentalsTo || [])) { global._rentalsTo = list; log('\u2699\ufe0f  RENTALS sheet goes to: ' + (list.join(', ') || '(same as TODAY)')); } }
     if (Array.isArray(j.TODAY_TO)) { const list = j.TODAY_TO.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._todayTo || [])) { global._todayTo = list; log('⚙️  TODAY sheet goes to: ' + (list.join(', ') || '(own number)')); } }
   } catch (e) {}
 }
@@ -1584,7 +1585,7 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+const EXTRA_FILES = ['scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
@@ -1715,6 +1716,50 @@ async function todaySheet() {
 }
 setInterval(todaySheet, 15 * 60 * 1000);
 setTimeout(todaySheet, 90 * 1000);
+
+// ── The daily RENTALS sheet (Miriam, 20 Sep 2026): the same stationery as the
+//    TODAY sheet, one card per rental that went public in the last day, each
+//    linking to its post. Mornings, once a day, to RENTALS_TO (else TODAY_TO).
+const RENTALS_FILE = path.join(__dirname, 'rentals-sent.json');
+const RENTALS_HOUR = Number(process.env.RENTALS_HOUR || 8);
+let _rentalsBusy = false;
+async function rentalsSheet() {
+  if (_rentalsBusy) return; _rentalsBusy = true;
+  try {
+    const day = todayKey();
+    let sent = {}; try { sent = JSON.parse(fs.readFileSync(RENTALS_FILE, 'utf8')) || {}; } catch (e) {}
+    if (sent[day]) return;
+    const hour = israelHour();
+    if (hour < RENTALS_HOUR || hour >= 14) return;
+    const sock = global._sock; if (!sock || !sock.user) return;
+    const R = require('./scripts/rentals-pdf.js');
+    const { offers, wanted, pdf } = await R.makeRentalsSheet(SITE);
+    if (!pdf) { if (!sent['_checked_' + day]) { log('🔑 rentals: nothing new today — no sheet'); sent['_checked_' + day] = true; fs.writeFileSync(RENTALS_FILE, JSON.stringify(sent)); } return; }
+    const me = String(sock.user.id || '').split(':')[0].split('@')[0];
+    const to = (global._rentalsTo && global._rentalsTo.length) ? global._rentalsTo : ((global._todayTo && global._todayTo.length) ? global._todayTo : [MY_NUMBERS[0] || me]);
+    const nice = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Jerusalem', weekday: 'long', month: 'long', day: 'numeric' });
+    const okTo = [];
+    for (const num of to) {
+      const jid = num + '@s.whatsapp.net';
+      try {
+        await Promise.race([
+          sock.sendMessage(jid, { document: pdf, mimetype: 'application/pdf', fileName: 'Rentals-in-Jerusalem-' + day + '.pdf',
+            caption: '🔑 *RENTALS in Jerusalem* — ' + nice + '\n' + offers.length + ' new listing' + (offers.length === 1 ? '' : 's') + (wanted.length ? ' + ' + wanted.length + ' looking for a place' : '') + ', each linking to its post — powered by chutznik.org' }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('send timed out')), 90000)),
+        ]);
+        okTo.push(num);
+      } catch (e) { log('🔑 rentals sheet to ' + num + ' failed: ' + (e && e.message)); }
+      await new Promise((r) => setTimeout(r, 4000));
+    }
+    if (!okTo.length) return;
+    sent[day] = Date.now(); for (const k of Object.keys(sent)) if (k.startsWith('_checked_')) delete sent[k];
+    fs.writeFileSync(RENTALS_FILE, JSON.stringify(sent));
+    log('🔑 rentals sheet sent to ' + okTo.join(', ') + ' (' + offers.length + ' + ' + wanted.length + ' wanted)');
+  } catch (e) { log('🔑 rentals sheet: ' + (e && e.message)); }
+  finally { _rentalsBusy = false; }
+}
+setInterval(rentalsSheet, 15 * 60 * 1000);
+setTimeout(rentalsSheet, 150 * 1000);
 
 // ── What's on in Jerusalem: the events sources (Reconnect Shiurim, the Kotel,
 //    the municipality, iTravelJerusalem) are read from here every 2 hours too —
