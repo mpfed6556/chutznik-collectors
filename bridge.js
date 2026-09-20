@@ -1810,15 +1810,24 @@ async function waDigest() {
     const to = (global._digestTo && global._digestTo.length) ? global._digestTo : DIGEST_DEFAULT_TO;
     const rr = await fetch(SITE + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' },
       body: JSON.stringify({ type: 'custom', to, subject: 'WhatsApp digest — ' + live.length + ' live, ' + queued.length + ' to review (' + nice + ')', body: text, html }) });
-    if (!rr.ok) { log('📨 digest: mail failed ' + rr.status); return; }
+    const rt = (await rr.text().catch(() => '')).slice(0, 200);
+    if (!rr.ok) { log('📨 digest: mail failed ' + rr.status + ' ' + rt); return; }
     sent[key] = Date.now(); for (const k of Object.keys(sent)) if (k < todayKey()) delete sent[k];
     fs.writeFileSync(DIGEST_FILE, JSON.stringify(sent));
-    log('📨 digest sent to ' + to.join(', ') + ' (' + live.length + ' live, ' + queued.length + ' queued)');
+    log('📨 digest sent to ' + to.join(', ') + ' (' + live.length + ' live, ' + queued.length + ' queued) · ' + rt);
   } catch (e) { log('📨 digest: ' + (e && e.message)); }
   finally { _digestBusy = false; }
 }
 setInterval(waDigest, 15 * 60 * 1000);
 setTimeout(waDigest, 240 * 1000);
+// One look at the site's email function after each start: deployed? keys there?
+// does its log line land? The answer goes into the status log.
+setTimeout(async () => {
+  try {
+    const r = await fetch(SITE + '/api/send-email?check=1', { headers: { 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, signal: AbortSignal.timeout(30000) });
+    log('📧 send-email check: HTTP ' + r.status + ' ' + (await r.text()).slice(0, 300));
+  } catch (e) { log('📧 send-email check: ' + (e && e.message)); }
+}, 90 * 1000);
 
 // ── What's on in Jerusalem: the events sources (Reconnect Shiurim, the Kotel,
 //    the municipality, iTravelJerusalem) are read from here every 2 hours too —
