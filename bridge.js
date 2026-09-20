@@ -1126,7 +1126,9 @@ async function buildPost(cluster, chatName) {
     const url = await uploadImage(m.media.base64, m.media.mime, tag, idx++);
     if (url) attachments.push({ url, name: 'photo' + idx + '.jpg' });
     const t = await ocrImage(m.media.base64);
-    if (t) { ocrTexts.push(t); ocrByMsg.set(m.id, t); }
+    // two photos of the same flyer read the same: keep the words once
+    const tk = t ? t.toLowerCase().replace(/[^a-z0-9\u0590-\u05ff]+/g, '').slice(0, 160) : '';
+    if (t && !ocrTexts.some((x) => x.toLowerCase().replace(/[^a-z0-9\u0590-\u05ff]+/g, '').slice(0, 160) === tk)) { ocrTexts.push(t); ocrByMsg.set(m.id, t); }
     if (idx >= 6) break;
   }
 
@@ -1172,12 +1174,15 @@ async function buildPost(cluster, chatName) {
   } else {
     const cleaned = cleanBody(first.body, contacts);
     // Rentals get Miriam's structured title; everything else keeps its own words.
+    // a photo with no words of its own: the words on the picture are the post
+    // (Miriam, 20 Sep 2026: titles must be the actual summary, never "From <group>")
+    const fromPic = (!cleaned && ocrTexts.length) ? cleanBody(ocrTexts.join(' '), contacts) : '';
     title = first.kind === 'rental'
-      ? rentalTitle(first.body + ' ' + cleaned)
-      : smartTitle(cleaned || first.body, first.kind, chatName);
-    memo  = summarize(cleaned, 900);
+      ? rentalTitle(first.body + ' ' + (cleaned || fromPic))
+      : smartTitle(cleaned || first.body || fromPic, first.kind, chatName);
+    memo  = summarize(cleaned || fromPic, 900);
   }
-  if (ocrTexts.length && cluster.kind !== 'combined') {
+  if (ocrTexts.length && cluster.kind !== 'combined' && stripEmoji(first.body || '').trim()) {   // words of her own AND a picture: the picture's words follow
     const fromImg = summarize(cleanBody(ocrTexts.join(' '), contacts), 400);
     if (fromImg) memo += '\n\nFrom the attached image: ' + fromImg;
   }
