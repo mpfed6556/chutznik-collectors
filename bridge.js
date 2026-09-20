@@ -1127,8 +1127,8 @@ async function buildPost(cluster, chatName) {
     if (url) attachments.push({ url, name: 'photo' + idx + '.jpg' });
     const t = await ocrImage(m.media.base64);
     // two photos of the same flyer read the same: keep the words once
-    const tk = t ? t.toLowerCase().replace(/[^a-z0-9\u0590-\u05ff]+/g, '').slice(0, 160) : '';
-    if (t && !ocrTexts.some((x) => x.toLowerCase().replace(/[^a-z0-9\u0590-\u05ff]+/g, '').slice(0, 160) === tk)) { ocrTexts.push(t); ocrByMsg.set(m.id, t); }
+    const tk = t ? t.toLowerCase().replace(/[^a-z0-9\u0590-\u05ff]+/g, '').slice(0, 60) : '';
+    if (t && !ocrTexts.some((x) => x.toLowerCase().replace(/[^a-z0-9\u0590-\u05ff]+/g, '').slice(0, 60) === tk)) { ocrTexts.push(t); ocrByMsg.set(m.id, t); }
     if (idx >= 6) break;
   }
 
