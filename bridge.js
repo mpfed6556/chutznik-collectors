@@ -1413,6 +1413,7 @@ async function pullSettings() {
     // without dragging a week of everything else into the review queue at once.
     if (j.BACKFILL_CHATS !== undefined) { const list = (Array.isArray(j.BACKFILL_CHATS) ? j.BACKFILL_CHATS : []).map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._backfillChats || [])) { global._backfillChats = list; BACKFILL.chats = {}; saveBackfill(); log('⚙️  backfill limited to: ' + (list.join(' | ') || '(every group)')); } }
     // who gets the daily TODAY sheet (numbers with country code, no +)
+    if (Array.isArray(j.DIGEST_TO)) { const list = j.DIGEST_TO.map((x) => String(x || '').trim().toLowerCase()).filter((x) => x.includes('@')); if (JSON.stringify(list) !== JSON.stringify(global._digestTo || [])) { global._digestTo = list; log('\u2699\ufe0f  WhatsApp digest goes to: ' + (list.join(', ') || '(admin)')); } }
     if (Array.isArray(j.RENTALS_TO)) { const list = j.RENTALS_TO.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._rentalsTo || [])) { global._rentalsTo = list; log('\u2699\ufe0f  RENTALS sheet goes to: ' + (list.join(', ') || '(same as TODAY)')); } }
     if (Array.isArray(j.TODAY_TO)) { const list = j.TODAY_TO.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._todayTo || [])) { global._todayTo = list; log('⚙️  TODAY sheet goes to: ' + (list.join(', ') || '(own number)')); } }
   } catch (e) {}
@@ -1760,6 +1761,64 @@ async function rentalsSheet() {
 }
 setInterval(rentalsSheet, 15 * 60 * 1000);
 setTimeout(rentalsSheet, 150 * 1000);
+
+// ── The WhatsApp digest email (Miriam, 20 Sep 2026: "12 hr digest for whatsapp"):
+//    twice a day, 8:00 and 20:00 Israel time, one email listing every WhatsApp
+//    post of the last twelve hours — what went live, and what waits in the
+//    review queue — each line a link to its post. To DIGEST_TO in
+//    bridge-settings.json, else Miriam's inbox. Goes out through the site's own
+//    mail function with the ingest key, so it is logged like every other email.
+const DIGEST_FILE = path.join(__dirname, 'digest-sent.json');
+const DIGEST_SLOTS = [8, 20];
+const DIGEST_DEFAULT_TO = ['mpfederman@gmail.com'];
+let _digestBusy = false;
+function digestEsc(v) { return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+async function waDigest() {
+  if (_digestBusy) return; _digestBusy = true;
+  try {
+    const hour = israelHour();
+    const slot = DIGEST_SLOTS.find((h) => hour >= h && hour < h + 3);
+    if (slot === undefined) return;
+    const key = todayKey() + '-' + slot;
+    let sent = {}; try { sent = JSON.parse(fs.readFileSync(DIGEST_FILE, 'utf8')) || {}; } catch (e) {}
+    if (sent[key]) return;
+    if (!INGEST_KEY) return;
+    const r = await fetch(SITE + '/api/live-data?type=updates&queue=1&t=' + Date.now());
+    if (!r.ok) return;
+    const all = await r.json(); if (!Array.isArray(all)) return;
+    const since = Date.now() - 12 * 3600 * 1000, now = Date.now() + 60000;
+    const items = all.filter((p) => p && p.source === 'whatsapp' && (p.created || 0) >= since && (p.created || 0) <= now && !/^wa_(BABYSIT|CLEANERS)$/.test(String(p.id)))
+      .sort((a, b) => (b.created || 0) - (a.created || 0));
+    const live = items.filter((p) => p.status === 'public'), queued = items.filter((p) => p.status !== 'public');
+    const nice = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Jerusalem', weekday: 'long', month: 'long', day: 'numeric' }) + (slot === 8 ? ', morning' : ', evening');
+    const when = (p) => new Date(p.created).toLocaleTimeString('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
+    const link = (p) => SITE + '/post/up_' + encodeURIComponent(String(p.id));
+    const row = (p) => '<tr><td style="padding:6px 8px 6px 0;color:#9a8c80;font-size:12px;white-space:nowrap;vertical-align:top">' + when(p) + '</td>'
+      + '<td style="padding:6px 0"><a href="' + link(p) + '" style="color:#3a2920;font-weight:700;text-decoration:none">' + digestEsc(String(p.title || '(untitled)').slice(0, 90)) + '</a>'
+      + '<div style="font-size:12px;color:#9a8c80">' + digestEsc(String(p.group || '').slice(0, 50)) + ((p.types || []).length ? ' · ' + digestEsc(String(p.types[0])) : '') + '</div></td></tr>';
+    const section = (title, list, note) => '<h3 style="font-family:Georgia,serif;font-weight:700;color:#6b2a0c;font-size:16px;margin:22px 0 6px">' + title + ' <span style="color:#c4845f">' + list.length + '</span></h3>'
+      + (list.length ? '<table style="border-collapse:collapse;width:100%">' + list.slice(0, 150).map(row).join('') + '</table>' + (list.length > 150 ? '<div style="color:#9a8c80;font-size:12px">…and ' + (list.length - 150) + ' more on the site</div>' : '') : '<div style="color:#b8aa9c;font-size:13px">' + note + '</div>');
+    const html = '<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px;line-height:1.5;color:#3a2920;max-width:640px">'
+      + '<div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:#6b2a0c">WhatsApp on Chutznik — the last 12 hours</div>'
+      + '<div style="color:#9a8c80;font-size:13px;margin-bottom:6px">' + digestEsc(nice) + ' · ' + live.length + ' went live, ' + queued.length + ' waiting for you</div>'
+      + section('Went live', live, 'Nothing went live in these twelve hours.')
+      + section('Waiting in your review queue', queued, 'Nothing is waiting — the queue is clear.')
+      + '<div style="margin:22px 0"><a href="' + SITE + '/israel" style="display:inline-block;background:#c4845f;color:#fff;border-radius:99px;padding:11px 24px;text-decoration:none;font-weight:700">Open the review queue →</a></div>'
+      + '<div style="color:#b8aa9c;font-size:11px">Sent twice a day, 8:00 and 20:00 Israel time, by the WhatsApp bridge.</div></div>';
+    const text = 'WhatsApp on Chutznik — the last 12 hours (' + nice + ')\n\nWent live (' + live.length + '):\n' + live.slice(0, 150).map((p) => '• ' + String(p.title || '').slice(0, 90) + ' — ' + link(p)).join('\n')
+      + '\n\nWaiting in the review queue (' + queued.length + '):\n' + queued.slice(0, 150).map((p) => '• ' + String(p.title || '').slice(0, 90) + ' — ' + link(p)).join('\n');
+    const to = (global._digestTo && global._digestTo.length) ? global._digestTo : DIGEST_DEFAULT_TO;
+    const rr = await fetch(SITE + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' },
+      body: JSON.stringify({ type: 'custom', to, subject: 'WhatsApp digest — ' + live.length + ' live, ' + queued.length + ' to review (' + nice + ')', body: text, html }) });
+    if (!rr.ok) { log('📨 digest: mail failed ' + rr.status); return; }
+    sent[key] = Date.now(); for (const k of Object.keys(sent)) if (k < todayKey()) delete sent[k];
+    fs.writeFileSync(DIGEST_FILE, JSON.stringify(sent));
+    log('📨 digest sent to ' + to.join(', ') + ' (' + live.length + ' live, ' + queued.length + ' queued)');
+  } catch (e) { log('📨 digest: ' + (e && e.message)); }
+  finally { _digestBusy = false; }
+}
+setInterval(waDigest, 15 * 60 * 1000);
+setTimeout(waDigest, 240 * 1000);
 
 // ── What's on in Jerusalem: the events sources (Reconnect Shiurim, the Kotel,
 //    the municipality, iTravelJerusalem) are read from here every 2 hours too —
