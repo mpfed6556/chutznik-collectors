@@ -519,9 +519,17 @@ function rentalFeature(text) {
 const RENT_REQ_STRONG = /\b(?:i'?m|i am|we'?re|we are|my (?:family|parents|kids|daughter|son|friend)s?(?: and i)?|(?:a |an |young )?(?:girl|boy|guy|woman|man|lady|couple|family|student|bochur|seminary girl|sem girl|someone|friend|client|newlyweds?)s?)\s+(?:are\s+|is\s+)?looking\b|\blooking to (?:join|share|move|find)\b|\b(?:my|our) budget\b|\bbudget (?:is|of|around|about|up to|max)\b|\bbudget:\s*\S|\bany leads\b|\bdoes anyone\b|\banyone (?:know|have|got|renting|subletting|has)\b|\biso\b|\bin search of\b|\bwanted\b|\bseeking\b|\blooking to rent\b|\bwant(?:ed|ing)? to rent\b|\bneed(?:ed|ing)? (?:a|an|to find) (?:apartment|apt|flat|place|room|dira|sublet)|\blooking for (?:a |an )?(?:apartment|apt|flat|place|room|dira|sublet|somewhere|something)\b.*?\b(?:budget|for (?:my|our|us|me)|we (?:are|need)|i (?:am|need))/;
 const RENT_REQ_WEAK   = /\blooking (?:for|to)\b|\bneed(?:ed|ing)?\s+(?:a|an|to|small|big|\d)/;
 const RENT_OFFER      = /\bfor rent\b|\bto let\b|\brent(?:ing)? out\b|\bnow renting\b|\bsublett?(?:ing)?\s+(?:my|our|a |an |available|avail)\b|\b(?:apartment|apt|flat|unit|room|dira|house|villa|penthouse|studio)\s+(?:is\s+)?(?:available|avail)\b|\bavailable (?:from|for|now|immediately|starting|over|during|this)\b|\bavail(?:able)? (?:from|for|now|immediately|starting|over|during|this)\b|\bfor sale\b|\bprice\s*:|\bfully furnished\b|\bcontact (?:me|us)\b|\bpm (?:me )?for (?:details|more|info)\b|\bdm for\b|\bbook(?:ing)? now\b|\bdon'?t miss\b|\bstunning\b|\bluxur(?:y|ious)\b|\bbrand[- ]new\b|\bnewly renovated\b|\bpanoramic\b|\bnew long term\b|\bentry (?:after|from|on)\b|\brealty\b|\bproperties\b|\/\s*month\b|per month\b|\/\s*night\b|per night\b|\bincludes\b|\bamenities\b/;
+// An ad describing who the place suits ("ideal for a mature couple looking for
+// comfort", "perfect for a family looking to settle") is an offer, not a
+// request (Miriam, 22 Sep 2026: "this isn't WANTED"); those clauses are cut
+// out before the request test, and an ad that opens with FOR RENT is an offer.
+const TENANT_CLAUSE = /\b(?:ideal|perfect|suitable|great|good|excellent|suited|appropriate)\s+for\b[^.\n!]*|\bfor (?:a|an)\s+(?:young |mature |older |religious |chareidi |frum |quiet |small |large |big )?(?:couple|family|student|girl|boy|bochur|woman|man|person|professional)s?\b[^.\n!]*/g;
+const OFFER_HEAD = /^\W*(?:for (?:long|short)[- ]?term rent|for rent|to let|(?:apartment|apt|flat|unit|penthouse|villa|house|studio)\s+(?:for rent|available|avail|to let)|available (?:now|from|for|immediately)|now (?:renting|available)|rental available)\b/;
 function rentalIsWanted(low) {
-  const t = String(low || '').toLowerCase();
+  let t = String(low || '').toLowerCase();
   if (/\blooking for (?:a |an )?(?:\w+ ){0,3}(?:roommates?|room ?mates?|flatmates?|housemates?)\b/.test(t)) return false;   // offering a room, not asking for one
+  if (OFFER_HEAD.test(t.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}*_~]/gu, ' ').trim())) return false;
+  t = t.replace(TENANT_CLAUSE, ' ');
   if (RENT_REQ_STRONG.test(t)) return true;
   if (RENT_OFFER.test(t)) return false;
   return RENT_REQ_WEAK.test(t);
