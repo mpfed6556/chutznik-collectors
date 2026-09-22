@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-22T12:03:19.382Z",
+  "lastRun": "2026-09-22T16:52:41.514Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -50,12 +50,12 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "ok via RSS (6 items)",
+    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
     "Tipat Chalav (Family Health Centers)": "page HTTP 403",
-    "Harel Insurance": "blocked: robots.txt unreachable — skipping to be safe",
+    "Harel Insurance": "blocked: robots.txt disallows this path",
     "Israel Nature & Parks Authority": "blocked: robots.txt unreachable — skipping to be safe",
     "Chaim V'Chessed": "blocked: robots.txt unreachable — skipping to be safe",
     "Moovit": "ok via RSS (6 items)",
@@ -63,7 +63,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-22T12:03:19.381Z",
+      "lastRun": "2026-09-22T16:52:41.513Z",
       "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
