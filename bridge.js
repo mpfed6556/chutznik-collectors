@@ -1505,6 +1505,21 @@ function noteText(entry, postId) {
   return 'hi, I just posted your message about your ' + (what || 'message')
     + ' here so more people can see it. feel free to add info;)\n' + link;
 }
+// A rental poster hears about her matches instead (Miriam, 22 Sep 2026): the
+// people looking for what she offers, or the apartments answering what she
+// asked for — from posts at most three days old. No match: the plain note.
+async function rentalNoteOrPlain(e, postId) {
+  try {
+    const RM = require('./scripts/rental-match.js');
+    const item = (global._updItems || {})[String(postId)];
+    if (item && RM.isRental(item)) {
+      const recent = await RM.fetchRecent(SITE);
+      const m = RM.findMatches(Object.assign({}, item, { _kind: 'up' }), recent);
+      if (m.length) { log('🤝 ' + m.length + ' match(es) for "' + String(item.title || '').slice(0, 40) + '"'); return RM.message(item, m, SITE); }
+    }
+  } catch (err) { log('🤝 matches: ' + (err && err.message)); }
+  return noteText(e, postId);
+}
 let _notifyBusy = false, _lastUpdSha = '';
 async function notifyPosters() {
   if (NOTIFY_MODE === 'off' || _notifyBusy) return;
@@ -1522,7 +1537,7 @@ async function notifyPosters() {
       const mr = await fetch(SITE + '/api/live-data?type=meta'); const meta = mr.ok ? await mr.json() : {};
       if (meta.updates && meta.updates !== _lastUpdSha) {
         const r = await fetch(SITE + '/api/live-data?type=updates');
-        if (r.ok) { const arr = await r.json(); if (Array.isArray(arr)) { _lastUpdSha = meta.updates; global._updInfo = {}; for (const u of arr) global._updInfo[String(u.id)] = { status: u.status, notify: u.notify, notified: u.notified }; } }
+        if (r.ok) { const arr = await r.json(); if (Array.isArray(arr)) { _lastUpdSha = meta.updates; global._updInfo = {}; global._updItems = {}; for (const u of arr) { global._updInfo[String(u.id)] = { status: u.status, notify: u.notify, notified: u.notified }; global._updItems[String(u.id)] = u; } } }
       }
       info = global._updInfo || {};
     } catch (e) {}
@@ -1546,7 +1561,7 @@ async function notifyPosters() {
       // one note per person, ever (Miriam, 8 Sep 2026): whoever was already
       // told about one post is never messaged about another
       if (NOTIFY_STATE.people[who] || TOLD.has(who)) { e.notified = true; e.skipped = 'already told'; continue; }
-      const text = noteText(e, postId);
+      const text = await rentalNoteOrPlain(e, postId);
       if (NOTIFY_MODE === 'dry') {
         // a rehearsal: say what would go, once, and leave the post waiting for live mode
         if (!e.dryLogged) { e.dryLogged = true; savePosted(); log('📣 notify (dry run, NOT sent) → ' + (e.phone || e.jid) + ' [' + (e.name || '?') + ']: ' + text.replace(/\n/g, ' / ').slice(0, 220)); }
@@ -1586,7 +1601,7 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+const EXTRA_FILES = ['scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];

@@ -57,11 +57,12 @@ function classify(subject, text) {
 }
 
 // ── the note ────────────────────────────────────────────────────────────────
-function noteFor(c) {
+function noteFor(c, matchText) {
   const rental = c.kind === 'rental';
   const subject = rental ? 'rental info' : 'job info';
   let text;
-  if (rental && !c.seek) text = 'hi! I saw you just posted a rental on jerusaguide. there are people looking to rent here 👉 ' + SITE + '\nhatzlachah!';
+  if (rental && matchText) text = matchText;   // her matches, in Miriam's words (rental-match.js)
+  else if (rental && !c.seek) text = 'hi! I saw you just posted a rental on jerusaguide. there are people looking to rent here 👉 ' + SITE + '\nhatzlachah!';
   else if (rental && c.seek) text = 'hi! I saw you\'re looking for a rental on jerusaguide. there are tons listed here 👉 ' + SITE + '/israel/rental\nhatzlachah!';
   else if (!rental && !c.seek) text = 'hi! I saw you just posted a job on jerusaguide. there are people looking for work here 👉 ' + SITE + '\nhatzlachah!';
   else text = 'hi! I saw you\'re looking for work on jerusaguide. there are tons of jobs listed here 👉 ' + SITE + '/israel/jobs\nhatzlachah!';
@@ -129,7 +130,7 @@ async function run(log) {
   try { ({ ImapFlow } = require('imapflow')); ({ simpleParser } = require('mailparser')); } catch (e) { log('📬 jerusaguide: run  npm i imapflow mailparser'); busy = false; return; }
   const client = new ImapFlow({ host: 'imap.gmail.com', port: 993, secure: true, auth: { user, pass }, logger: false });
   const ours = new Set([user.toLowerCase(), REPLY_TO.toLowerCase(), (FROM.match(/<([^>]+)>/) || [])[1] || ''].filter(Boolean));
-  let sent = 0, skipped = 0;
+  let sent = 0, skipped = 0, recent = null;   // recent: the site's rentals of the last three days, for the matches
   try {
     await client.connect();
     let box = '[Gmail]/All Mail';
@@ -156,7 +157,12 @@ async function run(log) {
       const text = cleanText(parsed.text || (parsed.html ? String(parsed.html).replace(/<[^>]+>/g, ' ') : ''));
       const c = classify(subject, text);
       if (!c) { skipped++; continue; }
-      const note = noteFor(c);
+      // a rental poster hears about her matches on the site instead of the plain note (Miriam, 22 Sep 2026)
+      let matchText = '';
+      if (c.kind === 'rental') {
+        try { const RM = require('./rental-match.js'); const it = RM.itemFromText(subject, text); if (!recent) recent = await RM.fetchRecent(SITE); const m = RM.findMatches(it, recent); if (m.length) matchText = RM.message(it, m, SITE); } catch (e) { log('🤝 matches: ' + (e && e.message)); }
+      }
+      const note = noteFor(c, matchText);
       if (MODE === 'dry') { log('📬 jerusaguide (dry): would email ' + who + ' — ' + note.subject + ' — ' + (c.seek ? 'asking' : 'posting') + ' · "' + subject.slice(0, 60) + '"'); TOLD[who] = { ts: Date.now(), kind: c.kind, seek: c.seek, dry: true, subject: subject.slice(0, 80) }; sent++; sentToday++; continue; }
       try {
         const via = await sendMail(who, note, log);
