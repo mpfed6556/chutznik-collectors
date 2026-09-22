@@ -61,7 +61,7 @@ function noteFor(c, matchText) {
   const rental = c.kind === 'rental';
   const subject = rental ? 'rental info' : 'job info';
   let text;
-  if (rental && matchText) text = matchText;   // her matches, in Miriam's words (rental-match.js)
+  if (matchText) text = matchText;   // her matches, in Miriam's words (rental-match.js)
   else if (rental && !c.seek) text = 'hi! I saw you just posted a rental on jerusaguide. there are people looking to rent here 👉 ' + SITE + '\nhatzlachah!';
   else if (rental && c.seek) text = 'hi! I saw you\'re looking for a rental on jerusaguide. there are tons listed here 👉 ' + SITE + '/israel/rental\nhatzlachah!';
   else if (!rental && !c.seek) text = 'hi! I saw you just posted a job on jerusaguide. there are people looking for work here 👉 ' + SITE + '\nhatzlachah!';
@@ -159,7 +159,7 @@ async function run(log) {
       if (!c) { skipped++; continue; }
       // a rental poster hears about her matches on the site instead of the plain note (Miriam, 22 Sep 2026)
       let matchText = '';
-      if (c.kind === 'rental') {
+      if (c.kind === 'rental' || c.kind === 'job') {
         try { const RM = require('./rental-match.js'); const it = RM.itemFromText(subject, text); if (!recent) recent = await RM.fetchRecent(SITE); const m = RM.findMatches(it, recent); if (m.length) matchText = RM.message(it, m, SITE); } catch (e) { log('🤝 matches: ' + (e && e.message)); }
       }
       const note = noteFor(c, matchText);

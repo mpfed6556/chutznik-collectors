@@ -1505,14 +1505,15 @@ function noteText(entry, postId) {
   return 'hi, I just posted your message about your ' + (what || 'message')
     + ' here so more people can see it. feel free to add info;)\n' + link;
 }
-// A rental poster hears about her matches instead (Miriam, 22 Sep 2026): the
-// people looking for what she offers, or the apartments answering what she
-// asked for — from posts at most three days old. No match: the plain note.
+// A poster hears about her matches instead (Miriam, 22 Sep 2026): the people
+// looking for what she offers, or the posts answering what she asked for —
+// rentals, jobs, anything — from posts at most three days old. No match: the
+// plain note.
 async function rentalNoteOrPlain(e, postId) {
   try {
     const RM = require('./scripts/rental-match.js');
     const item = (global._updItems || {})[String(postId)];
-    if (item && RM.isRental(item)) {
+    if (item) {
       const recent = await RM.fetchRecent(SITE);
       const m = RM.findMatches(Object.assign({}, item, { _kind: 'up' }), recent);
       if (m.length) { log('🤝 ' + m.length + ' match(es) for "' + String(item.title || '').slice(0, 40) + '"'); return RM.message(item, m, SITE); }
