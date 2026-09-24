@@ -542,6 +542,7 @@ function saleTitle(t0, memo) {
   if (suffix.toLowerCase() === kind) suffix = '';
   return ('For sale: ' + (beds ? beds + ' bdrm ' : '') + kind + (area ? ' in ' + area : '') + (suffix ? ' — ' + suffix : '')).replace(/\s{2,}/g, ' ').slice(0, 60);
 }
+const GROUP_NOTICE_RE = /please be courteous|no[- ]?shows?\b|leave (?:us|them|people|me) hanging|group rules|rules of (?:the|this) group|this group is (?:only |strictly )?for|(?:please|pls|kindly) (?:don.?t|do not|dont) post|admin(?:s)? (?:note|reminder|message|announcement)|not the (?:place|group) for|keep (?:this|the) group (?:clean|on topic|for)|off[- ]topic|kindly refrain|removed from (?:the|this) group|no ads (?:allowed|please|in this group)|posting rules|please read the (?:description|rules)|reminder to (?:all|everyone) (?:in|on) (?:the|this) group|will be (?:blocked|removed|kicked)|this is a (?:friendly |gentle )?reminder|(?:group|chat) (?:description|guidelines)|be (?:respectful|considerate) (?:to|of)|(?:if|when) you (?:say yes|commit|agree) to a job|if your plans change/i;
 function rentalIsWanted(low) {
   let t = String(low || '').toLowerCase();
   if (/\blooking for (?:a |an )?(?:\w+ ){0,3}(?:roommates?|room ?mates?|flatmates?|housemates?)\b/.test(t)) return false;   // offering a room, not asking for one
@@ -775,6 +776,8 @@ async function intake(sock, m, chatName) {
   const link = linkOf(m);
   // A contact card or a link with no words is still a real answer.
   let kind = classify(body, !!media);
+  // a group's own etiquette reminder ("please say if you can't make it", "no ads") is never a post (Miriam, 24 Sep 2026)
+  if (GROUP_NOTICE_RE.test(body)) kind = 'chatter';
   if ((cards.length || link) && (kind === 'chatter' || kind === 'info')) kind = 'answer';
   // in a rental group, a housing message is a Rental even without "for rent"
   if (kind !== 'rental' && kind !== 'chatter' && kind !== 'question' && isRentalChat(chatName) && RENT_STRONG.test(body) && body.length > 25) kind = 'rental';
@@ -965,6 +968,7 @@ function clusterThreads(msgs) {
     const hasStuff = (m.cards && m.cards.length) || m.link || m.media;
     const parent = resolveParent(m, batchIndex);
     if (m.kind === 'chatter' && !hasStuff && !parent) continue;
+    if (m.kind === 'chatter' && GROUP_NOTICE_RE.test(m.body || '')) continue;
     if (parent && parent.cluster) {
       const c = parent.cluster;
       if (c.kind === 'combined') c.answers.push(m); else { c.kind = 'combined'; c.q = c.msgs[0]; c.answers = [m]; }
