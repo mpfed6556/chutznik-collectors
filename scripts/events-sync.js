@@ -56,6 +56,64 @@ function dateIn(text) {
   return null;
 }
 const niceDate = (d) => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+// ── the event's picture (Miriam, 24 Sep 2026): the first picture the source
+//    shows for it — from the card, the feed entry, or the event's own page —
+//    downloaded and put on the site like a WhatsApp photo ──
+const IMG_RE = /\.(jpe?g|png|webp|gif)(\?[^\s"']*)?$/i;
+const absUrl = (u, base) => { try { return new URL(String(u || '').trim(), base).href; } catch (e) { return ''; } };
+// the first image-looking string inside a data object (a Strapi card, a JSON-LD event)
+function imageInObject(o, base, depth) {
+  depth = depth || 0; if (!o || depth > 5) return '';
+  if (typeof o === 'string') { const a = absUrl(o, base); return a && (IMG_RE.test(a) || /\/(uploads?|images?|media|cdn)\//i.test(a)) && /^https?:/.test(a) ? a : ''; }
+  if (Array.isArray(o)) { for (const x of o) { const r = imageInObject(x, base, depth + 1); if (r) return r; } return ''; }
+  if (typeof o !== 'object') return '';
+  // keys that mean "picture" first, then anything else
+  const keys = Object.keys(o).sort((a, b) => (/image|photo|thumb|cover|picture|media|banner|hero/i.test(b) ? 1 : 0) - (/image|photo|thumb|cover|picture|media|banner|hero/i.test(a) ? 1 : 0));
+  for (const k of keys) {
+    if (!/image|photo|thumb|cover|picture|media|banner|hero|url|src|formats|large|medium|small|data|attributes|listing/i.test(k)) continue;
+    const r = imageInObject(o[k], base, depth + 1); if (r) return r;
+  }
+  return '';
+}
+// the first <img> in a piece of HTML (a feed entry's description)
+function imageInHtml(html, base) {
+  try { const $ = cheerio.load('<div>' + (html || '') + '</div>'); let out = '';
+    $('img').each((i, el) => { if (out) return; const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-lazy-src') || ''; const a = absUrl(src, base); if (a && /^https?:/.test(a) && !/pixel|spacer|1x1|emoji|icon|logo|avatar|gravatar/i.test(a)) out = a; });
+    return out; } catch (e) { return ''; }
+}
+// the page's own picture: og:image, twitter:image, then the first real <img>
+let PAGE_PICS = 0;
+async function imageOfPage(link) {
+  if (!link || PAGE_PICS >= 25) return '';
+  PAGE_PICS++;
+  try { const r = await get(link); if (!r.ok) return ''; const $ = cheerio.load(r.text);
+    const og = $('meta[property="og:image"], meta[name="og:image"], meta[property="og:image:secure_url"], meta[name="twitter:image"]').map((i, el) => $(el).attr('content')).get().map((u) => absUrl(u, link)).find((u) => u && /^https?:/.test(u));
+    if (og) return og;
+    let out = '';
+    $('main img, article img, .content img, img').each((i, el) => { if (out) return; const src = $(el).attr('src') || $(el).attr('data-src') || ''; const w = Number($(el).attr('width')) || 0; const a = absUrl(src, link);
+      if (a && /^https?:/.test(a) && !/pixel|spacer|1x1|emoji|icon|logo|avatar|gravatar|flag|sprite/i.test(a) && (w === 0 || w >= 240)) out = a; });
+    return out; } catch (e) { return ''; }
+}
+// download the picture and put it on the site; returns its /attachments/… url or ''
+async function uploadPicture(url, tag) {
+  try {
+    const r = await fetch(url, { headers: Object.assign({}, UA, { Accept: 'image/*,*/*;q=0.5' }), redirect: 'follow' });
+    if (!r.ok) return '';
+    let mime = String(r.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (!buf.length || buf.length > 2_900_000) return '';
+    if (!/^image\/(jpe?g|png|webp|gif)$/.test(mime)) { mime = /\.png(\?|$)/i.test(url) ? 'image/png' : (/\.webp(\?|$)/i.test(url) ? 'image/webp' : (/\.gif(\?|$)/i.test(url) ? 'image/gif' : 'image/jpeg')); }
+    if (mime === 'image/jpg') mime = 'image/jpeg';
+    const saveUrl = String(process.env.INGEST_URL || '').replace(/\/api\/ingest-whatsapp.*$/, '/api/save-attachment');
+    if (!/save-attachment/.test(saveUrl)) return '';
+    const res = await fetch(saveUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': process.env.INGEST_KEY, 'User-Agent': 'chutznik-events' },
+      body: JSON.stringify({ postId: 'ev_' + tag, index: 0, mime, base64: buf.toString('base64') }) });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j.url) { log('  📷 picture not saved (' + res.status + '): ' + String(j.error || '').slice(0, 80)); return ''; }
+    return j.url;
+  } catch (e) { log('  📷 picture not saved: ' + (e && e.message)); return ''; }
+}
 function timeIn(text) { const m = String(text || '').match(/\b(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i) || String(text || '').match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/); return m ? m[0] : ''; }
 
 // ── the sources ─────────────────────────────────────────────────────────────
@@ -71,15 +129,17 @@ const SOURCES = [
         if (!r.ok) continue;
         const $ = cheerio.load(r.text, { xmlMode: true });
         $('item').each((i, el) => { const $e = $(el); const title = strip($e.find('title').first().text()); const link = $e.find('link').first().text().trim();
+          const rawHtml = $e.find('content\\:encoded').first().text() || $e.find('description').first().text();
           const desc = strip($e.find('description').first().text() || $e.find('content\\:encoded').first().text()); const pub = Date.parse($e.find('pubDate').first().text()) || Date.now();
-          if (title && link) items.push({ title, link, desc, date: dateIn(title) || dateIn(desc), time: timeIn(desc), place: '', published: pub }); });
+          const image = $e.find('enclosure[type^="image"]').attr('url') || $e.find('media\\:content[url]').attr('url') || $e.find('media\\:thumbnail[url]').attr('url') || imageInHtml(rawHtml, link);
+          if (title && link) items.push({ title, link, desc, date: dateIn(title) || dateIn(desc), time: timeIn(desc), place: '', published: pub, image }); });
         if (items.length) { STATUS[this.name] = 'ok via ' + u + ' (' + items.length + ')'; return items; }
       }
       // the Store API as a fallback
       try {
         const r = await get('https://reconnectshiurim.com/wp-json/wc/store/v1/products?per_page=20&orderby=date&order=desc');
         if (r.ok) { const arr = JSON.parse(r.text); for (const p of arr) { const title = strip(p.name); const desc = strip(p.short_description || p.description || '');
-          items.push({ title, link: p.permalink, desc: desc + (p.prices && p.prices.price ? ' Price: ' + (Number(p.prices.price) / Math.pow(10, p.prices.currency_minor_unit || 2)) + ' ' + (p.prices.currency_code || '') : ''), date: dateIn(title) || dateIn(desc), time: timeIn(desc), place: '', published: Date.now() }); }
+          items.push({ image: (Array.isArray(p.images) && p.images[0] && (p.images[0].src || p.images[0].thumbnail)) || '', title, link: p.permalink, desc: desc + (p.prices && p.prices.price ? ' Price: ' + (Number(p.prices.price) / Math.pow(10, p.prices.currency_minor_unit || 2)) + ' ' + (p.prices.currency_code || '') : ''), date: dateIn(title) || dateIn(desc), time: timeIn(desc), place: '', published: Date.now() }); }
           if (items.length) { STATUS[this.name] = 'ok via store API (' + items.length + ')'; return items; } last = r.text; }
       } catch (e) { last = String(e); }
       STATUS[this.name] = 'nothing parsed · ' + snippet(last);
@@ -95,7 +155,8 @@ const SOURCES = [
         const $ = cheerio.load(r.text, { xmlMode: true });
         $('item').each((i, el) => { const $e = $(el); const title = strip($e.find('title').first().text()); const link = $e.find('link').first().text().trim();
           const desc = strip($e.find('description').first().text()); const pub = Date.parse($e.find('pubDate').first().text()) || Date.now();
-          if (title && link) items.push({ title, link, desc, date: dateIn(title) || dateIn(desc), time: timeIn(desc), place: 'The Kotel', published: pub }); });
+          const image = $e.find('enclosure[type^="image"]').attr('url') || $e.find('media\\:content[url]').attr('url') || imageInHtml($e.find('content\\:encoded').first().text() || $e.find('description').first().text(), link);
+          if (title && link) items.push({ title, link, desc, date: dateIn(title) || dateIn(desc), time: timeIn(desc), place: 'The Kotel', published: pub, image }); });
         if (items.length) { STATUS[this.name] = 'ok via ' + u + ' (' + items.length + ')'; return items; }
       }
       try { const r = await get('https://thekotel.org/en/wp-json/wp/v2/posts?per_page=10&_fields=title,link,date,excerpt'); if (r.ok) { for (const p of JSON.parse(r.text)) { const title = strip(p.title && p.title.rendered); const desc = strip(p.excerpt && p.excerpt.rendered);
@@ -114,12 +175,13 @@ const SOURCES = [
         const $ = cheerio.load(r.text); const items = [];
         // JSON-LD events, if the page has them
         $('script[type="application/ld+json"]').each((i, el) => { try { const j = JSON.parse($(el).text()); const arr = Array.isArray(j) ? j : (j['@graph'] || [j]);
-          for (const e of arr) if (e && /Event/i.test(String(e['@type']))) items.push({ title: strip(e.name), link: e.url || u, desc: strip(e.description), date: e.startDate ? new Date(e.startDate) : null, time: e.startDate && /T\d\d:\d\d/.test(e.startDate) ? e.startDate.slice(11, 16) : '', place: e.location && (e.location.name || e.location.address && e.location.address.streetAddress) || '', published: Date.now() }); } catch (e) {} });
+          for (const e of arr) if (e && /Event/i.test(String(e['@type']))) items.push({ image: imageInObject(e.image, u), title: strip(e.name), link: e.url || u, desc: strip(e.description), date: e.startDate ? new Date(e.startDate) : null, time: e.startDate && /T\d\d:\d\d/.test(e.startDate) ? e.startDate.slice(11, 16) : '', place: e.location && (e.location.name || e.location.address && e.location.address.streetAddress) || '', published: Date.now() }); } catch (e) {} });
         if (!items.length) {
           // cards: any link whose block has a date
           $('a[href*="/events/"], a[href*="/event/"]').each((i, el) => { const $a = $(el); const href = $a.attr('href') || ''; const block = $a.closest('article, li, div'); const text = strip(block.text() || $a.text()); const title = strip($a.attr('title') || $a.find('h2,h3,h4').first().text() || $a.text()).slice(0, 140);
             if (!title || title.length < 4) return; let link = href; try { link = new URL(href, u).href; } catch (e) {} if (link === u || items.some((x) => x.link === link)) return;
-            items.push({ title, link, desc: text.slice(0, 400), date: dateIn(text), time: timeIn(text), place: '', published: Date.now() }); });
+            const image = absUrl(block.find('img').first().attr('src') || block.find('img').first().attr('data-src') || '', u);
+            items.push({ title, link, desc: text.slice(0, 400), date: dateIn(text), time: timeIn(text), place: '', published: Date.now(), image }); });
         }
         if (items.length) { STATUS[this.name] = 'ok via ' + u + ' (' + items.length + ')'; return items.slice(0, 15); }
         STATUS[this.name] = 'page read but no events found · ' + snippet(r.text, /events|אירוע/i);
@@ -185,7 +247,7 @@ const SOURCES = [
           // not for this community: anything on Shabbos, and nightlife
           if (occ.date && occ.date.getDay() === 6) { SEEN.add(key); continue; }
           if (/\b(saturday|shabbat market|pride|nightclub|club night|dj set|bar crawl|cocktail|beer festival|wine tasting)\b/i.test(title + ' ' + desc)) { SEEN.add(key); continue; }
-          items.push({ title, link, desc: desc.slice(0, 500), date: occ.date, time: occ.time, place, published: Date.now(), _raw: (arr ? arr.length + ' dates; first ' + JSON.stringify(arr[0]).slice(0, 160) : 'no dates on card') });
+          items.push({ image: imageInObject(c, 'https://www.itraveljerusalem.com'), title, link, desc: desc.slice(0, 500), date: occ.date, time: occ.time, place, published: Date.now(), _raw: (arr ? arr.length + ' dates; first ' + JSON.stringify(arr[0]).slice(0, 160) : 'no dates on card') });
         }
         if (items.length) { STATUS[this.name] = 'ok via listing cards (' + items.length + ' new of ' + cards.length + ')'; return items; }
         if (cards.length) { STATUS[this.name] = cards.length + ' cards, nothing new (' + seenPath.size + ' distinct)'; return []; }
@@ -225,7 +287,7 @@ async function run(seenSet, statusObj, force) {
   SEEN = seenSet; STATUS = statusObj;
   const prev = (loadJSON(STATUS_FILE, {}) || {}).orgs || {}; const prevEv = prev._events || {};
   if (!force && prevEv.lastRun && Date.now() - Date.parse(prevEv.lastRun) < EVERY_MS) { statusObj._events = prevEv; return 0; }
-  let sent = 0; const samples = {};
+  let sent = 0; const samples = {}; PAGE_PICS = 0;
   for (const src of SOURCES) {
     let raws = [];
     try { raws = await src.collect(); } catch (e) { STATUS[src.name] = 'failed: ' + (e && e.message); }
@@ -244,9 +306,13 @@ async function run(seenSet, statusObj, force) {
       if (hasHebrew(desc)) { const t = await translate(desc.slice(0, 400)); desc = t || ''; }
       const when = d ? ('📅 ' + niceDate(d) + (r.time ? ' · ' + r.time : '')) : '';
       const memo = [desc.slice(0, 600), when, r.place ? '📍 ' + r.place : '', '🔗 ' + r.link].filter(Boolean).join('\n\n');
+      // the picture: what the source shows for it, or its page's own picture
+      let picUrl = r.image || '';
+      if (!picUrl && d) picUrl = await imageOfPage(r.link);
+      const saved = picUrl ? await uploadPicture(picUrl, fp(key)) : '';
       const item = { source: 'events', group: src.group, author: src.group, title: title.slice(0, 150), memo: memo.slice(0, 1500),
         types: src.types, area: src.area, communities: [], contactWebsite: r.link, created: Math.min(Date.now(), r.published || Date.now()),
-        status: d ? 'public' : 'pending', dedupeKey: key, _event: !!d };
+        status: d ? 'public' : 'pending', dedupeKey: key, _event: !!d, attachments: saved ? [{ url: saved, name: 'photo.jpg' }] : [] };
       const ok = await forward(item); if (ok) { SEEN.add(key); sent++; }
       await sleep(400);
     }
@@ -259,7 +325,7 @@ async function run(seenSet, statusObj, force) {
   log('=== events sync done — ' + sent + ' new ===');
   return sent;
 }
-module.exports = { run, SOURCES, VERSION: 'ev-2026-09-08e' };
+module.exports = { run, SOURCES, VERSION: 'ev-2026-09-24a' };
 
 if (require.main === module) {
   // standalone: node events-sync.js  (needs INGEST_URL / INGEST_KEY)
