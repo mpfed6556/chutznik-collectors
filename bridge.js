@@ -525,6 +525,23 @@ const RENT_OFFER      = /\bfor rent\b|\bto let\b|\brent(?:ing)? out\b|\bnow rent
 // out before the request test, and an ad that opens with FOR RENT is an offer.
 const TENANT_CLAUSE = /\b(?:ideal|perfect|suitable|great|good|excellent|suited|appropriate)\s+for\b[^.\n!]*|\bfor (?:a|an)\s+(?:young |mature |older |religious |chareidi |frum |quiet |small |large |big )?(?:couple|family|student|girl|boy|bochur|woman|man|person|professional)s?\b[^.\n!]*/g;
 const OFFER_HEAD = /^\W*(?:for (?:long|short)[- ]?term rent|for rent|to let|(?:apartment|apt|flat|unit|penthouse|villa|house|studio)\s+(?:for rent|available|avail|to let)|available (?:now|from|for|immediately)|now (?:renting|available)|rental available)\b/;
+function isForSaleText(t) {
+  const x = String(t || '').toLowerCase();
+  if (/\bfor sale\b|למכירה/.test(x.slice(0, 240))) return true;
+  return /\bfor sale\b|למכירה|\bsale price\b/.test(x) && !/\bfor rent\b|\bto let\b|\bper month\b|\/\s*month\b|\bper night\b|\/\s*night\b|\bsublet\b/.test(x);
+}
+function saleTitle(t0, memo) {
+  const orig = String(t0 || '').trim();
+  if (/\bfor sale\b/i.test(orig) || !/\bavail|\bwanted\b|\bbdrm\b|\bterm\b/i.test(orig)) return orig.slice(0, 60);
+  let t = orig.replace(/^\s*wanted:?\s*/i, '').replace(/\s+—.*$/, '').replace(/\b(?:short|long)[- ]?term\b/gi, '').replace(/\bavail(?:able)?\b/gi, '').replace(/\s+for (?:sukk?o[st]|pesach|passover|chag|yom tov|the chagim)\b.*$/i, '').replace(/\s{2,}/g, ' ').trim();
+  let suffix = (orig.match(/\s+—\s*(.+)$/) || [])[1] || '';
+  const beds = (t.match(/^(\d[\d\-–]*)\s*bdrm/i) || [])[1] || '';
+  const area = (t.match(/\bin\s+(.+)$/i) || [])[1] || '';
+  const m = String(memo || '').toLowerCase();
+  const kind = /\bpenthouse\b/.test(m) ? 'penthouse' : /\bvilla\b/.test(m) ? 'villa' : /\btriplex\b/.test(m) ? 'triplex' : /\bduplex\b/.test(m) ? 'duplex' : /\bcottage\b/.test(m) ? 'cottage' : /\bgarden apartment\b/.test(m) ? 'garden apartment' : /\b(?:private )?house\b|\bhome\b/.test(m) ? 'house' : /\bplot\b|\bland\b/.test(m) ? 'plot' : 'apartment';
+  if (suffix.toLowerCase() === kind) suffix = '';
+  return ('For sale: ' + (beds ? beds + ' bdrm ' : '') + kind + (area ? ' in ' + area : '') + (suffix ? ' — ' + suffix : '')).replace(/\s{2,}/g, ' ').slice(0, 60);
+}
 function rentalIsWanted(low) {
   let t = String(low || '').toLowerCase();
   if (/\blooking for (?:a |an )?(?:\w+ ){0,3}(?:roommates?|room ?mates?|flatmates?|housemates?)\b/.test(t)) return false;   // offering a room, not asking for one
@@ -1240,6 +1257,8 @@ async function buildPost(cluster, chatName) {
   // "Items / Questions", which is why apartments showed up under questions.
   let types = categoriesFor(allText, kind);
   if (kind === 'rental') types = ['Rental'];
+  // a property for sale is "For Sale", never a rental (Miriam, 23 Sep 2026)
+  if (kind === 'rental' && isForSaleText(allText)) { types = ['For Sale']; title = saleTitle(title, allText); }
   if (kind === 'job') types = ['Jobs'];
   if (kind === 'appeal') types = ['Chesed'];
   if (!Array.isArray(types) || !types.length) types = ['Community'];
