@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-24T06:41:05.713Z",
+  "lastRun": "2026-09-24T12:16:33.602Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -50,7 +50,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -63,14 +63,14 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-24T06:41:05.712Z",
-      "sent": 4,
+      "lastRun": "2026-09-24T12:16:33.600Z",
+      "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
-        "iTravelJerusalem": "ok via listing cards (4 new of 40)"
+        "iTravelJerusalem": "40 cards, nothing new (20 distinct)"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -107,6 +107,12 @@
         ],
         "The Kotel": [
           {
+            "title": "The Refined Person – Sukkot 5787",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157771/"
+          },
+          {
             "title": "“Go, Eat with Joy” – Yom Kippur",
             "date": null,
             "time": "",
@@ -129,45 +135,10 @@
             "date": null,
             "time": "",
             "link": "https://thekotel.org/en/157613/"
-          },
-          {
-            "title": "Sukkot 2026 – Birkat Kohanim (Priestly Blessing)",
-            "date": "2026-09-28",
-            "time": "8:45",
-            "link": "https://thekotel.org/en/157667/"
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [
-          {
-            "title": "Sukkot in the Jewish Quarter: History Comes to Life",
-            "date": "2026-09-27",
-            "time": "09:00",
-            "link": "https://www.itraveljerusalem.com/event/sukkot-jewish-quarter",
-            "raw": "1 dates; first {\"startDate\":\"2026-09-27T06:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"09:00\",\"endTime\":\"19:00\",\"repeats\":\"no\"}"
-          },
-          {
-            "title": "Sukkot Celebration at Hava Farm Gei Ben Hinnom with City of David",
-            "date": "2026-09-27",
-            "time": "11:00",
-            "link": "https://www.itraveljerusalem.com/event/city-of-david-hagiga-bahava-sukkot",
-            "raw": "1 dates; first {\"startDate\":\"2026-09-27T08:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"11:00\",\"endTime\":\"18:00\",\"repeats\":\"no\"}"
-          },
-          {
-            "title": "The Harvest Festival at Ein Yael Museum",
-            "date": "2026-09-28",
-            "time": "09:30",
-            "link": "https://www.itraveljerusalem.com/event/sukkot-ein-yael",
-            "raw": "1 dates; first {\"startDate\":\"2026-09-28T06:30:00.000Z\",\"endDate\":\"\",\"startTime\":\"09:30\",\"endTime\":\"16:30\",\"repeats\":\"no\"}"
-          },
-          {
-            "title": "Ein Karem Festival 2026 | Chol HaMoed Sukkot",
-            "date": "2026-10-01",
-            "time": "17:00",
-            "link": "https://www.itraveljerusalem.com/event/ein-karem-festival",
-            "raw": "1 dates; first {\"startDate\":\"2026-10-01T14:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"17:00\",\"endTime\":\"23:00\",\"repeats\":\"no\"}"
-          }
-        ]
+        "iTravelJerusalem": []
       }
     }
   }
