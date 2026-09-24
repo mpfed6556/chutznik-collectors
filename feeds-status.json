@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-24T17:23:32.491Z",
+  "lastRun": "2026-09-24T20:44:36.887Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -50,7 +50,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -63,14 +63,14 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-24T17:23:32.490Z",
-      "sent": 1,
+      "lastRun": "2026-09-24T20:44:36.886Z",
+      "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
-        "iTravelJerusalem": "ok via listing cards (1 new of 40)"
+        "iTravelJerusalem": "40 cards, nothing new (20 distinct)"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -138,15 +138,7 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [
-          {
-            "title": "Sukkot at the Botanical Garden: A Family Celebration of Art and Experience",
-            "date": "2026-09-27",
-            "time": "10:00",
-            "link": "https://www.itraveljerusalem.com/event/sukkot-botanical",
-            "raw": "1 dates; first {\"startDate\":\"2026-09-27T07:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"10:00\",\"endTime\":\"16:30\",\"repeats\":\"no\"}"
-          }
-        ]
+        "iTravelJerusalem": []
       }
     }
   }
