@@ -471,7 +471,7 @@ const HOODS = [
   'Lod'
 ];
 const HOLIDAYS = [
-  ['sukkos|sukkot|succos|succot|sukkah','Sukkos'], ['pesach|passover','Pesach'],
+  ['sukkos|sukkot|succos|succot|(?:for|over|during) (?:the )?(?:chag|yom tov|chol hamoed)','Sukkos'], ['pesach|passover','Pesach'],
   ['rosh hashan(?:a|ah)','Rosh Hashana'], ['yom kippur','Yom Kippur'],
   ['chanuk(?:a|ah)|hanukkah','Chanuka'], ['purim','Purim'],
   ['shavuos|shavuot','Shavuos'], ['bein hazmanim','Bein Hazmanim'],
@@ -528,7 +528,11 @@ const OFFER_HEAD = /^\W*(?:for (?:long|short)[- ]?term rent|for rent|to let|(?:a
 function isForSaleText(t) {
   const x = String(t || '').toLowerCase();
   if (/\bfor sale\b|למכירה/.test(x.slice(0, 240))) return true;
-  return /\bfor sale\b|למכירה|\bsale price\b/.test(x) && !/\bfor rent\b|\bto let\b|\bper month\b|\/\s*month\b|\bper night\b|\/\s*night\b|\bsublet\b/.test(x);
+  const rentWords = /\bfor rent\b|\bto let\b|\bper month\b|\/\s*mo(?:nth)?\b|\bper night\b|\/\s*night\b|\bsublet\b|\bmonthly\b/.test(x);
+  // a price in the millions is a sale price (Miriam, 25 Sep 2026: "look at the prices")
+  const millions = /(?:₪|nis|shekel|ש"ח|\$)\s?\d{1,3}(?:,\d{3}){2,}|\d{1,3}(?:,\d{3}){2,}\s?(?:₪|nis|shekel|ש"ח)|\b\d(?:\.\d{1,2})?\s?(?:m|million)\s?(?:nis|₪|shekel|dollars?|\$)|(?:₪|nis|\$)\s?\d(?:\.\d{1,2})?\s?(?:m|million)\b/i.test(x);
+  if (millions && !rentWords) return true;
+  return /\bfor sale\b|למכירה|\bsale price\b/.test(x) && !rentWords;
 }
 function saleTitle(t0, memo) {
   const orig = String(t0 || '').trim();
@@ -543,6 +547,8 @@ function saleTitle(t0, memo) {
   return ('For sale: ' + (beds ? beds + ' bdrm ' : '') + kind + (area ? ' in ' + area : '') + (suffix ? ' — ' + suffix : '')).replace(/\s{2,}/g, ' ').slice(0, 60);
 }
 const GROUP_NOTICE_RE = /please be courteous|no[- ]?shows?\b|leave (?:us|them|people|me) hanging|group rules|rules of (?:the|this) group|this group is (?:only |strictly )?for|(?:please|pls|kindly) (?:don.?t|do not|dont) post|admin(?:s)? (?:note|reminder|message|announcement)|not the (?:place|group) for|keep (?:this|the) group (?:clean|on topic|for)|off[- ]topic|kindly refrain|removed from (?:the|this) group|no ads (?:allowed|please|in this group)|posting rules|please read the (?:description|rules)|reminder to (?:all|everyone) (?:in|on) (?:the|this) group|will be (?:blocked|removed|kicked)|this is a (?:friendly |gentle )?reminder|(?:group|chat) (?:description|guidelines)|be (?:respectful|considerate) (?:to|of)|(?:if|when) you (?:say yes|commit|agree) to a job|if your plans change/i;
+const HOUSING_RE = /\b(apartments?|apt|apts|flat|dira|dirot|studios?|penthouse|cottage|duplex|basement unit|units?|houses?|villa|rooms? (?:for rent|to rent|available)|roommates?|vacation rentals?|short[- ]term rentals?|holiday (?:apartment|rental)|sublet|sublease|airbnb)\b|דירה|להשכרה/i;
+const RENT_WORD_RE = /\b(rent|rental|rentals|renting|to let|for let|sublet|sublease|lease|available|avail|looking for|seeking|wanted|need)\b|להשכרה|מחפש/i;
 function rentalIsWanted(low) {
   let t = String(low || '').toLowerCase();
   if (/\blooking for (?:a |an )?(?:\w+ ){0,3}(?:roommates?|room ?mates?|flatmates?|housemates?)\b/.test(t)) return false;   // offering a room, not asking for one
@@ -781,6 +787,9 @@ async function intake(sock, m, chatName) {
   if ((cards.length || link) && (kind === 'chatter' || kind === 'info')) kind = 'answer';
   // in a rental group, a housing message is a Rental even without "for rent"
   if (kind !== 'rental' && kind !== 'chatter' && kind !== 'question' && isRentalChat(chatName) && RENT_STRONG.test(body) && body.length > 25) kind = 'rental';
+  // a home offered or looked for is a Rental in ANY group — "studios to rent in Rechavia?",
+  // "vacation rental on Paran after Sukkos" — so it goes public with the rentals (Miriam, 25 Sep 2026)
+  if (kind !== 'rental' && kind !== 'chatter' && HOUSING_RE.test(body) && RENT_WORD_RE.test(body) && body.length > 20 && !GROUP_NOTICE_RE.test(body)) kind = 'rental';
   return { id: key.id || String(Date.now()+Math.random()), ts, chat: chatName, sender, phone, body, media, kind,
            quotedId, mentions, cards, link,
            // where a private "your post is up" note can be sent (real number first, privacy id as fallback)

@@ -79,7 +79,8 @@ async function fetchTodayRentals(site) {
 // ── the page ────────────────────────────────────────────────────────────────
 function buildRentalsPdf({ site, today, offers, wanted }) {
   const rows = offers.length + wanted.length;
-  const H = Math.max(1180, FIRST_Y + rows * (CARD_H + GAP) + (wanted.length ? SECTION_H + GAP : 0) - GAP + TAIL);
+  const nSec = (offers.some((p) => p.term === 'short') ? 1 : 0) + (offers.some((p) => p.term !== 'short') ? 1 : 0) + (wanted.length ? 1 : 0);
+  const H = Math.max(1180, FIRST_Y + rows * (CARD_H + GAP) + nSec * (SECTION_H + 6 + GAP) - GAP + TAIL);
   const doc = new PDFDocument({ size: [W, H], margin: 0, font: FONTS.R, info: { Title: 'Rentals Today in Jerusalem — Chutznik', Author: 'Chutznik' } });
   doc.on('error', (e) => { try { console.error('pdf: ' + (e && e.message)); } catch (x) {} });
   const chunks = []; doc.on('data', (c) => chunks.push(c));
@@ -143,7 +144,11 @@ function buildRentalsPdf({ site, today, offers, wanted }) {
     doc.link(PAD, y, CARD_R - PAD, CARD_H, url);
     y += CARD_H + GAP;
   };
-  for (const p of offers) card(p, 'offer');
+  // the offers in two parts: short term, then long term (Miriam, 25 Sep 2026)
+  const heading = (label) => { y += 6; doc.font('B').fontSize(28).fillColor(INK.title2).text(label, PAD + 6, y + 14, { lineBreak: false }); const lw = doc.widthOfString(label); doc.lineWidth(1.4).strokeColor(INK.rule).moveTo(PAD + 6 + lw + 24, y + 30).lineTo(CARD_R, y + 30).stroke(); y += SECTION_H; };
+  const shortT = offers.filter((p) => p.term === 'short'), longT = offers.filter((p) => p.term !== 'short');
+  if (shortT.length) { heading('Short term'); for (const p of shortT) card(p, 'offer'); }
+  if (longT.length) { heading(shortT.length ? 'Long term' : 'Long term'); for (const p of longT) card(p, 'offer'); }
   if (wanted.length) {
     y += 6;
     doc.font('B').fontSize(28).fillColor(INK.title2).text('Looking for a place', PAD + 6, y + 14, { lineBreak: false });

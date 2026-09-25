@@ -60,6 +60,7 @@ const niceDate = (d) => d.toLocaleDateString('en-US', { weekday: 'long', month: 
 // ── the event's picture (Miriam, 24 Sep 2026): the first picture the source
 //    shows for it — from the card, the feed entry, or the event's own page —
 //    downloaded and put on the site like a WhatsApp photo ──
+const NOT_OURS_RE = /\b(church(?:es)?|christian(?:ity)?|christmas|xmas|jesus|christ\b|easter|monaster(?:y|ies)|convent|cathedral|basilica|chapel|nuns?|priests?|gospel|crusader|via dolorosa|holy sepulch|nativity|saints? [A-Z]|st\.? (?:john|mary|anne|peter|george|stephen)|mosque|ramadan|eid\b|buddh|hindu|yoga retreat temple|halloween|new year'?s eve)\b/i;
 const IMG_RE = /\.(jpe?g|png|webp|gif)(\?[^\s"']*)?$/i;
 const absUrl = (u, base) => { try { return new URL(String(u || '').trim(), base).href; } catch (e) { return ''; } };
 // the first image-looking string inside a data object (a Strapi card, a JSON-LD event)
@@ -88,6 +89,7 @@ async function imageOfPage(link) {
   if (!link || PAGE_PICS >= 25) return '';
   PAGE_PICS++;
   try { const r = await get(link); if (!r.ok) return ''; const $ = cheerio.load(r.text);
+    if (NOT_OURS_RE.test($('main, article, .content, body').first().text().slice(0, 6000))) return '';
     const og = $('meta[property="og:image"], meta[name="og:image"], meta[property="og:image:secure_url"], meta[name="twitter:image"]').map((i, el) => $(el).attr('content')).get().map((u) => absUrl(u, link)).find((u) => u && /^https?:/.test(u));
     if (og) return og;
     let out = '';
@@ -301,11 +303,14 @@ async function run(seenSet, statusObj, force) {
       // date (and, for a news feed, event words) reach the site
       if (src.datedOnly && !d) { SEEN.add(key); continue; }
       if (src.eventWords && !src.eventWords.test(r.title + ' ' + (r.desc || ''))) { SEEN.add(key); continue; }
+      // not for this site: anything church-related or otherwise not Jewish (Miriam, 25 Sep 2026)
+      if (NOT_OURS_RE.test(r.title + ' ' + (r.desc || '') + ' ' + (r.place || ''))) { SEEN.add(key); continue; }
       let title = r.title, desc = r.desc || '';
       if (hasHebrew(title)) { const t = await translate(title); if (t) title = t; }
       if (hasHebrew(desc)) { const t = await translate(desc.slice(0, 400)); desc = t || ''; }
       const when = d ? ('📅 ' + niceDate(d) + (r.time ? ' · ' + r.time : '')) : '';
-      const memo = [desc.slice(0, 600), when, r.place ? '📍 ' + r.place : '', '🔗 ' + r.link].filter(Boolean).join('\n\n');
+      // the link is on the post itself (contactWebsite): not repeated in the text (Miriam, 25 Sep 2026)
+      const memo = [desc.slice(0, 600), when, r.place ? '📍 ' + r.place : ''].filter(Boolean).join('\n\n');
       // the picture: what the source shows for it, or its page's own picture
       let picUrl = r.image || '';
       if (!picUrl && d) picUrl = await imageOfPage(r.link);
@@ -325,7 +330,7 @@ async function run(seenSet, statusObj, force) {
   log('=== events sync done — ' + sent + ' new ===');
   return sent;
 }
-module.exports = { run, SOURCES, VERSION: 'ev-2026-09-24a' };
+module.exports = { run, SOURCES, VERSION: 'ev-2026-09-25a' };
 
 if (require.main === module) {
   // standalone: node events-sync.js  (needs INGEST_URL / INGEST_KEY)
