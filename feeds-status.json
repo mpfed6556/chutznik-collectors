@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-26T00:08:18.920Z",
+  "lastRun": "2026-09-26T04:57:33.231Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -35,7 +35,7 @@
     "Nefesh B'Nefesh": "ok via RSS (6 items)",
     "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
     "AACI": "no feed, no scannable items, nothing in the news last 48h",
-    "Janglo": "ok via page-scan (5 items) — no RSS found",
+    "Janglo": "no feed, no scannable items, nothing in the news last 48h",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
     "Drushim": "ok via page-scan (4 items) — no RSS found",
@@ -60,15 +60,15 @@
     "Chaim V'Chessed": "blocked: robots.txt unreachable — skipping to be safe",
     "Moovit": "ok via RSS (6 items)",
     "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
-    "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
-    "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
+    "Shaare Zedek Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
+    "Herzog Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
     "_events": {
-      "lastRun": "2026-09-26T00:08:18.918Z",
+      "lastRun": "2026-09-26T04:57:33.230Z",
       "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
-        "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
+        "The Kotel": "nothing parsed · SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON",
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
         "iTravelJerusalem": "40 cards, nothing new (20 distinct)"
       },
@@ -105,38 +105,7 @@
             "link": "https://reconnectshiurim.com/product/listening-and-the-four-family-types/"
           }
         ],
-        "The Kotel": [
-          {
-            "title": "The Refined Person – Sukkot 5787",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157771/"
-          },
-          {
-            "title": "“Go, Eat with Joy” – Yom Kippur",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157737/"
-          },
-          {
-            "title": "Respect for Tradition – Parashat Ha’azinu",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157731/"
-          },
-          {
-            "title": "Prayers to the Western Wall from 140 countries: “For My House shall be called a house of prayer for all peoples.”",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157648/"
-          },
-          {
-            "title": "Inner Work – Rosh Hashanah 5787",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157613/"
-          }
-        ],
+        "The Kotel": [],
         "Jerusalem Municipality": [],
         "iTravelJerusalem": []
       }
