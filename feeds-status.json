@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-28T07:48:28.503Z",
+  "lastRun": "2026-09-28T16:08:56.526Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -63,7 +63,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-28T07:48:28.502Z",
+      "lastRun": "2026-09-28T16:08:56.525Z",
       "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
@@ -107,6 +107,12 @@
         ],
         "The Kotel": [
           {
+            "title": "What Are We Joyous About? – Simchat Torah",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157796/"
+          },
+          {
             "title": "The Refined Person – Sukkot 5787",
             "date": null,
             "time": "",
@@ -129,12 +135,6 @@
             "date": null,
             "time": "",
             "link": "https://thekotel.org/en/157648/"
-          },
-          {
-            "title": "Inner Work – Rosh Hashanah 5787",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157613/"
           }
         ],
         "Jerusalem Municipality": [],
