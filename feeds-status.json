@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-30T15:26:30.970Z",
+  "lastRun": "2026-09-30T20:18:18.049Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -63,14 +63,14 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-30T15:26:30.969Z",
-      "sent": 0,
+      "lastRun": "2026-09-30T20:18:18.048Z",
+      "sent": 1,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
-        "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
-        "iTravelJerusalem": "40 cards, nothing new (20 distinct)"
+        "iTravelJerusalem hints": "20 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
+        "iTravelJerusalem": "ok via listing cards (1 new of 20)"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -138,7 +138,15 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": []
+        "iTravelJerusalem": [
+          {
+            "title": "Open House Jerusalem 2026",
+            "date": "2026-10-15",
+            "time": "09:30",
+            "link": "https://www.itraveljerusalem.com/event/open-house-jerusalem",
+            "raw": "1 dates; first {\"startDate\":\"2026-10-15T06:30:00.000Z\",\"endDate\":\"\",\"startTime\":\"09:30\",\"endTime\":\"18:30\",\"repeats\":\"no\"}"
+          }
+        ]
       }
     }
   }
