@@ -148,8 +148,10 @@ function prepare(arr, kind) { return (Array.isArray(arr) ? arr : []).filter((p) 
 async function fetchRecent(SITE) {
   const base = (SITE || 'https://chutznik.org').replace(/\/$/, '');
   const get = async (q) => { try { const r = await fetch(base + '/api/live-data?type=' + q, { signal: AbortSignal.timeout(20000) }); return r.ok ? await r.json() : []; } catch (e) { return []; } };
-  const [ups, posts] = await Promise.all([get('updates'), get('posts')]);
-  return prepare(ups, 'up').concat(prepare(posts, 'post'));
+  // the last three days only: the matches never look further back (the whole file was 2 MB a time — Miriam, 30 Sep 2026)
+  let ups = await get('updates&since=' + (Date.now() - 3 * 86400e3)); if (ups && ups.delta) ups = ups.items || [];
+  const posts = await get('posts');
+  return prepare(Array.isArray(ups) ? ups : [], 'up').concat(prepare(posts, 'post'));
 }
 // a poster we only know by the words of her message (jerusaguide)
 function itemFromText(subject, text) { const t = String(subject || '') + '\n' + String(text || ''); const types = RENT_RE.test(t) ? ['Rental'] : (JOB_RE.test(t) ? ['Jobs'] : []); return { id: 'mail', title: String(subject || '').slice(0, 120), memo: String(text || '').slice(0, 3000), types, author: '' }; }

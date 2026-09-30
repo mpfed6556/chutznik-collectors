@@ -1577,8 +1577,14 @@ async function notifyPosters() {
     try {
       const mr = await fetch(SITE + '/api/live-data?type=meta'); const meta = mr.ok ? await mr.json() : {};
       if (meta.updates && meta.updates !== _lastUpdSha) {
-        const r = await fetch(SITE + '/api/live-data?type=updates');
-        if (r.ok) { const arr = await r.json(); if (Array.isArray(arr)) { _lastUpdSha = meta.updates; global._updInfo = {}; global._updItems = {}; for (const u of arr) { global._updInfo[String(u.id)] = { status: u.status, notify: u.notify, notified: u.notified }; global._updItems[String(u.id)] = u; } } }
+        // only what changed since the last look (the whole 2 MB file was being pulled on every round — Miriam, 30 Sep 2026)
+        const haveAll = global._updItems && Object.keys(global._updItems).length && global._updSince;
+        const r = await fetch(SITE + '/api/live-data?type=updates' + (haveAll ? '&since=' + (global._updSince - 90000) : ''));
+        if (r.ok) { const j = await r.json();
+          if (j && j.delta && haveAll) { for (const u of (j.items || [])) { global._updInfo[String(u.id)] = { status: u.status, notify: u.notify, notified: u.notified }; global._updItems[String(u.id)] = u; }
+            if (typeof j.count === 'number' && j.count !== Object.values(global._updItems).filter((u) => u && u.status === 'public').length) { global._updSince = 0; }   // something was removed: the whole file next round
+            else { global._updSince = j.now || Date.now(); _lastUpdSha = meta.updates; } }
+          else if (Array.isArray(j)) { _lastUpdSha = meta.updates; global._updInfo = {}; global._updItems = {}; for (const u of j) { global._updInfo[String(u.id)] = { status: u.status, notify: u.notify, notified: u.notified }; global._updItems[String(u.id)] = u; } global._updSince = Date.now(); } }
       }
       info = global._updInfo || {};
     } catch (e) {}
