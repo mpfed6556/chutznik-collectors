@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-30T20:18:18.049Z",
+  "lastRun": "2026-10-01T00:00:28.390Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -27,7 +27,7 @@
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
+    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Electric Corporation": "no feed, no scannable items, nothing in the news last 48h",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
@@ -63,14 +63,14 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-09-30T20:18:18.048Z",
-      "sent": 1,
+      "lastRun": "2026-10-01T00:00:28.388Z",
+      "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "20 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
-        "iTravelJerusalem": "ok via listing cards (1 new of 20)"
+        "iTravelJerusalem": "20 cards, nothing new (20 distinct)"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -138,15 +138,7 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [
-          {
-            "title": "Open House Jerusalem 2026",
-            "date": "2026-10-15",
-            "time": "09:30",
-            "link": "https://www.itraveljerusalem.com/event/open-house-jerusalem",
-            "raw": "1 dates; first {\"startDate\":\"2026-10-15T06:30:00.000Z\",\"endDate\":\"\",\"startTime\":\"09:30\",\"endTime\":\"18:30\",\"repeats\":\"no\"}"
-          }
-        ]
+        "iTravelJerusalem": []
       }
     }
   }
