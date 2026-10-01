@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-01T17:47:33.818Z",
+  "lastRun": "2026-10-01T22:04:47.633Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -63,14 +63,14 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-01T17:47:33.817Z",
+      "lastRun": "2026-10-01T22:04:47.632Z",
       "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
-        "iTravelJerusalem hints": "18 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
-        "iTravelJerusalem": "18 cards, nothing new (18 distinct)"
+        "iTravelJerusalem hints": "16 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
+        "iTravelJerusalem": "16 cards, nothing new (16 distinct)"
       },
       "samples": {
         "Reconnect Shiurim": [
