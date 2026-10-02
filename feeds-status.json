@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-02T19:22:16.977Z",
+  "lastRun": "2026-10-02T23:09:14.080Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -50,7 +50,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -63,14 +63,14 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-02T19:22:16.976Z",
+      "lastRun": "2026-10-02T23:09:14.079Z",
       "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
-        "iTravelJerusalem hints": "14 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
-        "iTravelJerusalem": "14 cards, nothing new (14 distinct)"
+        "iTravelJerusalem hints": "13 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
+        "iTravelJerusalem": "13 cards, nothing new (13 distinct)"
       },
       "samples": {
         "Reconnect Shiurim": [
