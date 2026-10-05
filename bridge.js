@@ -1513,8 +1513,10 @@ async function milestonesRun() {
   if (sent[want.stamp]) return;
   _milestonesBusy = true;
   try {
+    // the script arrives with the self-update; fetch it now if it is not here yet
+    if (!fs.existsSync(path.join(__dirname, 'scripts', 'milestones.js'))) { try { await syncExtras(); } catch (e) {} }
+    let M; try { M = require('./scripts/milestones.js'); } catch (e) { log('📈 milestones: script not here yet (' + (e && e.message || '').split('\n')[0] + ') — next round'); return; }
     sent[want.stamp] = { startedAt: Date.now(), to: want.to }; fs.writeFileSync(MILESTONES_FILE, JSON.stringify(sent));   // never twice, even if it fails halfway
-    const M = require('./scripts/milestones.js');
     const report = await M.sendMilestones({ SITE, KEY: INGEST_KEY, mode: want.to === 'members' ? 'members' : 'preview', previewTo: ['mpfederman@gmail.com'], log, pause: 900 });
     sent[want.stamp].report = report; sent[want.stamp].doneAt = Date.now(); fs.writeFileSync(MILESTONES_FILE, JSON.stringify(sent));
     log('📈 milestones (' + want.stamp + ') → ' + report);
@@ -1808,6 +1810,11 @@ async function selfUpdate() {
 }
 setInterval(selfUpdate, 10 * 60 * 1000);
 setTimeout(selfUpdate, 90 * 1000);
+// a dependency added since the last install (pdf-parse, 5 Oct 2026): install it once, in the background
+setTimeout(() => { try { require.resolve('pdf-parse'); } catch (e) {
+  log('📦 pdf-parse not installed — npm install');
+  try { require('child_process').execSync('npm install --omit=dev --no-audit --no-fund', { cwd: __dirname, stdio: 'ignore', timeout: 180000 }); log('📦 npm install done'); } catch (e2) { log('📦 npm install failed: ' + (e2 && e2.message)); }
+} }, 30 * 1000);
 
 // ── Status heartbeat ─────────────────────────────────────────────────────────
 // Every 10 minutes the last log lines and a few counters go to the site's data
