@@ -784,7 +784,8 @@ async function intake(sock, m, chatName) {
   let kind = classify(body, !!media);
   // a group's own etiquette reminder ("please say if you can't make it", "no ads") is never a post (Miriam, 24 Sep 2026)
   if (GROUP_NOTICE_RE.test(body)) kind = 'chatter';
-  if ((cards.length || link) && (kind === 'chatter' || kind === 'info')) kind = 'answer';
+  const inviteOnly = /chat\.whatsapp\.com\//i.test(body) && body.replace(/https?:\/\/\S+/g, ' ').replace(/whatsapp group invite|group invite|join (?:the |our )?group|invite link/gi, ' ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean).length < 6;
+  if ((cards.length || link) && (kind === 'chatter' || kind === 'info') && !inviteOnly) kind = 'answer';
   // in a rental group, a housing message is a Rental even without "for rent"
   if (kind !== 'rental' && kind !== 'chatter' && kind !== 'question' && isRentalChat(chatName) && RENT_STRONG.test(body) && body.length > 25) kind = 'rental';
   // a home offered or looked for is a Rental in ANY group — "studios to rent in Rechavia?",
