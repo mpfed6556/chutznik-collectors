@@ -1495,6 +1495,8 @@ async function pullSettings() {
     // wants. Naming one group is for bringing in a single feed's past content
     // without dragging a week of everything else into the review queue at once.
     if (j.BACKFILL_CHATS !== undefined) { const list = (Array.isArray(j.BACKFILL_CHATS) ? j.BACKFILL_CHATS : []).map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._backfillChats || [])) { global._backfillChats = list; BACKFILL.chats = {}; saveBackfill(); log('⚙️  backfill limited to: ' + (list.join(' | ') || '(every group)')); } }
+    // MILESTONES {stamp, to: 'preview'|'members'}: the "three months of Chutznik" email, once per stamp (Miriam, 5 Oct 2026)
+    if (j.MILESTONES && typeof j.MILESTONES === 'object' && j.MILESTONES.stamp) { global._milestones = { stamp: String(j.MILESTONES.stamp), to: String(j.MILESTONES.to || 'preview').toLowerCase() }; setTimeout(milestonesRun, 2000); }
     // who gets the daily TODAY sheet (numbers with country code, no +)
     if (Array.isArray(j.DIGEST_TO)) { const list = j.DIGEST_TO.map((x) => String(x || '').trim().toLowerCase()).filter((x) => x.includes('@')); if (JSON.stringify(list) !== JSON.stringify(global._digestTo || [])) { global._digestTo = list; log('\u2699\ufe0f  WhatsApp digest goes to: ' + (list.join(', ') || '(admin)')); } }
     if (Array.isArray(j.RENTALS_TO)) { const list = j.RENTALS_TO.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._rentalsTo || [])) { global._rentalsTo = list; log('\u2699\ufe0f  RENTALS sheet goes to: ' + (list.join(', ') || '(same as TODAY)')); } }
@@ -1502,6 +1504,23 @@ async function pullSettings() {
   } catch (e) {}
 }
 setInterval(pullSettings, 5 * 60 * 1000); setTimeout(pullSettings, 20 * 1000);
+// the milestones email: sent once per stamp, to Miriam (preview) or to every member
+const MILESTONES_FILE = path.join(__dirname, 'milestones-sent.json');
+let _milestonesBusy = false;
+async function milestonesRun() {
+  const want = global._milestones; if (!want || !INGEST_KEY || _milestonesBusy) return;
+  let sent = {}; try { sent = JSON.parse(fs.readFileSync(MILESTONES_FILE, 'utf8')) || {}; } catch (e) {}
+  if (sent[want.stamp]) return;
+  _milestonesBusy = true;
+  try {
+    sent[want.stamp] = { startedAt: Date.now(), to: want.to }; fs.writeFileSync(MILESTONES_FILE, JSON.stringify(sent));   // never twice, even if it fails halfway
+    const M = require('./scripts/milestones.js');
+    const report = await M.sendMilestones({ SITE, KEY: INGEST_KEY, mode: want.to === 'members' ? 'members' : 'preview', previewTo: ['mpfederman@gmail.com'], log, pause: 900 });
+    sent[want.stamp].report = report; sent[want.stamp].doneAt = Date.now(); fs.writeFileSync(MILESTONES_FILE, JSON.stringify(sent));
+    log('📈 milestones (' + want.stamp + ') → ' + report);
+  } catch (e) { log('📈 milestones: ' + (e && e.message)); }
+  finally { _milestonesBusy = false; }
+}
 const NOTIFY_AUTO = String(process.env.NOTIFY_AUTO || '0') === '1';
 const NOTIFY_DAILY = Number(process.env.NOTIFY_DAILY || 25);
 const NOTIFY_FROM = Number(process.env.NOTIFY_FROM_HOUR || 8), NOTIFY_TO = Number(process.env.NOTIFY_TO_HOUR || 22);
@@ -1725,7 +1744,7 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+const EXTRA_FILES = ['scripts/milestones.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
