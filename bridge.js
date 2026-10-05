@@ -1515,6 +1515,7 @@ async function milestonesRun() {
   try {
     // the script arrives with the self-update; fetch it now if it is not here yet
     if (!fs.existsSync(path.join(__dirname, 'scripts', 'milestones.js'))) { try { await syncExtras(); } catch (e) {} }
+    try { delete require.cache[require.resolve('./scripts/milestones.js')]; } catch (e) {}   // always the newest copy
     let M; try { M = require('./scripts/milestones.js'); } catch (e) { log('📈 milestones: script not here yet (' + (e && e.message || '').split('\n')[0] + ') — next round'); return; }
     sent[want.stamp] = { startedAt: Date.now(), to: want.to }; fs.writeFileSync(MILESTONES_FILE, JSON.stringify(sent));   // never twice, even if it fails halfway
     const report = await M.sendMilestones({ SITE, KEY: INGEST_KEY, mode: want.to === 'members' ? 'members' : 'preview', previewTo: ['mpfederman@gmail.com'], log, pause: 900 });
