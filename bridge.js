@@ -547,7 +547,8 @@ function saleTitle(t0, memo) {
   return ('For sale: ' + (beds ? beds + ' bdrm ' : '') + kind + (area ? ' in ' + area : '') + (suffix ? ' — ' + suffix : '')).replace(/\s{2,}/g, ' ').slice(0, 60);
 }
 const GROUP_NOTICE_RE = /please be courteous|no[- ]?shows?\b|leave (?:us|them|people|me) hanging|group rules|rules of (?:the|this) group|this group is (?:only |strictly )?for|(?:please|pls|kindly) (?:don.?t|do not|dont) post|admin(?:s)? (?:note|reminder|message|announcement)|not the (?:place|group) for|keep (?:this|the) group (?:clean|on topic|for)|off[- ]topic|kindly refrain|removed from (?:the|this) group|no ads (?:allowed|please|in this group)|posting rules|please read the (?:description|rules)|reminder to (?:all|everyone) (?:in|on) (?:the|this) group|will be (?:blocked|removed|kicked)|this is a (?:friendly |gentle )?reminder|(?:group|chat) (?:description|guidelines)|be (?:respectful|considerate) (?:to|of)|(?:if|when) you (?:say yes|commit|agree) to a job|if your plans change/i;
-const HOUSING_RE = /\b(apartments?|apt|apts|flat|dira|dirot|studios?|penthouse|cottage|duplex|basement unit|units?|houses?|villa|rooms? (?:for rent|to rent|available)|roommates?|vacation rentals?|short[- ]term rentals?|holiday (?:apartment|rental)|sublet|sublease|airbnb)\b|דירה|להשכרה/i;
+// "in-house wig services" is not a house (a wig salon came in as a rental, 5 Oct 2026)
+const HOUSING_RE = /\b(?<!in[- ])(apartments?|apt|apts|flat|dira|dirot|studios?|penthouse|cottage|duplex|basement unit|units?|houses?|villa|rooms? (?:for rent|to rent|available)|roommates?|vacation rentals?|short[- ]term rentals?|holiday (?:apartment|rental)|sublet|sublease|airbnb)\b|דירה|להשכרה/i;
 const RENT_WORD_RE = /\b(rent|rental|rentals|renting|to let|for let|sublet|sublease|lease|available|avail|looking for|seeking|wanted|need)\b|להשכרה|מחפש/i;
 function rentalIsWanted(low) {
   let t = String(low || '').toLowerCase();
