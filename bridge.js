@@ -289,13 +289,24 @@ function summarize(text, limit) {
 }
 
 // A title that actually describes the post.
+// true when the text has at least one line that could be a title (not just a
+// link, a number, a greeting)
+function hasTitleWords(body) {
+  const t = smartTitle(body, '', '');
+  return !!t && !/^From /.test(t) && t !== 'Apartment available' && t !== 'From a local business' && t !== 'A question for the community';
+}
 function smartTitle(body, kind, chatName) {
   const lines = String(body || '').split('\n').map(l => stripEmoji(l).trim()).filter(Boolean);
   const junk = l => !l || l.length < 6
     || EMAIL_RE.test(l) && l.replace(EMAIL_RE, '').trim().length < 3
     || /^https?:\/\//i.test(l)
+    // a bare link of any shape (wa.me/…, Https://drive…, bit.ly/x), a phone
+    // number from anywhere, or fancy-lettered "Sponsored": never a title
+    || /^(?:https?:\/\/|www\.|wa\.me\/|[\w.-]+\.(?:com|net|org|co\.il|me|ly|link|app|io|info|co)\b)\S*$/i.test(l)
     || normalizePhone(l) !== ''
+    || /^\+?\d[\d\s().\-]{6,}$/.test(l)
     || /^\d[\d\s.\-]*$/.test(l)
+    || /^[\u{1D400}-\u{1D7FF}\s]+$/u.test(l)
     // attribution / boilerplate, never a real title
     || /\basked:\s*$/i.test(l)
     || /^[—–-]\s*Posted by\b/i.test(l)
@@ -1212,17 +1223,22 @@ async function buildPost(cluster, chatName) {
     title = first.link.title.slice(0, 90);
     memo = [stripEmoji(first.body || '').replace(first.link.url, '').trim(), first.link.description, first.link.url].filter(Boolean).join('\n');
   } else {
-    const cleaned = cleanBody(first.body, contacts);
+    let cleaned = cleanBody(first.body, contacts);
     // Rentals get Miriam's structured title; everything else keeps its own words.
     // a photo with no words of its own: the words on the picture are the post
     // (Miriam, 20 Sep 2026: titles must be the actual summary, never "From <group>")
-    const fromPic = (!cleaned && ocrTexts.length) ? cleanBody(ocrTexts.join(' '), contacts) : '';
+    // "no words of its own" includes a bare wa.me link or a phone number with a
+    // flyer: the flyer is the post, the link goes underneath (Miriam, 5 Oct 2026)
+    const picWords = ocrTexts.length ? cleanBody(ocrTexts.join(' '), contacts) : '';
+    const bodyJunk = !hasTitleWords(cleaned);
+    const fromPic = ((!cleaned || bodyJunk) && picWords) ? picWords : '';
+    if (bodyJunk && fromPic) { const link = cleaned; cleaned = ''; memo = summarize(fromPic, 900) + (link ? '\n\n' + link : ''); }
     title = first.kind === 'rental'
       ? rentalTitle(first.body + ' ' + (cleaned || fromPic))
-      : smartTitle(cleaned || first.body || fromPic, first.kind, chatName);
-    memo  = summarize(cleaned || fromPic, 900);
+      : smartTitle(cleaned || fromPic || first.body, first.kind, chatName);
+    if (!(bodyJunk && fromPic)) memo = summarize(cleaned || fromPic, 900);
   }
-  if (ocrTexts.length && cluster.kind !== 'combined' && stripEmoji(first.body || '').trim()) {   // words of her own AND a picture: the picture's words follow
+  if (ocrTexts.length && cluster.kind !== 'combined' && stripEmoji(first.body || '').trim() && hasTitleWords(cleanBody(first.body, contacts))) {   // words of her own AND a picture: the picture's words follow
     const fromImg = summarize(cleanBody(ocrTexts.join(' '), contacts), 400);
     if (fromImg) memo += '\n\nFrom the attached image: ' + fromImg;
   }
