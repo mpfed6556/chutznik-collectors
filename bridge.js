@@ -753,6 +753,21 @@ function imageOf(m) {
   const inner = msg.ephemeralMessage?.message || msg.viewOnceMessage?.message || msg;
   return inner.imageMessage || null;
 }
+function docOf(m) {
+  const msg = m.message || {};
+  const inner = msg.ephemeralMessage?.message || msg.viewOnceMessage?.message || msg;
+  return inner.documentMessage || inner.documentWithCaptionMessage?.message?.documentMessage || null;
+}
+// the words of a PDF (first pages), tidied like OCR text
+async function pdfText(buf) {
+  try {
+    const { PDFParse } = require('pdf-parse');
+    const parser = new PDFParse({ data: new Uint8Array(buf) });
+    const r = await parser.getText({ last: 3 }); try { await parser.destroy(); } catch (e) {}
+    const text = String(r && r.text || '').replace(/--\s*\d+ of \d+\s*--/g, ' ').replace(/\s+/g, ' ').trim();
+    return readsLikeText(text) ? text.substring(0, 1500) : '';
+  } catch (e) { log('   PDF not read: ' + (e && e.message)); return ''; }
+}
 async function intake(sock, m, chatName) {
   const key = m.key || {};
   const participant = key.participant || key.remoteJid || '';
@@ -785,6 +800,15 @@ async function intake(sock, m, chatName) {
       if (buf && buf.length < 4_000_000) media = { base64: buf.toString('base64'), mime: img.mimetype || 'image/jpeg' };
     } catch (e) {}
   }
+  // a flyer sent as a PDF: its words count like the words on a picture (Miriam, 5 Oct 2026)
+  let docText = '';
+  const doc = docOf(m);
+  if (doc && (/pdf/i.test(doc.mimetype || '') || /\.pdf$/i.test(doc.fileName || ''))) {
+    try {
+      const buf = await downloadMediaMessage(m, 'buffer', {}, { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage });
+      if (buf && buf.length < 8_000_000) docText = await pdfText(buf);
+    } catch (e) { log('   PDF skipped: ' + (e && e.message)); }
+  }
   const ts = Number(m.messageTimestamp || 0) * 1000;
   if (rawId && m.pushName) { NAMES.set(rawId, m.pushName); }
   const ctx = ctxOf(m) || {};
@@ -793,7 +817,7 @@ async function intake(sock, m, chatName) {
   const cards = cardsOf(m);
   const link = linkOf(m);
   // A contact card or a link with no words is still a real answer.
-  let kind = classify(body, !!media);
+  let kind = classify(body + (docText && !body ? ' ' + docText.slice(0, 300) : ''), !!media || !!docText);
   // a group's own etiquette reminder ("please say if you can't make it", "no ads") is never a post (Miriam, 24 Sep 2026)
   if (GROUP_NOTICE_RE.test(body)) kind = 'chatter';
   const inviteOnly = /chat\.whatsapp\.com\//i.test(body) && body.replace(/https?:\/\/\S+/g, ' ').replace(/whatsapp group invite|group invite|join (?:the |our )?group|invite link/gi, ' ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean).length < 6;
@@ -803,7 +827,7 @@ async function intake(sock, m, chatName) {
   // a home offered or looked for is a Rental in ANY group — "studios to rent in Rechavia?",
   // "vacation rental on Paran after Sukkos" — so it goes public with the rentals (Miriam, 25 Sep 2026)
   if (kind !== 'rental' && kind !== 'chatter' && HOUSING_RE.test(body) && RENT_WORD_RE.test(body) && body.length > 20 && !GROUP_NOTICE_RE.test(body)) kind = 'rental';
-  return { id: key.id || String(Date.now()+Math.random()), ts, chat: chatName, sender, phone, body, media, kind,
+  return { id: key.id || String(Date.now()+Math.random()), ts, chat: chatName, sender, phone, body, media, docText, kind,
            quotedId, mentions, cards, link,
            // where a private "your post is up" note can be sent (real number first, privacy id as fallback)
            jid: pnJid || participant, fromMe: !!key.fromMe };
@@ -987,7 +1011,7 @@ function clusterThreads(msgs) {
       }
       // its text went to a post we already sent, or was dropped: carry on as usual
     }
-    const hasStuff = (m.cards && m.cards.length) || m.link || m.media;
+    const hasStuff = (m.cards && m.cards.length) || m.link || m.media || m.docText;
     const parent = resolveParent(m, batchIndex);
     if (m.kind === 'chatter' && !hasStuff && !parent) continue;
     if (m.kind === 'chatter' && GROUP_NOTICE_RE.test(m.body || '')) continue;
@@ -1134,7 +1158,7 @@ async function sendBabysit(cl, chatName, threadId) {
 async function buildAptItem(m, chatName, capFallback) {
   const tag = String(m.id || (Date.now() + '' + Math.random())).replace(/[^a-zA-Z0-9]/g, '').slice(-16);
   const bodyRaw = (String(m.body || '').trim()) || (capFallback || '');
-  const attachments = []; let ocr = '';
+  const attachments = []; let ocr = m.docText || '';
   if (m.media) {
     const url = await uploadImage(m.media.base64, m.media.mime, 'apt' + tag, 0);
     if (url) attachments.push({ url, name: 'photo.jpg' });
@@ -1173,6 +1197,7 @@ async function buildPost(cluster, chatName) {
   const attachments = []; const ocrTexts = []; const ocrByMsg = new Map();
   let idx = 0;
   for (const m of msgs) {
+    if (m.docText && !ocrTexts.includes(m.docText)) { ocrTexts.push(m.docText); ocrByMsg.set(m.id, m.docText); }
     if (!m.media) continue;
     const url = await uploadImage(m.media.base64, m.media.mime, tag, idx++);
     if (url) attachments.push({ url, name: 'photo' + idx + '.jpg' });
@@ -1773,7 +1798,7 @@ function logKeep(s) { LOG_RING.push(new Date().toISOString().slice(11, 19) + ' '
 async function sendStatus() {
   try {
     const status = {
-      at: new Date().toISOString(), version: (fs.statSync(__filename).mtime || '').toString(), pid: process.pid, up: Math.round(process.uptime()),
+      node: process.version, at: new Date().toISOString(), version: (fs.statSync(__filename).mtime || '').toString(), pid: process.pid, up: Math.round(process.uptime()),
       connected: !!(global._sock && global._sock.user), me: global._sock && global._sock.user ? String(global._sock.user.id || '').split(':')[0] : '',
       lids: Object.keys(LIDS).length, seen: SEEN.size, posted: Object.keys(POSTED).length, notifyMode: NOTIFY_MODE,
       log: LOG_RING.slice(-80),
