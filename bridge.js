@@ -1563,6 +1563,55 @@ async function rentalNoteOrPlain(e, postId) {
   return noteText(e, postId);
 }
 let _notifyBusy = false, _lastUpdSha = '';
+// what the site says about each post: status, whether Miriam pressed 📣, and
+// (since 5 Oct 2026) a "someone replied" note she asked the bridge to send
+async function refreshUpdInfo() {
+  try {
+    const mr = await fetch(SITE + '/api/live-data?type=meta'); const meta = mr.ok ? await mr.json() : {};
+    if (meta.updates && meta.updates !== _lastUpdSha) {
+      // only what changed since the last look (the whole 2 MB file was being pulled on every round — Miriam, 30 Sep 2026)
+      const haveAll = global._updItems && Object.keys(global._updItems).length && global._updSince;
+      const r = await fetch(SITE + '/api/live-data?type=updates' + (haveAll ? '&since=' + (global._updSince - 90000) : ''));
+      if (r.ok) { const j = await r.json();
+        if (j && j.delta && haveAll) { for (const u of (j.items || [])) { global._updInfo[String(u.id)] = { status: u.status, notify: u.notify, notified: u.notified }; global._updItems[String(u.id)] = u; }
+          if (typeof j.count === 'number' && j.count !== Object.values(global._updItems).filter((u) => u && u.status === 'public').length) { global._updSince = 0; }   // something was removed: the whole file next round
+          else { global._updSince = j.now || Date.now(); _lastUpdSha = meta.updates; } }
+        else if (Array.isArray(j)) { _lastUpdSha = meta.updates; global._updInfo = {}; global._updItems = {}; for (const u of j) { global._updInfo[String(u.id)] = { status: u.status, notify: u.notify, notified: u.notified }; global._updItems[String(u.id)] = u; } global._updSince = Date.now(); } }
+    }
+  } catch (e) {}
+  return global._updInfo || {};
+}
+// Miriam pressed "Notify poster — they got a reply" inside a post: the site
+// stored the note (replyNote) and we send it from her number, right away,
+// whatever the hour, the daily limit or the one-note-per-person rule — she
+// asked for this one herself. replyNoted marks it done on the site.
+let _replyBusy = false;
+async function replyNotes() {
+  if (_replyBusy) return; _replyBusy = true;
+  try {
+    await refreshUpdInfo();
+    const items = Object.values(global._updItems || {}).filter((u) => u && u.replyNote && !u.replyNoted);
+    if (!items.length) return;
+    const sock = global._sock; if (!sock) { log('📲 reply note: ' + items.length + ' waiting, WhatsApp not connected yet'); return; }
+    for (const u of items) {
+      const id = String(u.id);
+      const e = POSTED[id] || {};
+      let jid = e.jid || '';
+      if (!jid) { let d = String(u.contactPhone || e.phone || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '972' + d.slice(1); if (d.length >= 11 && d.length <= 13) jid = d + '@s.whatsapp.net'; }
+      const mark = async (patch) => { try { await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', id, patch }) }); } catch (err) {} };
+      if (!jid) { log('📲 reply note: no number on ' + id + ' — skipped'); u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted }); continue; }
+      const who = optKey({ jid }); if (who && OPTOUT.has(who)) { log('📲 reply note: ' + who + ' opted out — skipped'); u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted }); continue; }
+      try { await sock.sendMessage(jid, { text: String(u.replyNote) }); log('📲 reply note → ' + jid.split('@')[0] + ': "' + String(u.title || '').slice(0, 50) + '"'); }
+      catch (err) { log('📲 reply note failed → ' + jid.split('@')[0] + ': ' + (err && err.message)); u._replyTries = (u._replyTries || 0) + 1; if (u._replyTries >= 3) { u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted }); } continue; }
+      u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted });
+      await new Promise(r => setTimeout(r, 4000 + Math.floor(Math.random() * 6000)));
+    }
+  } catch (e) { log('📲 reply note: ' + (e && e.message)); }
+  finally { _replyBusy = false; }
+}
+setInterval(replyNotes, 90 * 1000);
+setTimeout(replyNotes, 60 * 1000);
+
 async function notifyPosters() {
   if (NOTIFY_MODE === 'off' || _notifyBusy) return;
   _notifyBusy = true;
@@ -1573,22 +1622,7 @@ async function notifyPosters() {
     // source of truth — a post Miriam flagged that the site never saw notified)
     const pending = Object.entries(POSTED).filter(([, e]) => e.jid && (!e.notified || (!e.sentLive && !e.skipped)));
     if (!pending.length) return;
-    // what the site says about each post: status, and whether Miriam pressed 📣
-    let info = {};
-    try {
-      const mr = await fetch(SITE + '/api/live-data?type=meta'); const meta = mr.ok ? await mr.json() : {};
-      if (meta.updates && meta.updates !== _lastUpdSha) {
-        // only what changed since the last look (the whole 2 MB file was being pulled on every round — Miriam, 30 Sep 2026)
-        const haveAll = global._updItems && Object.keys(global._updItems).length && global._updSince;
-        const r = await fetch(SITE + '/api/live-data?type=updates' + (haveAll ? '&since=' + (global._updSince - 90000) : ''));
-        if (r.ok) { const j = await r.json();
-          if (j && j.delta && haveAll) { for (const u of (j.items || [])) { global._updInfo[String(u.id)] = { status: u.status, notify: u.notify, notified: u.notified }; global._updItems[String(u.id)] = u; }
-            if (typeof j.count === 'number' && j.count !== Object.values(global._updItems).filter((u) => u && u.status === 'public').length) { global._updSince = 0; }   // something was removed: the whole file next round
-            else { global._updSince = j.now || Date.now(); _lastUpdSha = meta.updates; } }
-          else if (Array.isArray(j)) { _lastUpdSha = meta.updates; global._updInfo = {}; global._updItems = {}; for (const u of j) { global._updInfo[String(u.id)] = { status: u.status, notify: u.notify, notified: u.notified }; global._updItems[String(u.id)] = u; } global._updSince = Date.now(); } }
-      }
-      info = global._updInfo || {};
-    } catch (e) {}
+    const info = await refreshUpdInfo();
     const hour = israelHour();
     const flaggedN = pending.filter(([id]) => info[String(id)] && info[String(id)].notify && !info[String(id)].notified).length;
     const sig = pending.length + '/' + flaggedN + '/' + NOTIFY_MODE + '/' + Object.keys(info).length;
