@@ -63,11 +63,11 @@ async function gather(SITE, KEY) {
   // reaching back past the last day only if the day has fewer), the newest jobs, and
   // every wig stylist / sheitel macher on the site
   const byTime = (a, b) => tsOf(b) - tsOf(a);
+  const junkTitle = (u) => /^(?:https?:|www\.|wa\.me)/i.test(String(u.title || '')) || String(u.title || '').length < 6;
   const pubAll = (Array.isArray(updates) ? updates : []).filter((u) => u && u.status === 'public');
   const isLong = (u) => !/\bshort[- ]term\b/i.test(u.title || '') && (u.term === 'long' || (u.term !== 'short' && u.priceMode === 'month') || /\blong[- ]term\b/i.test(u.title || ''));
   const offers = pubAll.filter((u) => (u.types || []).includes('Rental') && !/^wanted/i.test(u.title || '') && isLong(u)).sort(byTime);
   let rentals = offers.filter((u) => !junkTitle(u) && now - tsOf(u) < 86400000); if (rentals.length < 10) rentals = offers.slice(0, 12);
-  const junkTitle = (u) => /^(?:https?:|www\.|wa\.me)/i.test(String(u.title || '')) || String(u.title || '').length < 6;
   const jobs = pubAll.filter((u) => !junkTitle(u) && (u.types || []).includes('Jobs') && !/^wa_(BABYSIT|CLEANERS)$/.test(String(u.id)) && !/\bflying to\b|\bseeking (?:someone|a )|^(?:my name|i'?m |i am |we are a )/i.test(u.title || '')).sort(byTime).slice(0, 10);
   const wigRe = /sheitel|shaitel|sheitl|shaytel|\bwigs?\b/i, wigWork = /macher|stylist|salon|wash|\bset\b|cut|styl|repair|colou?r|wigs|hair/i;
   const wigs = pubAll.concat((Array.isArray(posts) ? posts : []).filter((p) => p && !p.isExternal))
