@@ -128,12 +128,13 @@ async function uploadImage(base64, mime, tag, index) {
 //    title ("Refuit Health Center: winter is a time…") and says whether Miriam
 //    would publish it; what she would not, waits for her as before.
 const CURATE = String(process.env.CURATE || 'on') !== 'off';
-async function curateItems(items) {
+async function curateItems(items, review) {
   if (!CURATE || !INGEST_KEY || !items.length) return {};
   try {
+    const picUrl = (it) => { const a = it.attachments && it.attachments[0]; const u = a && typeof a.url === 'string' ? a.url : ''; return /^\/api\/live-data\?type=file&path=attachments%2F/.test(u) ? SITE + u : ''; };
     const r = await fetch(SITE + '/api/live-data?type=curate', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' },
-      body: JSON.stringify({ items: items.map((it) => ({ id: String(it.id), title: it.title || '', text: String(it.memo || '').slice(0, 1500), group: it.group || '', pic: !!(it.attachments && it.attachments.length), phone: !!it.contactPhone })) }),
-      signal: AbortSignal.timeout(90000) });
+      body: JSON.stringify({ review: !!review, items: items.map((it) => ({ id: String(it.id), title: it.title || '', text: String(it.memo || '').slice(0, review ? 2500 : 1500), group: it.group || '', pic: !!(it.attachments && it.attachments.length), phone: !!it.contactPhone, picUrl: review ? picUrl(it) : '' })) }),
+      signal: AbortSignal.timeout(180000) });
     const j = await r.json().catch(() => null);
     if (!r.ok || !j || !j.ok) { log('   ✍️ curate: ' + (j && j.error || ('HTTP ' + r.status))); return {}; }
     return j.posts || {};
@@ -1554,20 +1555,28 @@ async function retitleBacklog() {
     done[want.stamp] = { startedAt: Date.now() }; fs.writeFileSync(RETITLE_FILE, JSON.stringify(done));
     const r = await fetch(SITE + '/api/live-data?type=updates&queue=1&t=' + Date.now()); const all = r.ok ? await r.json() : [];
     const since = Date.now() - want.days * 86400000;
-    const list = (Array.isArray(all) ? all : []).filter((it) => curatable(it) && (it.created || 0) >= since && !it.curated);
-    log('✍️ retitle (' + want.stamp + '): ' + list.length + ' past post(s) to title');
-    let changed = 0;
-    for (let i = 0; i < list.length; i += 15) {
-      const batch = list.slice(i, i + 15);
-      const out = await curateItems(batch);
+    // every external post (WhatsApp, magazine, feeds): title and text checked against each other and
+    // against the first picture; rentals and jobs included (Miriam, 6 Oct 2026: "review every single post")
+    const reviewable = (it) => it && !/^wa_(BABYSIT|CLEANERS)$/.test(String(it.id)) && it.curated !== 'reviewed';
+    const list = (Array.isArray(all) ? all : []).filter((it) => reviewable(it) && (it.created || 0) >= since).sort((a, b) => (b.created || 0) - (a.created || 0));
+    log('✍️ review (' + want.stamp + '): ' + list.length + ' post(s) to go through');
+    let changed = 0, flagged = [];
+    for (let i = 0; i < list.length; i += 8) {
+      const batch = list.slice(i, i + 8);
+      const out = await curateItems(batch, true);
       for (const it of batch) {
-        const c = out[String(it.id)]; if (!c || !c.title || c.title === it.title) continue;
-        try { const pr = await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', id: String(it.id), patch: { title: c.title.substring(0, 150) } }) }); if (pr.ok) changed++; } catch (e) {}
-        await new Promise((res) => setTimeout(res, 400));
+        const c = out[String(it.id)]; if (!c) continue;
+        const patch = { curated: 'reviewed' };
+        if (c.title && c.title !== it.title) patch.title = c.title.substring(0, 150);
+        if (c.memo && c.memo !== it.memo) patch.memo = c.memo.substring(0, 4000);
+        if (c.flag) { flagged.push(String(it.id) + ' · ' + String(it.title || '').slice(0, 40) + ' · ' + c.flag); patch.curated = 'flagged: ' + c.flag; }
+        try { const pr = await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', id: String(it.id), patch }) }); if (pr.ok && (patch.title || patch.memo)) changed++; } catch (e) {}
+        await new Promise((res) => setTimeout(res, 350));
       }
+      if ((i / 8) % 10 === 9) { log('✍️ review: ' + Math.min(i + 8, list.length) + ' of ' + list.length + ' done, ' + changed + ' changed'); done[want.stamp].progress = i + 8; fs.writeFileSync(RETITLE_FILE, JSON.stringify(done)); }
     }
-    done[want.stamp].doneAt = Date.now(); done[want.stamp].changed = changed; fs.writeFileSync(RETITLE_FILE, JSON.stringify(done));
-    log('✍️ retitle (' + want.stamp + ') → ' + changed + ' title(s) changed of ' + list.length);
+    done[want.stamp].doneAt = Date.now(); done[want.stamp].changed = changed; done[want.stamp].flagged = flagged; fs.writeFileSync(RETITLE_FILE, JSON.stringify(done));
+    log('✍️ review (' + want.stamp + ') → ' + changed + ' post(s) changed of ' + list.length + (flagged.length ? ' · flagged: ' + flagged.slice(0, 20).join(' | ') : ''));
   } catch (e) { log('✍️ retitle: ' + (e && e.message)); }
   finally { _retitleBusy = false; }
 }
