@@ -166,6 +166,23 @@ async function curateItems(items, review) {
   } catch (e) { log('   ✍️ curate: ' + (e && e.message)); return {}; }
 }
 const curatable = (it) => it && it.source === 'whatsapp' && !/^wa_(apt|BABYSIT|CLEANERS)/.test(String(it.id)) && !(it.types || []).some((t) => /^(Rental|Jobs|For Sale)$/.test(t));
+// ── News or advert? For groups that carry both (Miriam, 6 Oct 2026: "a lot of good ads and info, not news")
+const NEWS_RE = /\b(breaking|police|accident|crash|killed|injured|wounded|arrested|suspect|terror|attack|rocket|siren|sirens|protest|demonstration|minister|knesset|government|election|court|verdict|weather|storm|flood|fire ?fighters|wildfire|earthquake|road (?:closed|closure)|traffic jam|light rail (?:fault|stopped)|evacuat|hostage|idf|hamas|hezbollah|iran|gaza|ceasefire|update:|report:)\b|תאונה|נפצע|פצוע|הרוג|נהרג|משטרה|נעצר|חשוד|פיגוע|אזעק|טיל|רקטה|הפגנ|מחאה|השר |שר ה|ראש הממשלה|הממשלה|כנסת|בג"ץ|בית המשפט|מזג האוויר|סופה|שיטפון|שריפה|כבאי|רעידת|כביש חסום|חסימ|פקק|תקלה ברכבת|חטופ|צה"ל|חמאס|חיזבאללה|איראן|עזה|הפסקת אש|מבזק|עדכון:|דיווח|חדשות|ערוץ|כתבת|כתב /i;
+const AD_RE = /\b(sale|discount|off\b|special|new (?:branch|store|shop)|open(?:ing|s)?\b|now open|course|class(?:es)?|workshop|lecture|shiur|event|concert|show|fair|registration|register|sign up|delivery|catering|store|shop|salon|clinic|studio|gym|lessons?|tutor|camp|chug|price|₪|nis|shekel)\b|מבצע|הנחה|חוג|חוגים|קורס|סדנה|הרצאה|שיעור|אירוע|הופעה|כנס|יריד|הרשמה|נרשמים|פתיחה|נפתח|סניף|חנות|שירות|משלוח|קייטרינג|מסעדה|סלון|מכון|סטודיו|מחיר|ש"ח|₪|לפרטים|להזמנות|הזמינו|בואו|מוזמנים|חדש!|חדש:/i;
+function isNewsMessage(m) {
+  try {
+    const inner = innerOf(m);
+    // a news clip: a video with no advert words, or a forwarded broadcast
+    if (inner.videoMessage && !AD_RE.test(String(inner.videoMessage.caption || ''))) return true;
+    const t = textOf(m) || '';
+    return NEWS_RE.test(t) && !AD_RE.test(t);
+  } catch (e) { return false; }
+}
+function isAdvertText(t, hasPic) {
+  t = String(t || '');
+  if (NEWS_RE.test(t) && !AD_RE.test(t)) return false;
+  return AD_RE.test(t) || phonesInText(t).length > 0 || /@|https?:\/\//.test(t) || (hasPic && t.length < 40);   // a flyer with a word or two is an advert
+}
 // ── Send one finished post into the admin review queue ───────────────────────
 async function sendToQueue(item) {
   // Same text already came through another group in the last few hours? Skip.
@@ -1567,6 +1584,7 @@ async function pullSettings() {
     if (j.NOTIFY_MODE && ['off', 'dry', 'live'].includes(String(j.NOTIFY_MODE).toLowerCase()) && String(j.NOTIFY_MODE).toLowerCase() !== NOTIFY_MODE) {
       NOTIFY_MODE = String(j.NOTIFY_MODE).toLowerCase(); log('⚙️  poster notes mode is now: ' + NOTIFY_MODE + ' (from the site settings)');
     }
+    if (Array.isArray(j.ADS_ONLY_CHATS)) { const list = j.ADS_ONLY_CHATS.map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._adsOnlyChats || [])) { global._adsOnlyChats = list; log('⚙️  adverts only (no news) from: ' + (list.join(' | ') || 'none')); } }
     if (Array.isArray(j.SKIP_CHATS)) { const list = j.SKIP_CHATS.map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._skipChats || [])) { global._skipChats = list; log('⚙️  chats skipped: ' + list.join(' | ')); } }
     // BACKFILL_SINCE (ISO time): after an outage, ask WhatsApp for each group's older messages back to this time
     if (j.BACKFILL_SINCE !== undefined) { const t = Date.parse(String(j.BACKFILL_SINCE || '')) || 0; if (t !== (global._backfillSince || 0)) { global._backfillSince = t; BACKFILL = { since: t, chats: {} }; saveBackfill(); log(t ? '⚙️  backfill: asking ' + ((global._backfillChats || []).length ? (global._backfillChats || []).join(' | ') : 'each group') + ' for messages back to ' + new Date(t).toISOString() : '⚙️  backfill: off'); } }
@@ -2337,8 +2355,12 @@ async function handleMessages(sock, messages, label) {
       SEEN.add(mid);
       if (EXCLUDE.includes(name.toLowerCase())) continue;
       if ((global._skipChats || []).some((x) => x && name.toLowerCase().includes(String(x).toLowerCase()))) continue;   // chats Miriam does not want read at all
+      // a news-and-ads group (ADS_ONLY_CHATS): the adverts and useful notices come in, the news does not (Miriam, 6 Oct 2026)
+      const adsOnly = (global._adsOnlyChats || []).some((x) => x && name.toLowerCase().includes(String(x).toLowerCase()));
+      if (adsOnly && isNewsMessage(m)) continue;
       const it = await intake(sock, m, name);
       if (!it.body && !it.media) continue;
+      if (adsOnly && !isAdvertText(it.body + ' ' + (it.docText || ''), !!it.media)) continue;
       if (isOptedOut(it)) continue;                          // asked us not to post her messages
       buffersPush(name, it); n++;
       if (label === 'live') {
