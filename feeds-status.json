@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-05T21:35:01.652Z",
+  "lastRun": "2026-10-06T01:56:32.642Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -27,7 +27,7 @@
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
+    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Electric Corporation": "no feed, no scannable items, nothing in the news last 48h",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
@@ -43,7 +43,7 @@
     "JET Jerusalem Transportation": "blocked: robots.txt unreachable — skipping to be safe",
     "Tel Aviv Light Rail (Dankal)": "blocked: robots.txt unreachable — skipping to be safe",
     "Kavim": "blocked: robots.txt unreachable — skipping to be safe",
-    "Metropoline": "page HTTP 504",
+    "Metropoline": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Post": "no feed, no scannable items, nothing in the news last 48h",
     "Kol Zchut (All Rights)": "page HTTP 403",
     "Beit Shemesh Municipality": "blocked: robots.txt unreachable — skipping to be safe",
@@ -63,7 +63,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-05T21:35:01.650Z",
+      "lastRun": "2026-10-06T01:56:32.641Z",
       "sent": 0,
       "sources": {
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
