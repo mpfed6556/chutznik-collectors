@@ -833,9 +833,12 @@ let NAMES = new Map();
 try { NAMES = new Map(JSON.parse(fs.readFileSync(NAMES_FILE, 'utf8'))); } catch (e) {}
 const saveNames = () => { try { fs.writeFileSync(NAMES_FILE, JSON.stringify([...NAMES].slice(-20000))); } catch (e) {} };
 function imageOf(m) {
-  const msg = m.message || {};
-  const inner = msg.ephemeralMessage?.message || msg.viewOnceMessage?.message || msg;
-  return inner.imageMessage || null;
+  const inner = innerOf(m);
+  if (inner.imageMessage) return inner.imageMessage;
+  // a flyer sent as a file to keep its quality (Miriam, 6 Oct 2026: "nothing can be missed")
+  const d = inner.documentMessage || inner.documentWithCaptionMessage?.message?.documentMessage;
+  if (d && (/^image\//i.test(String(d.mimetype || '')) || /\.(jpe?g|png|webp)$/i.test(String(d.fileName || '')))) return Object.assign({}, d, { mimetype: /^image\//i.test(String(d.mimetype || '')) ? d.mimetype : 'image/jpeg', _asDocument: true });
+  return null;
 }
 function docOf(m) {
   const msg = m.message || {};
@@ -1589,6 +1592,8 @@ async function pullSettings() {
     if (j.NOTIFY_MODE && ['off', 'dry', 'live'].includes(String(j.NOTIFY_MODE).toLowerCase()) && String(j.NOTIFY_MODE).toLowerCase() !== NOTIFY_MODE) {
       NOTIFY_MODE = String(j.NOTIFY_MODE).toLowerCase(); log('⚙️  poster notes mode is now: ' + NOTIFY_MODE + ' (from the site settings)');
     }
+    if (j.RESEEN && typeof j.RESEEN === 'object' && j.RESEEN.stamp) { let done = ''; try { done = fs.readFileSync(path.join(__dirname, 'reseen.txt'), 'utf8').trim(); } catch (e) {}
+      if (String(j.RESEEN.stamp) !== done) { fs.writeFileSync(path.join(__dirname, 'reseen.txt'), String(j.RESEEN.stamp)); SEEN.clear(); saveSeen(); log('🔁 RESEEN ' + j.RESEEN.stamp + ': the last two days will be read again — restarting'); try { await flush(); } catch (e) {} setTimeout(() => process.exit(0), 1500); return; } }
     if (Array.isArray(j.ADS_ONLY_CHATS)) { const list = j.ADS_ONLY_CHATS.map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._adsOnlyChats || [])) { global._adsOnlyChats = list; log('⚙️  adverts only (no news) from: ' + (list.join(' | ') || 'none')); } }
     if (Array.isArray(j.SKIP_CHATS)) { const list = j.SKIP_CHATS.map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._skipChats || [])) { global._skipChats = list; log('⚙️  chats skipped: ' + list.join(' | ')); } }
     // BACKFILL_SINCE (ISO time): after an outage, ask WhatsApp for each group's older messages back to this time
@@ -2363,7 +2368,7 @@ async function handleMessages(sock, messages, label) {
       const adsOnly = EXCLUDE.includes(name.toLowerCase()) || (global._skipChats || []).some((x) => x && name.toLowerCase().includes(String(x).toLowerCase())) || (global._adsOnlyChats || []).some((x) => x && name.toLowerCase().includes(String(x).toLowerCase()));
       if (adsOnly && isNewsMessage(m)) continue;
       const it = await intake(sock, m, name);
-      if (!it.body && !it.media) continue;
+      if (!it.body && !it.media) { if (label === 'live') { const inner = innerOf(m); log('⊘ ' + name + ' · ' + (it.sender || '?') + ': nothing to post (' + Object.keys(inner).filter((k) => /Message$/.test(k)).join(',') + ')'); } continue; }
       if (adsOnly && !isAdvertText(it.body + ' ' + (it.docText || ''), !!it.media)) continue;
       if (isOptedOut(it)) continue;                          // asked us not to post her messages
       buffersPush(name, it); n++;
