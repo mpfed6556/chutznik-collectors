@@ -116,6 +116,16 @@ async function uploadPicture(url, tag) {
     return j.url;
   } catch (e) { log('  📷 picture not saved: ' + (e && e.message)); return ''; }
 }
+function tidyTitle(raw) {
+  let t = String(raw || '').replace(/\s+/g, ' ').trim(); let tail = '';
+  const m = t.match(/^(.{12,}?)\s+((?:Prof\.?|Professor|Rabbi|Rav|Dr\.?|Rebbetzin|Mrs\.?|Mr\.?|Ms\.?|Hon\.?|Series:|Season \d|Part \d|Lecture \d|Session \d|With |Featuring |Presented by |Hosted by )\s*.+)$/i);
+  if (m) { t = m[1]; tail = m[2]; }
+  if (t.length > 80) { const cut = t.search(/\s[–—|]\s|: /); if (cut > 20) { tail = (t.slice(cut + 1).trim() + (tail ? '. ' + tail : '')); t = t.slice(0, cut); } }
+  if (t.length > 110) t = t.slice(0, 108).replace(/\s+\S*$/, '') + '…';
+  t = t.replace(/[\s:;,–—-]+$/, '').trim();
+  tail = tail.replace(/^(with|featuring|presented by|hosted by)\s+/i, (x) => x.charAt(0).toUpperCase() + x.slice(1)).replace(/^(Prof\.?|Professor|Rabbi|Rav|Dr\.?|Rebbetzin|Mrs\.?|Mr\.?|Ms\.?)\b/, 'With $1').trim();
+  return { title: t || String(raw || '').slice(0, 110), tail };
+}
 function timeIn(text) { const m = String(text || '').match(/\b(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i) || String(text || '').match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/); return m ? m[0] : ''; }
 
 // ── the sources ─────────────────────────────────────────────────────────────
@@ -389,6 +399,10 @@ async function run(seenSet, statusObj, force) {
       // not for this site: anything church-related or otherwise not Jewish (Miriam, 25 Sep 2026)
       if (NOT_OURS_RE.test(r.title + ' ' + (r.desc || '') + ' ' + (r.place || ''))) { SEEN.add(key); continue; }
       let title = r.title, desc = r.desc || '';
+      // a card's heading often runs the name, the speaker and the series into one line
+      // ("The Battle for the Jewish Future Prof. Daniel R. Schwartz Series: …"): the name
+      // is the title, the rest opens the text (Miriam, 6 Oct 2026: "never mess up like this")
+      { const t = tidyTitle(title); if (t.tail && !desc.toLowerCase().includes(t.tail.toLowerCase().slice(0, 30))) desc = t.tail + (desc ? '\n\n' + desc : ''); title = t.title; }
       if (hasHebrew(title)) { const t = await translate(title); if (t) title = t; }
       if (hasHebrew(desc)) { const t = await translate(desc.slice(0, 400)); desc = t || ''; }
       const when = d ? ('📅 ' + niceDate(d) + (r.time ? ' · ' + r.time : '')) : '';
@@ -413,7 +427,7 @@ async function run(seenSet, statusObj, force) {
   log('=== events sync done — ' + sent + ' new ===');
   return sent;
 }
-module.exports = { run, SOURCES, VERSION: 'ev-2026-10-06a' };
+module.exports = { run, SOURCES, VERSION: 'ev-2026-10-06b' };
 
 if (require.main === module) {
   // standalone: node events-sync.js  (needs INGEST_URL / INGEST_KEY)
