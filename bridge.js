@@ -881,7 +881,12 @@ async function intake(sock, m, chatName) {
   if (img) {
     try {
       const buf = await downloadMediaMessage(m, 'buffer', {}, { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage });
-      if (buf && buf.length < 4_000_000) media = { base64: buf.toString('base64'), mime: img.mimetype || 'image/jpeg' };
+      // a big flyer (a 5 MB poster) used to be dropped whole, message and all (Miriam, 6 Oct 2026: the Shukaroo
+      // flyer never arrived): it is shrunk to fit the site's 3 MB limit instead
+      let out = buf;
+      if (buf && buf.length >= 2_900_000) { try { const { Jimp } = require('jimp'); const im = await Jimp.read(buf); const w = Math.min(im.width, 1600); im.resize({ w }); out = await im.getBuffer('image/jpeg', { quality: 78 }); if (out.length >= 2_900_000) { im.resize({ w: 1100 }); out = await im.getBuffer('image/jpeg', { quality: 70 }); } log('   📷 big picture shrunk: ' + Math.round(buf.length / 1e6) + ' MB → ' + Math.round(out.length / 1e5) / 10 + ' MB'); } catch (e) { log('   📷 could not shrink a big picture: ' + (e && e.message)); out = null; } }
+      if (out && out.length < 2_900_000) media = { base64: out.toString('base64'), mime: out === buf ? (img.mimetype || 'image/jpeg') : 'image/jpeg' };
+      else if (buf) log('   📷 picture too big to keep (' + Math.round(buf.length / 1e6) + ' MB)');
     } catch (e) {}
   }
   // a flyer sent as a PDF: its words count like the words on a picture (Miriam, 5 Oct 2026)
