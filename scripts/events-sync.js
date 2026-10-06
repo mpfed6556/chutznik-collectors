@@ -207,8 +207,11 @@ function generic(def) {
           else { const $ = cheerio.load(t); items = parseJsonLd($, u); if (!items.length) items = parseEventLinks($, u); }
         } catch (e) { last = 'parse: ' + (e && e.message); continue; }
         items = items.filter((x) => x && x.title && x.link);
+        // a whole-calendar feed (the OU's runs to thousands, years back): the upcoming ones, soonest first
+        const now = Date.now(); const dated = items.filter((x) => x.date && !isNaN(x.date) && x.date.getTime() >= now - 864e5 && x.date.getTime() <= now + 60 * 864e5).sort((a, b) => a.date - b.date);
+        items = dated.length ? dated : items;
         if (def.place) items.forEach((x) => { if (!x.place) x.place = def.place; });
-        if (items.length) { STATUS[this.name] = 'ok via ' + u + ' (' + items.length + ')'; return items.slice(0, 25); }
+        if (items.length) { STATUS[this.name] = 'ok via ' + u + ' (' + items.length + ' upcoming)'; return items.slice(0, 30); }
         last = 'nothing parsed at ' + u;
       }
       STATUS[this.name] = 'no events · ' + snippet(last);
@@ -451,7 +454,7 @@ async function run(seenSet, statusObj, force) {
   log('=== events sync done — ' + sent + ' new ===');
   return sent;
 }
-module.exports = { run, SOURCES, VERSION: 'ev-2026-10-06d' };
+module.exports = { run, SOURCES, VERSION: 'ev-2026-10-06e' };
 
 if (require.main === module) {
   // standalone: node events-sync.js  (needs INGEST_URL / INGEST_KEY)
