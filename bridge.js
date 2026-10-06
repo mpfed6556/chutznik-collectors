@@ -2358,10 +2358,9 @@ async function handleMessages(sock, messages, label) {
       const myCutoff = Math.min(isJobChat(name) ? Date.now() - JOBS_HOURS * 3600 * 1000 : cutoff, (global._backfillSince && backfillOn(name)) ? global._backfillSince : Infinity);
       if (ts && ts < myCutoff) continue;                    // older than the window
       SEEN.add(mid);
-      if (EXCLUDE.includes(name.toLowerCase())) continue;
-      if ((global._skipChats || []).some((x) => x && name.toLowerCase().includes(String(x).toLowerCase()))) continue;   // chats Miriam does not want read at all
-      // a news-and-ads group (ADS_ONLY_CHATS): the adverts and useful notices come in, the news does not (Miriam, 6 Oct 2026)
-      const adsOnly = (global._adsOnlyChats || []).some((x) => x && name.toLowerCase().includes(String(x).toLowerCase()));
+      // no chat is left out any more (Miriam, 6 Oct 2026: "every single chat should be coming in"): a group on the old
+      // skip lists is read for its adverts and notices, and only the messages that do not fit are left out
+      const adsOnly = EXCLUDE.includes(name.toLowerCase()) || (global._skipChats || []).some((x) => x && name.toLowerCase().includes(String(x).toLowerCase())) || (global._adsOnlyChats || []).some((x) => x && name.toLowerCase().includes(String(x).toLowerCase()));
       if (adsOnly && isNewsMessage(m)) continue;
       const it = await intake(sock, m, name);
       if (!it.body && !it.media) continue;
