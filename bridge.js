@@ -124,6 +124,22 @@ async function uploadImage(base64, mime, tag, index) {
   } catch (e) { log('   📷 photo not saved: ' + (e && e.message ? e.message.slice(0, 90) : e)); return ''; }
 }
 
+// ── Curating (Miriam, 6 Oct 2026): the site's reader gives a business-first
+//    title ("Refuit Health Center: winter is a time…") and says whether Miriam
+//    would publish it; what she would not, waits for her as before.
+const CURATE = String(process.env.CURATE || 'on') !== 'off';
+async function curateItems(items) {
+  if (!CURATE || !INGEST_KEY || !items.length) return {};
+  try {
+    const r = await fetch(SITE + '/api/live-data?type=curate', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' },
+      body: JSON.stringify({ items: items.map((it) => ({ id: String(it.id), title: it.title || '', text: String(it.memo || '').slice(0, 1500), group: it.group || '', pic: !!(it.attachments && it.attachments.length), phone: !!it.contactPhone })) }),
+      signal: AbortSignal.timeout(90000) });
+    const j = await r.json().catch(() => null);
+    if (!r.ok || !j || !j.ok) { log('   ✍️ curate: ' + (j && j.error || ('HTTP ' + r.status))); return {}; }
+    return j.posts || {};
+  } catch (e) { log('   ✍️ curate: ' + (e && e.message)); return {}; }
+}
+const curatable = (it) => it && it.source === 'whatsapp' && !/^wa_(apt|BABYSIT|CLEANERS)/.test(String(it.id)) && !(it.types || []).some((t) => /^(Rental|Jobs|For Sale)$/.test(t));
 // ── Send one finished post into the admin review queue ───────────────────────
 async function sendToQueue(item) {
   // Same text already came through another group in the last few hours? Skip.
@@ -132,6 +148,14 @@ async function sendToQueue(item) {
     return true;
   }
   delete item._contentKey; delete item._kind; delete item._msgIds;
+  if (curatable(item) && item.status !== 'public') {
+    const c = (await curateItems([item]))[String(item.id)];
+    if (c) {
+      if (c.title) item.title = c.title.substring(0, 150);
+      if (c.publish) { item.status = 'public'; item.curated = 'published'; } else { item.curated = 'waiting'; }
+      log('   ✍️ ' + (c.publish ? 'published' : 'waits for Miriam') + ' · "' + item.title.slice(0, 60) + '"' + (c.why ? ' · ' + c.why : ''));
+    }
+  }
   try {
     const r = await fetch(INGEST_URL + '?file=updates', {
       method: 'POST',
@@ -1495,6 +1519,8 @@ async function pullSettings() {
     // wants. Naming one group is for bringing in a single feed's past content
     // without dragging a week of everything else into the review queue at once.
     if (j.BACKFILL_CHATS !== undefined) { const list = (Array.isArray(j.BACKFILL_CHATS) ? j.BACKFILL_CHATS : []).map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._backfillChats || [])) { global._backfillChats = list; BACKFILL.chats = {}; saveBackfill(); log('⚙️  backfill limited to: ' + (list.join(' | ') || '(every group)')); } }
+    // RETITLE {stamp}: business-first titles for the past posts, once per stamp (titles only, nothing is published)
+    if (j.RETITLE && typeof j.RETITLE === 'object' && j.RETITLE.stamp) { global._retitle = { stamp: String(j.RETITLE.stamp), days: Number(j.RETITLE.days) || 92 }; setTimeout(retitleBacklog, 3000); }
     // MILESTONES {stamp, to: 'preview'|'members'}: the "three months of Chutznik" email, once per stamp (Miriam, 5 Oct 2026)
     if (j.MILESTONES && typeof j.MILESTONES === 'object' && j.MILESTONES.stamp) { global._milestones = { stamp: String(j.MILESTONES.stamp), to: String(j.MILESTONES.to || 'preview').toLowerCase() }; setTimeout(milestonesRun, 2000); }
     // who gets the daily TODAY sheet (numbers with country code, no +)
@@ -1504,6 +1530,34 @@ async function pullSettings() {
   } catch (e) {}
 }
 setInterval(pullSettings, 5 * 60 * 1000); setTimeout(pullSettings, 20 * 1000);
+const RETITLE_FILE = path.join(__dirname, 'retitle-done.json');
+let _retitleBusy = false;
+async function retitleBacklog() {
+  const want = global._retitle; if (!want || !INGEST_KEY || _retitleBusy) return;
+  let done = {}; try { done = JSON.parse(fs.readFileSync(RETITLE_FILE, 'utf8')) || {}; } catch (e) {}
+  if (done[want.stamp]) return;
+  _retitleBusy = true;
+  try {
+    done[want.stamp] = { startedAt: Date.now() }; fs.writeFileSync(RETITLE_FILE, JSON.stringify(done));
+    const r = await fetch(SITE + '/api/live-data?type=updates&queue=1&t=' + Date.now()); const all = r.ok ? await r.json() : [];
+    const since = Date.now() - want.days * 86400000;
+    const list = (Array.isArray(all) ? all : []).filter((it) => curatable(it) && (it.created || 0) >= since && !it.curated);
+    log('✍️ retitle (' + want.stamp + '): ' + list.length + ' past post(s) to title');
+    let changed = 0;
+    for (let i = 0; i < list.length; i += 15) {
+      const batch = list.slice(i, i + 15);
+      const out = await curateItems(batch);
+      for (const it of batch) {
+        const c = out[String(it.id)]; if (!c || !c.title || c.title === it.title) continue;
+        try { const pr = await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', id: String(it.id), patch: { title: c.title.substring(0, 150) } }) }); if (pr.ok) changed++; } catch (e) {}
+        await new Promise((res) => setTimeout(res, 400));
+      }
+    }
+    done[want.stamp].doneAt = Date.now(); done[want.stamp].changed = changed; fs.writeFileSync(RETITLE_FILE, JSON.stringify(done));
+    log('✍️ retitle (' + want.stamp + ') → ' + changed + ' title(s) changed of ' + list.length);
+  } catch (e) { log('✍️ retitle: ' + (e && e.message)); }
+  finally { _retitleBusy = false; }
+}
 // the milestones email: sent once per stamp, to Miriam (preview) or to every member
 const MILESTONES_FILE = path.join(__dirname, 'milestones-sent.json');
 let _milestonesBusy = false;
