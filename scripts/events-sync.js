@@ -100,11 +100,12 @@ async function imageOfPage(link) {
 // download the picture and put it on the site; returns its /attachments/… url or ''
 async function uploadPicture(url, tag) {
   try {
+    if (!/^https?:\/\//i.test(String(url || ''))) return '';
     const r = await fetch(url, { headers: Object.assign({}, UA, { Accept: 'image/*,*/*;q=0.5' }), redirect: 'follow' });
     if (!r.ok) return '';
     let mime = String(r.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
     const buf = Buffer.from(await r.arrayBuffer());
-    if (!buf.length || buf.length > 2_900_000) return '';
+    if (buf.length < 3000 || buf.length > 2_900_000) return '';   // a 1-pixel placeholder is not a picture
     if (!/^image\/(jpe?g|png|webp|gif)$/.test(mime)) { mime = /\.png(\?|$)/i.test(url) ? 'image/png' : (/\.webp(\?|$)/i.test(url) ? 'image/webp' : (/\.gif(\?|$)/i.test(url) ? 'image/gif' : 'image/jpeg')); }
     if (mime === 'image/jpg') mime = 'image/jpeg';
     const saveUrl = String(process.env.INGEST_URL || '').replace(/\/api\/ingest-whatsapp.*$/, '/api/save-attachment');
@@ -169,8 +170,14 @@ function parseEventLinks($, base) {
   const out = []; const seen = new Set();
   $('a[href*="/event"], a[href*="/events/"], a[href*="/show"], a[href*="/whats-on"], a[href*="/calendar/"]').each((i, el) => { const $a = $(el); const href = $a.attr('href') || ''; const link = absUrl(href, base); if (!link || link === base || seen.has(link)) return;
     const block = $a.closest('article, li, .card, .event, .item, div'); const text = strip(block.text() || $a.text()); const title = strip($a.attr('title') || block.find('h1,h2,h3,h4').first().text() || $a.text()).slice(0, 120);
-    if (!title || title.length < 4) return; const date = dateIn(text); if (!date) return; seen.add(link);
-    out.push({ title, link, desc: text.slice(0, 400), date, time: timeIn(text), place: '', published: Date.now(), image: absUrl(block.find('img').first().attr('src') || block.find('img').first().attr('data-src') || '', base) }); });
+    if (!title || title.length < 8) return;
+    // a navigation link, a month grid or a whole page is not an event (Miriam, 6 Oct 2026: "Full concerts list" with a calendar grid)
+    if (/^(?:full .*list|see all|view all|all events|more|read more|calendar|events?|tickets?|buy tickets?|register|sign up|learn more|details|next|previous|«.*|.*»)$/i.test(title)) return;
+    if (text.length > 700 || /\bS\s?M\s?T\s?W\s?T\s?F\s?S\b/.test(text) || /\b1 2 3 4 5 6 7 8 9 10 11 12\b/.test(text)) return;
+    if ((title.match(/\p{L}/gu) || []).length < title.length * 0.5) return;
+    const date = dateIn(text); if (!date) return; seen.add(link);
+    const imgSrc = block.find('img').first().attr('src') || block.find('img').first().attr('data-src') || '';
+    out.push({ title, link, desc: text.slice(0, 400), date, time: timeIn(text), place: '', published: Date.now(), image: /^data:/i.test(imgSrc) ? '' : absUrl(imgSrc, base) }); });
   return out.slice(0, 20);
 }
 function generic(def) {
@@ -427,7 +434,7 @@ async function run(seenSet, statusObj, force) {
   log('=== events sync done — ' + sent + ' new ===');
   return sent;
 }
-module.exports = { run, SOURCES, VERSION: 'ev-2026-10-06b' };
+module.exports = { run, SOURCES, VERSION: 'ev-2026-10-06c' };
 
 if (require.main === module) {
   // standalone: node events-sync.js  (needs INGEST_URL / INGEST_KEY)
