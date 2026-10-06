@@ -76,17 +76,42 @@ function readsLikeText(t) {
 // Hebrew → English, best effort (a free service; when it is over quota the
 // Hebrew stays, which is still better than nothing).
 const hasHebrew = (t) => /[\u0590-\u05FF]/.test(String(t || ''));
-async function toEnglish(text) {
+// which language a message is in, when it is not English (Miriam, 6 Oct 2026: "always translate, and say what it was translated from")
+function langOf(text) {
+  const t = String(text || '');
+  const letters = (t.match(/\p{L}/gu) || []).length; if (!letters) return '';
+  const heb = (t.match(/[\u0590-\u05ff]/g) || []).length;
+  if (heb / letters > 0.3) return /\b(?:איך|דאס|זיין|האב|וואס|ניט|מיט|פאר|אויף|געווען|זענען|ביי|אונז)\b/.test(t) ? 'yi' : 'he';
+  if ((t.match(/[\u0400-\u04ff]/g) || []).length / letters > 0.3) return 'ru';
+  if ((t.match(/[\u0600-\u06ff]/g) || []).length / letters > 0.3) return 'ar';
+  const words = t.toLowerCase().match(/\p{L}+/gu) || []; if (words.length < 4) return '';
+  const score = (set) => words.filter((w) => set.has(w)).length / words.length;
+  const fr = score(new Set(['le', 'la', 'les', 'des', 'une', 'un', 'pour', 'avec', 'vous', 'nous', 'est', 'sont', 'dans', 'sur', 'pas', 'que', 'qui', 'aux', 'du', 'au', 'et', 'ou', 'chez', 'très', 'bonjour', 'merci', 'cherche', 'appartement', 'disponible']));
+  const es = score(new Set(['el', 'la', 'los', 'las', 'para', 'con', 'está', 'una', 'un', 'por', 'que', 'del', 'al', 'en', 'y', 'es', 'muy', 'hola', 'gracias', 'busco', 'apartamento', 'disponible', 'tiene']));
+  const en = score(new Set(['the', 'and', 'for', 'with', 'you', 'is', 'are', 'in', 'on', 'to', 'of', 'a', 'we', 'our', 'your', 'please', 'call', 'available', 'looking']));
+  if (fr >= 0.12 && fr > en && fr > es) return 'fr';
+  if (es >= 0.12 && es > en && es > fr) return 'es';
+  return '';
+}
+const LANG_NAMES = { he: 'Hebrew', yi: 'Yiddish', ru: 'Russian', ar: 'Arabic', fr: 'French', es: 'Spanish' };
+async function toEnglish(text, lang) {
   const q = String(text || '').slice(0, 480);
-  if (!q || !hasHebrew(q)) return '';
+  lang = lang || langOf(q);
+  if (!q || !lang) return '';
   try {
-    const r = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(q) + '&langpair=he|en', { headers: { 'User-Agent': 'chutznik-bridge' } });
+    const r = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(q) + '&langpair=' + lang + '|en', { headers: { 'User-Agent': 'chutznik-bridge' } });
     if (!r.ok) return '';
     const j = await r.json();
     const out = j && j.responseData && j.responseData.translatedText ? String(j.responseData.translatedText) : '';
-    if (out && !hasHebrew(out) && !/MYMEMORY|QUOTA|INVALID|PLEASE/i.test(out)) return out.trim();
+    if (out && !hasHebrew(out) && !/MYMEMORY|QUOTA|INVALID|PLEASE/i.test(out) && out.toLowerCase() !== q.toLowerCase()) return out.trim();
   } catch (e) {}
   return '';
+}
+// the whole text in English, with a line saying what it was translated from, and the original underneath
+async function englishMemo(memo) {
+  const lang = langOf(memo); if (!lang) return memo;
+  const en = await toEnglish(memo, lang); if (!en) return memo;
+  return en + '\n\n🌐 Translated from ' + (LANG_NAMES[lang] || lang) + '. The original:\n' + String(memo).slice(0, 400);
 }
 async function ocrImage(base64) {
   if (!OCR) return '';
@@ -1213,8 +1238,8 @@ async function buildAptItem(m, chatName, capFallback) {
   let title = smartTitle(body, 'item', chatName);
   if (!title || /^From /.test(title)) title = 'Item';
   let memo = summarize(body, 700) || title;
-  if (hasHebrew(title)) { const en = await toEnglish(title); if (en) title = en.slice(0, 150); }
-  if (hasHebrew(memo)) { const en = await toEnglish(memo); if (en) memo = en + '\n\n— ' + memo.slice(0, 400); }
+  if (langOf(title)) { const en = await toEnglish(title); if (en) title = en.slice(0, 150); }
+  memo = await englishMemo(memo);
   return {
     id: 'wa_apt' + tag,
     source: 'aptitem',
@@ -1322,8 +1347,8 @@ async function buildPost(cluster, chatName) {
   if (!memo || memo.length < 3) memo = summarize(cleanBody(first.body, contacts), 900) || title;
   // English on the site: a Hebrew message is translated (best effort); the
   // Hebrew original stays underneath so nothing is lost
-  if (hasHebrew(memo)) { const en = await toEnglish(memo); if (en) memo = en + '\n\n— ' + memo.slice(0, 400); }
-  if (hasHebrew(title)) { const en = await toEnglish(title); if (en) title = en.slice(0, 150); }
+  memo = await englishMemo(memo);
+  if (langOf(title)) { const en = await toEnglish(title); if (en) title = en.slice(0, 150); }
 
   const allText = msgs.map(m => m.body).join(' ') + ' ' + ocrTexts.join(' ')
     + ' ' + msgs.flatMap(m => (m.cards || []).map(c => c.name)).join(' ')
