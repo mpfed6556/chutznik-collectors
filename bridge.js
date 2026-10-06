@@ -71,6 +71,8 @@ function readsLikeText(t) {
   const wordy = words.filter(w => /^[A-Za-z\u0590-\u05FF][A-Za-z\u0590-\u05FF'’-]{2,}[.,!?:]?$/.test(w)).length;
   const junk = (s.match(/[|\\\/=~^_{}\[\]<>*#@]/g) || []).length;
   const avg = words.reduce((n, w) => n + w.length, 0) / words.length;
+  const heb = (s.match(/[\u0590-\u05FF]/g) || []).length / Math.max(1, s.replace(/\s/g, '').length);
+  if (heb >= 0.5) return wordy / words.length >= 0.4 && junk <= words.length * 0.15;   // a Hebrew flyer: a looser bar, the translator tidies it
   return wordy / words.length >= 0.6 && junk <= words.length * 0.08 && avg >= 3 && avg <= 12;
 }
 // Hebrew → English, best effort (a free service; when it is over quota the
@@ -1377,6 +1379,12 @@ async function buildPost(cluster, chatName) {
   // Hebrew original stays underneath so nothing is lost
   memo = await englishMemo(memo);
   if (langOf(title)) { const en = await toEnglish(title); if (en) title = en.slice(0, 150); }
+  // a message that was only a flag or a few emoji with a flyer (Miriam, 6 Oct 2026): the words come from the flyer, in English
+  if (stripEmoji(title).replace(/[^\p{L}\p{N}]/gu, '').length < 3) {
+    const words = stripEmoji(String(memo || '').split('\n').find((l) => stripEmoji(l).replace(/[^\p{L}\p{N}]/gu, '').length >= 3) || '');
+    title = words ? smartTitle(words, kind, chatName) : ('Flyer from ' + chatName);
+    if (stripEmoji(String(memo || '')).replace(/[^\p{L}\p{N}]/gu, '').length < 3) memo = 'A flyer shared in ' + chatName + ' (see the picture).';
+  }
 
   const allText = msgs.map(m => m.body).join(' ') + ' ' + ocrTexts.join(' ')
     + ' ' + msgs.flatMap(m => (m.cards || []).map(c => c.name)).join(' ')
