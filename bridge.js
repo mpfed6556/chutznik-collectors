@@ -1593,6 +1593,7 @@ async function pullSettings() {
       NOTIFY_MODE = String(j.NOTIFY_MODE).toLowerCase(); log('⚙️  poster notes mode is now: ' + NOTIFY_MODE + ' (from the site settings)');
     }
     if (j.RESEEN && typeof j.RESEEN === 'object' && j.RESEEN.stamp) { let done = ''; try { done = fs.readFileSync(path.join(__dirname, 'reseen.txt'), 'utf8').trim(); } catch (e) {}
+      if (global._reseenSeen !== String(j.RESEEN.stamp)) { global._reseenSeen = String(j.RESEEN.stamp); log('⚙️  RESEEN stamp on the site: ' + j.RESEEN.stamp + (done === String(j.RESEEN.stamp) ? ' (already done)' : ' (new)')); }
       if (String(j.RESEEN.stamp) !== done) { fs.writeFileSync(path.join(__dirname, 'reseen.txt'), String(j.RESEEN.stamp)); SEEN.clear(); saveSeen(); log('🔁 RESEEN ' + j.RESEEN.stamp + ': the last two days will be read again — restarting'); try { await flush(); } catch (e) {} setTimeout(() => process.exit(0), 1500); return; } }
     if (Array.isArray(j.ADS_ONLY_CHATS)) { const list = j.ADS_ONLY_CHATS.map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._adsOnlyChats || [])) { global._adsOnlyChats = list; log('⚙️  adverts only (no news) from: ' + (list.join(' | ') || 'none')); } }
     if (Array.isArray(j.SKIP_CHATS)) { const list = j.SKIP_CHATS.map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._skipChats || [])) { global._skipChats = list; log('⚙️  chats skipped: ' + list.join(' | ')); } }
