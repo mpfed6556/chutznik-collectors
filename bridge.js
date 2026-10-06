@@ -837,6 +837,11 @@ async function intake(sock, m, chatName) {
   if (rawId && m.pushName) { NAMES.set(rawId, m.pushName); }
   const ctx = ctxOf(m) || {};
   const quotedId = ctx.stanzaId || '';
+  // the words of the message being replied to (WhatsApp carries them inside the reply), so an
+  // answer still says what it answers even when the question itself never reached us (Miriam, 6 Oct 2026)
+  let quotedText = '';
+  try { const q = ctx.quotedMessage || {}; const qi = q.ephemeralMessage?.message || q.viewOnceMessage?.message || q;
+    quotedText = String(qi.conversation || qi.extendedTextMessage?.text || qi.imageMessage?.caption || qi.videoMessage?.caption || qi.documentMessage?.caption || '').replace(/\s+/g, ' ').trim().slice(0, 300); } catch (e) {}
   const mentions = (ctx.mentionedJid || []).map(j => String(j).split('@')[0].split(':')[0]).filter(Boolean);
   const cards = cardsOf(m);
   const link = linkOf(m);
@@ -852,7 +857,7 @@ async function intake(sock, m, chatName) {
   // "vacation rental on Paran after Sukkos" — so it goes public with the rentals (Miriam, 25 Sep 2026)
   if (kind !== 'rental' && kind !== 'chatter' && HOUSING_RE.test(body) && RENT_WORD_RE.test(body) && body.length > 20 && !GROUP_NOTICE_RE.test(body)) kind = 'rental';
   return { id: key.id || String(Date.now()+Math.random()), ts, chat: chatName, sender, phone, body, media, docText, kind,
-           quotedId, mentions, cards, link,
+           quotedId, quotedText, mentions, cards, link,
            // where a private "your post is up" note can be sent (real number first, privacy id as fallback)
            jid: pnJid || participant, fromMe: !!key.fromMe };
 }
@@ -1267,7 +1272,9 @@ async function buildPost(cluster, chatName) {
     const card = first.cards[0];
     title = card.name || smartTitle(cleanBody(first.body, contacts), first.kind, chatName);
     const praise = stripEmoji(first.body || '').trim();
-    memo = [praise, ...first.cards.map(c => [c.name, c.phones.join(', ')].filter(Boolean).join(' — '))].filter(Boolean).join('\n');
+    const asked = first.quotedText ? 'Someone asked: \u201c' + stripEmoji(first.quotedText) + '\u201d' : '';
+    memo = [asked, praise, ...first.cards.map(c => [c.name, c.phones.join(', ')].filter(Boolean).join(' — '))].filter(Boolean).join('\n\n');
+    if (asked) title = 'Recommended: ' + smartTitle(cleanBody(first.quotedText, contacts), 'question', chatName).replace(/^(?:anyone|does anyone|do you|who)\s+(?:know|have|has|recommend)s?\s*(?:a |an |of |the )?/i, '').replace(/\?+$/, '').slice(0, 60) + (card.name ? ' \u2014 ' + card.name : '');
   } else if (first.link && first.link.title && !first.kind.match(/rental|ad/)) {
     title = first.link.title.slice(0, 90);
     memo = [stripEmoji(first.body || '').replace(first.link.url, '').trim(), first.link.description, first.link.url].filter(Boolean).join('\n');
@@ -1286,6 +1293,12 @@ async function buildPost(cluster, chatName) {
       ? rentalTitle(first.body + ' ' + (cleaned || fromPic))
       : smartTitle(cleaned || fromPic || first.body, first.kind, chatName);
     if (!(bodyJunk && fromPic)) memo = summarize(cleaned || fromPic, 900);
+    // a reply whose question never became a post of its own: the question goes on top, so the
+    // answer reads as an answer ("I used him and he's fantastic" alone said nothing)
+    if (first.quotedText && cluster.kind !== 'combined' && (first.kind === 'answer' || /\b(?:used|recommend|highly|fantastic|amazing|great|best|try|call)\b/i.test(first.body || '')) && !/^wanted/i.test(title)) {
+      memo = 'Someone asked: \u201c' + stripEmoji(first.quotedText) + '\u201d\n\n' + memo;
+      title = 'Recommended: ' + smartTitle(cleanBody(first.quotedText, contacts), 'question', chatName).replace(/^(?:anyone|does anyone|do you|who)\s+(?:know|have|has|recommend)s?\s*(?:a |an |of |the )?/i, '').replace(/\?+$/, '').slice(0, 70);
+    }
   }
   if (ocrTexts.length && cluster.kind !== 'combined' && stripEmoji(first.body || '').trim() && hasTitleWords(cleanBody(first.body, contacts))) {   // words of her own AND a picture: the picture's words follow
     const fromImg = summarize(cleanBody(ocrTexts.join(' '), contacts), 400);
