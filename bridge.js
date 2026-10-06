@@ -291,6 +291,8 @@ function normalizePhone(raw) {
 // Israeli numbers inside free text. Digit boundaries stop it matching a slice
 // of a long LID (e.g. "0841152" sitting inside 257208411529315).
 const PHONE_RE = /(?:(?<!\d)\+972[-.\s]?|(?<!\d)0)(?:5\d|[23489])[-.\s]?\d{3}[-.\s]?\d{4}(?!\d)/g;
+// the number inside a wa.me / api.whatsapp.com link counts as a phone number in the text
+function waLinkPhones(t) { const out = []; const re = /(?:wa\.me\/|api\.whatsapp\.com\/send\?(?:[^\s]*?&)?phone=)\+?(\d{9,15})/gi; let m; while ((m = re.exec(String(t || '')))) { let d = m[1]; if (/^972/.test(d)) d = '0' + d.slice(3); const n = normalizePhone(d); if (n && !out.includes(n)) out.push(n); } return out; }
 function phonesInText(t) {
   const out = [];
   for (const m of String(t || '').matchAll(PHONE_RE)) {
@@ -329,6 +331,7 @@ function cleanBody(text, contacts) {
     .replace(/^\s*[—–-]\s*Posted by .*$/gim, '')
     .replace(/^\s*📞\s*Numbers mentioned:.*$/gim, '')
     .replace(/^\s*📷\s*From the attached image[s]?:.*$/gim, '')
+    .replace(/^\s*(?:https?:\/\/|www\.|wa\.me\/)\S*(?:\?[^\n]*)?$/gim, '')
     .replace(/[ \t]+/g, ' ')
     .replace(/^[ \t]*[-–—:•]+[ \t]*$/gm, '')
     .replace(/\n{3,}/g, '\n\n')
@@ -366,7 +369,7 @@ function smartTitle(body, kind, chatName) {
     || /^https?:\/\//i.test(l)
     // a bare link of any shape (wa.me/…, Https://drive…, bit.ly/x), a phone
     // number from anywhere, or fancy-lettered "Sponsored": never a title
-    || /^(?:https?:\/\/|www\.|wa\.me\/|[\w.-]+\.(?:com|net|org|co\.il|me|ly|link|app|io|info|co)\b)\S*$/i.test(l)
+    || /^(?:https?:\/\/|www\.|wa\.me\/|[\w.-]+\.(?:com|net|org|co\.il|me|ly|link|app|io|info|co)\b)/i.test(l)
     || normalizePhone(l) !== ''
     || /^\+?\d[\d\s().\-]{6,}$/.test(l)
     || /^\d[\d\s.\-]*$/.test(l)
@@ -1233,7 +1236,7 @@ async function buildAptItem(m, chatName, capFallback) {
     if (url) attachments.push({ url, name: 'photo.jpg' });
     if (!bodyRaw) { const t = await ocrImage(m.media.base64); if (t) ocr = t; }
   }
-  const contacts = { phones: phonesInText(bodyRaw), emails: emailsInText(bodyRaw), urls: urlsInText(bodyRaw) };
+  const contacts = { phones: [...new Set([...phonesInText(bodyRaw), ...waLinkPhones(bodyRaw)])], emails: emailsInText(bodyRaw), urls: urlsInText(bodyRaw) };
   let body = cleanBody(bodyRaw, contacts) || cleanBody(ocr, contacts);
   let title = smartTitle(body, 'item', chatName);
   if (!title || /^From /.test(title)) title = 'Item';
@@ -1281,7 +1284,7 @@ async function buildPost(cluster, chatName) {
   // the message body reads cleanly and the site can render them properly.
   const rawAll = msgs.map(m => m.body).join('\n') + (ocrTexts.length ? '\n' + ocrTexts.join('\n') : '');
   const contacts = {
-    phones: [...new Set([...phonesInText(rawAll), ...msgs.map(m => m.phone).filter(Boolean)])],
+    phones: [...new Set([...phonesInText(rawAll), ...waLinkPhones(rawAll), ...msgs.map(m => m.phone).filter(Boolean)])],
     emails: emailsInText(rawAll),
     urls:   urlsInText(rawAll),
   };

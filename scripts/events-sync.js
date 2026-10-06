@@ -127,6 +127,19 @@ function tidyTitle(raw) {
   tail = tail.replace(/^(with|featuring|presented by|hosted by)\s+/i, (x) => x.charAt(0).toUpperCase() + x.slice(1)).replace(/^(Prof\.?|Professor|Rabbi|Rav|Dr\.?|Rebbetzin|Mrs\.?|Mr\.?|Ms\.?)\b/, 'With $1').trim();
   return { title: t || String(raw || '').slice(0, 110), tail };
 }
+// what kind of happening this is, and who gives it: "Lecture: The Hasmonean Civil War, with Prof. Daniel R. Schwartz"
+const EV_KINDS = [['Lecture', /\blecture|\bseries:|\bprof\.?\b|\bprofessor\b|\btalk\b/i], ['Shiur', /\bshiur|\brabbi\b|\brav\b|\brebbetzin\b|\bparsha|\btorah\b/i], ['Guided tour', /\bguided|\btour\b|\bwalk\b/i], ['Exhibition', /\bexhibit/i], ['Concert', /\bconcert|\bin concert\b|\bsymphony|\borchestra|\brecital/i], ['Workshop', /\bworkshop/i], ['Course', /\bcourse\b|\bclasses\b/i], ['Film screening', /\bscreening|\bfilm\b|\bmovie\b/i], ['Show', /\bshow\b|\bperformance|\btheat(?:er|re)|\bplay\b/i], ['Presentation', /\bpresentation/i], ['Fair', /\bfair\b|\bbazaar|\bmarket\b/i], ['Memorial evening', /\bmemorial|\byizkor|\bremembr/i], ['Evening', /\bevening\b|\bnight\b/i], ['Gathering', /\bgathering|\bmeet ?up|\bcommunity\b/i], ['Family activity', /\bkids\b|\bchildren|\bfamily\b/i]];
+function describeEvent(title, desc, src, r) {
+  const all = title + ' ' + desc;
+  const kind = (EV_KINDS.find((k) => k[1].test(all)) || ['Event'])[0];
+  const sp = all.match(/\b((?:Prof\.?|Professor|Rabbi|Rav|Dr\.?|Rebbetzin|Mrs\.?|Mr\.?|Ms\.?)\s+[A-Z][\w'’.-]+(?:\s+[A-Z]\.?)?(?:\s+[A-Z][\w'’-]+){0,2})/);
+  const speaker = sp ? sp[1].replace(/[.,;:]+$/, '') : '';
+  const online = /\bzoom\b|\bonline\b|\bwebinar\b|\blivestream/i.test(all);
+  const place = r.place || src.place || '';
+  const series = (all.match(/\bSeries:\s*([^.]{6,80}?)(?:\s+(?:zoom|online|[A-Z][a-z]+ \d{1,2},? \d{4})|$)/) || [])[1] || '';
+  const line = kind + (speaker ? ' with ' + speaker : '') + (online ? ', on Zoom' : (place ? ' at ' + place : '')) + (series ? ', part of the series "' + series.trim() + '"' : '') + '.';
+  return { kind, speaker, online, place, line };
+}
 function timeIn(text) { const m = String(text || '').match(/\b(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i) || String(text || '').match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/); return m ? m[0] : ''; }
 
 // ── the sources ─────────────────────────────────────────────────────────────
@@ -409,12 +422,16 @@ async function run(seenSet, statusObj, force) {
       // a card's heading often runs the name, the speaker and the series into one line
       // ("The Battle for the Jewish Future Prof. Daniel R. Schwartz Series: …"): the name
       // is the title, the rest opens the text (Miriam, 6 Oct 2026: "never mess up like this")
-      { const t = tidyTitle(title); if (t.tail && !desc.toLowerCase().includes(t.tail.toLowerCase().slice(0, 30))) desc = t.tail + (desc ? '\n\n' + desc : ''); title = t.title; }
+      { const t = tidyTitle(title); title = t.title; if (t.tail && !desc.toLowerCase().includes(t.tail.toLowerCase().slice(0, 30))) desc = t.tail + (desc ? '\n\n' + desc : ''); }
+      // the title says what it is (Miriam, 6 Oct 2026: "say what they are, not just a heading"); the text opens with a one-line description
+      const dsc = describeEvent(title, desc, src, r);
+      if (!new RegExp('^' + dsc.kind.split(' ')[0], 'i').test(title)) title = dsc.kind + ': ' + title + (dsc.speaker && !title.includes(dsc.speaker) ? ' \u2014 ' + dsc.speaker : '');
+      desc = dsc.line + (desc ? '\n\n' + desc.replace(/^With /, 'With ') : '');
       if (hasHebrew(title)) { const t = await translate(title); if (t) title = t; }
       if (hasHebrew(desc)) { const t = await translate(desc.slice(0, 400)); desc = t || ''; }
       const when = d ? ('📅 ' + niceDate(d) + (r.time ? ' · ' + r.time : '')) : '';
       // the link is on the post itself (contactWebsite): not repeated in the text (Miriam, 25 Sep 2026)
-      const memo = [desc.slice(0, 600), when, r.place ? '📍 ' + r.place : ''].filter(Boolean).join('\n\n');
+      const memo = [desc.slice(0, 700), when, (r.place || src.place) ? '📍 ' + (r.place || src.place) : ''].filter(Boolean).join('\n\n');
       // the picture: what the source shows for it, or its page's own picture
       let picUrl = r.image || '';
       if (!picUrl && d) picUrl = await imageOfPage(r.link);
@@ -434,7 +451,7 @@ async function run(seenSet, statusObj, force) {
   log('=== events sync done — ' + sent + ' new ===');
   return sent;
 }
-module.exports = { run, SOURCES, VERSION: 'ev-2026-10-06c' };
+module.exports = { run, SOURCES, VERSION: 'ev-2026-10-06d' };
 
 if (require.main === module) {
   // standalone: node events-sync.js  (needs INGEST_URL / INGEST_KEY)

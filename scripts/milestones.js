@@ -66,8 +66,9 @@ async function gather(SITE, KEY) {
   const pubAll = (Array.isArray(updates) ? updates : []).filter((u) => u && u.status === 'public');
   const isLong = (u) => !/\bshort[- ]term\b/i.test(u.title || '') && (u.term === 'long' || (u.term !== 'short' && u.priceMode === 'month') || /\blong[- ]term\b/i.test(u.title || ''));
   const offers = pubAll.filter((u) => (u.types || []).includes('Rental') && !/^wanted/i.test(u.title || '') && isLong(u)).sort(byTime);
-  let rentals = offers.filter((u) => now - tsOf(u) < 86400000); if (rentals.length < 10) rentals = offers.slice(0, 12);
-  const jobs = pubAll.filter((u) => (u.types || []).includes('Jobs') && !/^wa_(BABYSIT|CLEANERS)$/.test(String(u.id)) && !/\bflying to\b|\bseeking (?:someone|a )|^(?:my name|i'?m |i am |we are a )/i.test(u.title || '')).sort(byTime).slice(0, 10);
+  let rentals = offers.filter((u) => !junkTitle(u) && now - tsOf(u) < 86400000); if (rentals.length < 10) rentals = offers.slice(0, 12);
+  const junkTitle = (u) => /^(?:https?:|www\.|wa\.me)/i.test(String(u.title || '')) || String(u.title || '').length < 6;
+  const jobs = pubAll.filter((u) => !junkTitle(u) && (u.types || []).includes('Jobs') && !/^wa_(BABYSIT|CLEANERS)$/.test(String(u.id)) && !/\bflying to\b|\bseeking (?:someone|a )|^(?:my name|i'?m |i am |we are a )/i.test(u.title || '')).sort(byTime).slice(0, 10);
   const wigRe = /sheitel|shaitel|sheitl|shaytel|\bwigs?\b/i, wigWork = /macher|stylist|salon|wash|\bset\b|cut|styl|repair|colou?r|wigs|hair/i;
   const wigs = pubAll.concat((Array.isArray(posts) ? posts : []).filter((p) => p && !p.isExternal))
     .filter((x) => { const t = (x.title || '') + ' ' + (x.memo || ''); return wigRe.test(t) && wigWork.test(t) && !/looking to hire|seeking .*salons|wanted:/i.test(x.title || ''); })
@@ -83,57 +84,77 @@ async function gather(SITE, KEY) {
   };
 }
 
-const C = { ink: '#3a2920', brown: '#6b2a0c', tan: '#c4845f', cream: '#fdf6f1', mute: '#9a8c80', line: '#f0e4da' };
-function statBox(num, label) {
-  return '<td width="25%" style="padding:5px"><div style="background:' + C.cream + ';border-radius:14px;padding:14px 6px;text-align:center">'
-    + '<div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:' + C.brown + ';line-height:1">' + esc(num) + '</div>'
-    + '<div style="font-size:12px;color:' + C.mute + ';margin-top:4px">' + esc(label) + '</div></div></td>';
-}
-function picButton(SITE, img, label, path) {
-  return '<td width="33%" style="padding:5px;vertical-align:top"><a href="' + esc(SITE + path) + '" style="display:block;text-decoration:none;background:#fff;border:1px solid ' + C.line + ';border-radius:16px;padding:14px 4px 12px;text-align:center">'
-    + '<img src="' + esc(SITE + '/img/' + img) + '" width="56" height="56" alt="" style="display:block;margin:0 auto 8px;width:56px;height:56px;border:0">'
-    + '<span style="font-size:13px;font-weight:700;color:' + C.ink + '">' + esc(label) + '</span></a></td>';
-}
+const C = { ink: '#3a2920', brown: '#7a1f1f', tan: '#c4845f', cream: '#fdf6f1', mute: '#8a7a70', line: '#efe3d8', bg: '#fbf5ef' };
 // the post's link on the site
-const linkOf = (SITE, x) => SITE + '/post/' + (x.slug || (String(x.id).startsWith('up_') || !/^(wa_|mag_|ext_|ev_)/.test(String(x.id)) ? String(x.id) : 'up_' + String(x.id)));
-// "3 bdrm · Romema · ₪12,000/month"
+const linkOf = (SITE, x) => SITE + '/post/' + (x.slug || (String(x.id).startsWith('up_') || !/^(wa_|mag_|ext_|ev_|biz_)/.test(String(x.id)) ? String(x.id) : 'up_' + String(x.id)));
+const picOf = (SITE, x) => { const a = x && x.attachments && x.attachments[0]; return a && typeof a.url === 'string' ? (a.url.startsWith('http') ? a.url : SITE + a.url) : ''; };
+// "Jerusalem · 3 bdrm · ₪12,000/month"
 function rentalLine(x) {
   const t = String(x.title || '');
-  const beds = x.beds ? x.beds + ' bdrm' : (t.match(/(\d(?:-\d)?)\s*bdrm/i) || [])[1] ? (t.match(/(\d(?:-\d)?)\s*bdrm/i) || [])[1] + ' bdrm' : (/\broom\b/i.test(t) ? 'room' : 'apartment');
+  const beds = x.beds ? x.beds + ' bdrm' : (t.match(/(\d(?:-\d)?)\s*bdrm/i) || [])[1] ? (t.match(/(\d(?:-\d)?)\s*bdrm/i) || [])[1] + ' bdrm' : (/\broom\b/i.test(t) ? 'room' : '');
   const area = (t.match(/\bin ([A-Z][\w'’]+(?: [A-Z][\w'’]+)?)/) || [])[1] || (String(x.area || '').replace(/ & Surrounding/, '') || 'Jerusalem');
   const price = x.price ? '₪' + n(x.price) + (x.priceMode === 'night' ? '/night' : '/month') : '';
-  return [beds, area, price].filter(Boolean).join(' · ');
+  return [area, beds, price].filter(Boolean).join(' · ');
 }
-// Miriam's letter, word for word where she gave the words (6 Oct 2026)
+// Miriam's design (6 Oct 2026): banner, greeting, two big numbers, six picture tiles, three
+// sections each with a photo and a two-column list, one button. Fluid on a phone.
 function build(SITE, st, member) {
   const first = (member && member.name ? String(member.name).trim().split(' ')[0] : '') || 'there';
   const unsub = member && member.email ? SITE + '/api/email-unsubscribe?token=' + Buffer.from(String(member.email).toLowerCase()).toString('base64url') : SITE;
-  const a = (href, label) => '<a href="' + esc(href) + '" style="color:' + C.brown + ';font-weight:700;text-decoration:none">' + esc(label) + '</a>';
-  const h3 = (t) => '<h3 style="font-family:Georgia,serif;color:' + C.brown + ';font-size:18px;margin:26px 0 8px">' + esc(t) + '</h3>';
-  const row = (x, sub) => '<tr><td style="padding:7px 0;border-bottom:1px solid ' + C.line + '">' + a(linkOf(SITE, x), String(x.title || '').replace(/^wanted:\s*/i, '').slice(0, 72)) + (sub ? '<div style="font-size:12px;color:' + C.mute + '">' + esc(sub) + '</div>' : '') + '</td></tr>';
+  const A = (href, label, extra) => '<a href="' + esc(href) + '" style="color:' + C.brown + ';text-decoration:none;' + (extra || '') + '">' + label + '</a>';
+  const serif = "font-family:Georgia,'Times New Roman',serif";
+  const sans = "font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif";
   const tiles = [['ic-rentals-mail.png', 'Rentals', '/search/rentals'], ['ic-place-mail.png', 'Restaurants', '/search/restaurants'], ['ic-cleaners-mail.png', 'Cleaners', '/post/up_wa_CLEANERS'],
     ['ic-person-mail.png', 'Babysitters', '/post/up_wa_BABYSIT'], ['ic-mikva-mail.png', 'Mikvaot', '/search/mikva'], ['ic-doctors-mail.png', 'Doctors', '/search/doctors']];
-  const html = '<div style="background:#fbf7f3;padding:18px 10px"><div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:' + C.ink + ';max-width:600px;margin:0 auto;background:#fff;border-radius:22px;padding:26px 22px">'
-    + '<p style="margin:0 0 14px">Hi ' + esc(first) + ',</p>'
-    + '<div style="font-family:Georgia,serif;font-size:24px;font-weight:700;color:' + C.brown + ';margin:0 0 14px">Chutznik turned three months old</div>'
-    + '<p style="margin:0 0 16px">Since July 5 there have been <b>' + n(st.total) + ' posts</b> on the site: ' + n(st.rentals) + ' apartments for rent, ' + n(st.jobs) + ' jobs, ' + n(st.businesses) + ' business listings — and a first-time-ever shared ' + a(SITE + '/calendar', 'Jerusalem calendar') + '! And ' + n(st.comments) + ' comments and replies!</p>'
-    + '<table width="100%" style="border-collapse:collapse"><tr>' + statBox(n(st.perDay) + '+', 'new posts every day') + statBox(n(st.rentals), 'apartments for rent') + statBox(n(st.businesses), 'business listings') + statBox(n(st.jobs), 'jobs') + '</tr></table>'
-    + h3('Jump straight in')
-    + '<table width="100%" style="border-collapse:collapse"><tr>' + tiles.slice(0, 3).map((t) => picButton(SITE, t[0], t[1], t[2])).join('') + '</tr><tr>' + tiles.slice(3).map((t) => picButton(SITE, t[0], t[1], t[2])).join('') + '</tr></table>'
-    + (st.rentalList.length ? h3('Long-term rentals from the last day') + '<table width="100%" style="border-collapse:collapse">' + st.rentalList.map((x) => row(x, rentalLine(x))).join('') + '</table>' : '')
-    + (st.jobList.length ? h3('The latest jobs') + '<table width="100%" style="border-collapse:collapse">' + st.jobList.map((x) => row(x, String(x.group || '').slice(0, 40))).join('') + '</table>' : '')
-    + (st.wigList.length ? h3('Shaitel machers (wig stylists) on Chutznik') + '<table width="100%" style="border-collapse:collapse">' + st.wigList.map((x) => row(x, '')).join('') + '</table>' : '')
-    + '<p style="margin:26px 0 0;font-size:16px">Just ' + a(SITE + '/israel', 'open Chutznik') + ' and search for whatever you need.</p>'
-    + '<p style="margin:16px 0 0">Miriam</p>'
-    + '<div style="margin-top:24px;padding-top:12px;border-top:1px solid ' + C.line + ';font-size:11px;color:#b8aa9c"><a href="' + esc(unsub) + '" style="color:#b8aa9c">Unsubscribe</a></div>'
+  const tile = (t) => '<td class="tile" width="16.6%" style="padding:4px;vertical-align:top"><a href="' + esc(SITE + t[2]) + '" style="display:block;text-decoration:none;background:#fff;border:1px solid ' + C.line + ';border-radius:14px;padding:14px 2px 10px;text-align:center">'
+    + '<img src="' + esc(SITE + '/img/' + t[0]) + '" width="44" height="44" alt="" style="display:block;margin:0 auto 6px;width:44px;height:44px;border:0"><span style="' + sans + ';font-size:13px;font-weight:700;color:' + C.ink + '">' + esc(t[1]) + '</span></a></td>';
+  const item = (x, sub) => '<div style="padding:7px 0;border-bottom:1px solid ' + C.line + '">' + A(linkOf(SITE, x), esc(String(x.title || '').replace(/^wanted:\s*/i, '').slice(0, 60)), 'font-weight:700;font-size:14px') + (sub ? '<div style="' + sans + ';font-size:12px;color:' + C.mute + ';margin-top:2px">' + esc(sub) + '</div>' : '') + '</div>';
+  const twoCols = (list, subOf) => { const half = Math.ceil(list.length / 2); const col = (arr) => '<td class="col" width="50%" style="vertical-align:top;padding:0 8px">' + arr.map((x) => item(x, subOf(x))).join('') + '</td>';
+    return '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>' + col(list.slice(0, half)) + col(list.slice(half)) + '</tr></table>'; };
+  const section = (opts) => '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:14px;background:#fff;border:1px solid ' + C.line + ';border-radius:16px"><tr>'
+    + '<td class="photo" width="160" style="vertical-align:top;padding:0">' + (opts.photo ? '<img src="' + esc(opts.photo) + '" width="160" alt="" class="photo-img" style="display:block;width:160px;height:100%;min-height:180px;object-fit:cover;border-radius:16px 0 0 16px;border:0">' : '<div style="width:160px;min-height:180px;background:' + C.cream + ';border-radius:16px 0 0 16px;text-align:center;font-size:54px;line-height:180px">' + opts.emoji + '</div>') + '</td>'
+    + '<td style="vertical-align:top;padding:16px 14px 12px">'
+    + '<table width="100%" cellpadding="0" cellspacing="0"><tr><td style="vertical-align:top"><div style="' + serif + ';font-size:22px;font-weight:700;color:' + C.brown + '">' + esc(opts.title) + '</div><div style="' + sans + ';font-size:13px;color:' + C.mute + ';margin:2px 0 8px">' + esc(opts.sub) + '</div></td>'
+    + (opts.all ? '<td style="vertical-align:top;text-align:right;white-space:nowrap">' + A(SITE + opts.all[1], esc(opts.all[0]) + ' →', 'display:inline-block;border:1px solid ' + C.line + ';border-radius:99px;padding:7px 12px;font-size:12px;font-weight:700;background:' + C.cream) + '</td>' : '') + '</tr></table>'
+    + opts.body + '</td></tr></table>';
+  const rentals = st.rentalList.slice(0, 6), jobs = st.jobList.slice(0, 6), wigs = st.wigList.slice(0, 10);
+  const rentalPhoto = picOf(SITE, st.rentalList.find((x) => picOf(SITE, x))) || SITE + '/img/cal-jerusalem.webp';
+  const wigPhoto = picOf(SITE, st.wigList.find((x) => picOf(SITE, x)));
+  const jobPhoto = picOf(SITE, st.jobList.find((x) => picOf(SITE, x)));
+  const html = '<!--[if mso]><style>table{border-collapse:collapse}</style><![endif]-->'
+    + '<style>@media only screen and (max-width:620px){ .wrap{padding:0 !important} .card{border-radius:0 !important} .tile{display:inline-block !important;width:32% !important;box-sizing:border-box} .col{display:block !important;width:100% !important} .photo{display:block !important;width:100% !important} .photo-img{width:100% !important;height:170px !important;border-radius:16px 16px 0 0 !important} .big{font-size:40px !important} .stat{display:inline-block !important;width:49% !important;box-sizing:border-box !important;padding:6px 2px !important} .stat .n{font-size:30px !important} }</style>'
+    + '<div class="wrap" style="background:' + C.bg + ';padding:16px 8px"><div class="card" style="max-width:680px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;' + sans + ';color:' + C.ink + ';line-height:1.45">'
+    // banner
+    + '<a href="' + esc(SITE + '/israel') + '" style="display:block;text-decoration:none"><img src="' + esc(SITE + '/img/cal-jerusalem.webp') + '" width="680" alt="" style="display:block;width:100%;max-height:220px;object-fit:cover;border:0"></a>'
+    + '<div style="text-align:center;padding:16px 16px 0"><div style="' + serif + ';font-size:34px;font-weight:700;color:' + C.brown + ';letter-spacing:.5px">Chutznik</div><div style="' + sans + ';font-size:11px;letter-spacing:3px;color:' + C.mute + ';margin-top:-2px">ISRAEL. TOGETHER.</div></div>'
+    // greeting
+    + '<div style="text-align:center;padding:18px 20px 6px"><div style="font-size:16px;color:' + C.mute + '">Hi ' + esc(first) + ',</div>'
+    + '<div class="big" style="' + serif + ';font-size:36px;font-weight:700;color:' + C.brown + ';margin:4px 0 2px">Chutznik is 3 months old! <span style="color:#e06a5a">&#10084;</span></div></div>'
+    // two numbers
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:10px 0 6px"><tr>'
+    + '<td class="stat" width="50%" style="text-align:center;padding:10px;border-right:1px solid ' + C.line + '"><div style="font-size:30px;line-height:1">&#128172;</div><div class="n" style="' + serif + ';font-size:38px;font-weight:700;color:' + C.brown + ';line-height:1.1">' + n(st.total) + '</div><div style="font-size:12px;letter-spacing:2px;color:' + C.mute + '">POSTS</div></td>'
+    + '<td class="stat" width="50%" style="text-align:center;padding:10px"><div style="font-size:30px;line-height:1">&#127978;</div><div class="n" style="' + serif + ';font-size:38px;font-weight:700;color:' + C.brown + ';line-height:1.1">' + n(st.businesses) + '</div><div style="font-size:12px;letter-spacing:2px;color:' + C.mute + '">BUSINESS LISTINGS</div></td></tr></table>'
+    // tiles
+    + '<div style="margin:10px 12px 0;background:' + C.cream + ';border:1px solid ' + C.line + ';border-radius:16px;padding:12px 8px 8px">'
+    + '<div style="' + serif + ';font-size:22px;font-weight:700;color:' + C.brown + ';text-align:center;margin-bottom:8px">What are you looking for today?</div>'
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>' + tiles.map(tile).join('') + '</tr></table></div>'
+    // sections
+    + '<div style="padding:0 12px">'
+    + (rentals.length ? section({ photo: rentalPhoto, emoji: '🏠', title: 'Latest Rentals', sub: n(st.rentals) + ' apartments for rent', all: ['View all rentals', '/search/rentals'], body: twoCols(rentals, rentalLine) }) : '')
+    + (jobs.length ? section({ photo: jobPhoto, emoji: '💼', title: 'Latest Jobs', sub: n(st.jobs) + ' jobs', all: ['View all jobs', '/search/jobs'], body: twoCols(jobs, (x) => String(x.group || '').slice(0, 40)) }) : '')
+    + (wigs.length ? section({ photo: wigPhoto, emoji: '💇‍♀️', title: 'Shaitel machers', sub: 'wig stylists on Chutznik', all: null, body: twoCols(wigs, () => '') }) : '')
+    + '</div>'
+    // button + footer
+    + '<div style="text-align:center;padding:24px 16px 10px"><a href="' + esc(SITE + '/israel') + '" style="display:inline-block;background:' + C.brown + ';color:#fff;border-radius:10px;padding:13px 34px;text-decoration:none;font-weight:700;font-size:16px">Open Chutznik →</a></div>'
+    + '<div style="text-align:center;padding:6px 16px 18px;font-size:11px;color:#b8aa9c"><a href="' + esc(unsub) + '" style="color:#b8aa9c">Unsubscribe</a></div>'
     + '</div></div>';
-  const text = 'Hi ' + first + ',\n\nChutznik turned three months old\n\nSince July 5 there have been ' + n(st.total) + ' posts on the site: ' + n(st.rentals) + ' apartments for rent, ' + n(st.jobs) + ' jobs, ' + n(st.businesses) + ' business listings - and a first time ever shared Jerusalem calendar! ' + SITE + '/calendar\nAnd ' + n(st.comments) + ' comments and replies!\n\n'
-    + 'Rentals: ' + SITE + '/search/rentals\nRestaurants: ' + SITE + '/search/restaurants\nCleaners: ' + SITE + '/post/up_wa_CLEANERS\nBabysitters: ' + SITE + '/post/up_wa_BABYSIT\nMikvaot: ' + SITE + '/search/mikva\nDoctors: ' + SITE + '/search/doctors\n\n'
-    + (st.rentalList.length ? 'Long-term rentals from the last day:\n' + st.rentalList.map((x) => '- ' + String(x.title || '').slice(0, 72) + ' (' + rentalLine(x) + ') ' + linkOf(SITE, x)).join('\n') + '\n\n' : '')
-    + (st.jobList.length ? 'The latest jobs:\n' + st.jobList.map((x) => '- ' + String(x.title || '').slice(0, 72) + ' ' + linkOf(SITE, x)).join('\n') + '\n\n' : '')
-    + (st.wigList.length ? 'Shaitel machers (wig stylists) on Chutznik:\n' + st.wigList.map((x) => '- ' + String(x.title || '').slice(0, 72) + ' ' + linkOf(SITE, x)).join('\n') + '\n\n' : '')
-    + 'Just open Chutznik and search for whatever you need: ' + SITE + '/israel\n\nMiriam\n\nUnsubscribe: ' + unsub;
-  return { subject: 'Chutznik turned three months old', html, text };
+  const text = 'Hi ' + first + ',\n\nChutznik is 3 months old!\n\n' + n(st.total) + ' posts · ' + n(st.businesses) + ' business listings\n\n'
+    + 'What are you looking for today?\nRentals: ' + SITE + '/search/rentals\nRestaurants: ' + SITE + '/search/restaurants\nCleaners: ' + SITE + '/post/up_wa_CLEANERS\nBabysitters: ' + SITE + '/post/up_wa_BABYSIT\nMikvaot: ' + SITE + '/search/mikva\nDoctors: ' + SITE + '/search/doctors\n\n'
+    + (rentals.length ? 'Latest rentals (' + n(st.rentals) + ' apartments for rent):\n' + rentals.map((x) => '- ' + String(x.title || '').slice(0, 60) + ' (' + rentalLine(x) + ') ' + linkOf(SITE, x)).join('\n') + '\nAll rentals: ' + SITE + '/search/rentals\n\n' : '')
+    + (jobs.length ? 'Latest jobs (' + n(st.jobs) + '):\n' + jobs.map((x) => '- ' + String(x.title || '').slice(0, 60) + ' ' + linkOf(SITE, x)).join('\n') + '\nAll jobs: ' + SITE + '/search/jobs\n\n' : '')
+    + (wigs.length ? 'Shaitel machers (wig stylists):\n' + wigs.map((x) => '- ' + String(x.title || '').slice(0, 60) + ' ' + linkOf(SITE, x)).join('\n') + '\n\n' : '')
+    + 'Open Chutznik: ' + SITE + '/israel\n\nUnsubscribe: ' + unsub;
+  return { subject: 'Chutznik is 3 months old!', html, text };
 }
 
 // mode: 'preview' (to previewTo) or 'members' (everyone). Returns a short report line.
