@@ -387,16 +387,18 @@ function hasTitleWords(body) {
 // the common message openings, turned into a title that says what the post is
 function shapeTitle(t) {
   let x = String(t || '').trim().replace(/^[\s:;,.!-]+/, '');
+  if (/^[A-Za-z][\w' ]{2,24}:\s/.test(x)) return x;   // already labelled ("Wanted: 3 bdrm", "Refuit Health Center: …")
   const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
-  const clean = (w) => String(w || '').replace(/[\s?.!,;:]+$/, '').replace(/^\s*(?:a |an |the |some |any )/i, '').trim();
+  const clean = (w) => String(w || '').replace(/^[\s:;,.!-]+/, '').replace(/[\s?.!,;:]+$/, '').replace(/^\s*(?:a |an |the |some |any |seeking |looking for )/i, '').trim();
+  const rest = (w) => { const c = clean(w); return c && !/^(?:or|in|for best|at|to|by)\b/i.test(c) ? c : null; };
   let m;
-  if ((m = x.match(/^(?:selling|for sale:?|i am selling|i'm selling|we are selling)\s+(.+)/i))) return 'For sale: ' + clean(m[1]);
-  if ((m = x.match(/^(?:giving away|free to a good home|free:?|to give away|gifting)\s*:?\s*(.+)/i))) return 'Giving away: ' + clean(m[1]);
-  if ((m = x.match(/^(?:does |do )?(?:any ?one|any ?body|someone|somebody)\s+(?:know|knows|have|has|heard|got|use|used|recommend|recommends|tried)\s+(?:of |about |where |who |which |if |whether |a |an |the |some |any |good |a good )?(.+)/i))) return 'Seeking ' + clean(m[1]);
+  if ((m = x.match(/^(?:selling|for sale:?|i am selling|i'm selling|we are selling)\s+(.+)/i))) { const r = rest(m[1]); if (r) return 'For sale: ' + r; }
+  if ((m = x.match(/^(?:giving away|free to a good home|free:?|to give away|gifting)\s*:?\s*(.+)/i))) { const r = rest(m[1]); if (r) return 'Giving away: ' + r; }
+  if ((m = x.match(/^(?:does |do )?(?:any ?one|any ?body|someone|somebody)\s+(?:know|knows|have|has|heard|got|use|used|recommend|recommends|tried)\s+(?:of |about |where |who |which |if |whether |a |an |the |some |any |good |a good )?(.+)/i))) { const r = rest(m[1]); if (r) return 'Seeking ' + r; }
   if ((m = x.match(/^(?:looking for|seeking|searching for|in search of|iso|need|needs|needed|wanted|want|i need|we need)\s*:?\s+(.+)/i))) return 'Seeking ' + clean(m[1]);
   if ((m = x.match(/^(?:any|anyone have|anyone has)\s+(\w[\w' -]*?)(?:\s+(?:in|near|around|for|who|that|available|avail)\b.*)?[?.!]*$/i)) && m[1].length > 2) return 'Seeking ' + clean(m[0].replace(/^(?:any|anyone have|anyone has)\s+/i, ''));
   if ((m = x.match(/^(?:which|what|where|who|when|how|is there|are there|has anyone|have you|did anyone|does anybody|do they|is anyone|can anyone|could anyone|would anyone)\b(.*)/i))) return 'Question: ' + clean(x.charAt(0).toLowerCase() + x.slice(1));
-  if ((m = x.match(/^(?:found|lost)\s*:?\s+(.+)/i))) return cap(x.slice(0, 5).toLowerCase().replace(/\s+$/, '')) + ': ' + clean(m[1]);
+  if ((m = x.match(/^(?:found|lost)\s*:?\s+(.+)/i))) { const r = rest(m[1]); if (r) return cap(x.slice(0, 5).toLowerCase().replace(/\s+$/, '')) + ': ' + r; }
   if ((m = x.match(/^(?:i have|i've got|have)\s*:?\s+((?:\$|₪|£|€)\s?\d[\d,]*.*)/i))) return 'Exchange: ' + clean(m[1]);
   if (/^(?:was|now|only|just|save)\s*\$?\d/i.test(x) || /^\d+\s*\$|^\$\s*\d+\s*(?:off)?$/i.test(x)) return '';   // a bare price is not a title: the picture's words will do
   return x;
