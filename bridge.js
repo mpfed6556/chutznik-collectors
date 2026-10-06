@@ -169,8 +169,8 @@ async function curateItems(items, review) {
 }
 const curatable = (it) => it && it.source === 'whatsapp' && !/^wa_(apt|BABYSIT|CLEANERS)/.test(String(it.id)) && !(it.types || []).some((t) => /^(Rental|Jobs|For Sale)$/.test(t));
 // ── News or advert? For groups that carry both (Miriam, 6 Oct 2026: "a lot of good ads and info, not news")
-const NEWS_RE = /\b(breaking|police|accident|crash|killed|injured|wounded|arrested|suspect|terror|attack|rocket|siren|sirens|protest|demonstration|minister|knesset|government|election|court|verdict|weather|storm|flood|fire ?fighters|wildfire|earthquake|road (?:closed|closure)|traffic jam|light rail (?:fault|stopped)|evacuat|hostage|idf|hamas|hezbollah|iran|gaza|ceasefire|update:|report:)\b|תאונה|נפצע|פצוע|הרוג|נהרג|משטרה|נעצר|חשוד|פיגוע|אזעק|טיל|רקטה|הפגנ|מחאה|השר |שר ה|ראש הממשלה|הממשלה|כנסת|בג"ץ|בית המשפט|מזג האוויר|סופה|שיטפון|שריפה|כבאי|רעידת|כביש חסום|חסימ|פקק|תקלה ברכבת|חטופ|צה"ל|חמאס|חיזבאללה|איראן|עזה|הפסקת אש|מבזק|עדכון:|דיווח|חדשות|ערוץ|כתבת|כתב /i;
-const AD_RE = /\b(sale|discount|off\b|special|new (?:branch|store|shop)|open(?:ing|s)?\b|now open|course|class(?:es)?|workshop|lecture|shiur|event|concert|show|fair|registration|register|sign up|delivery|catering|store|shop|salon|clinic|studio|gym|lessons?|tutor|camp|chug|price|₪|nis|shekel)\b|מבצע|הנחה|חוג|חוגים|קורס|סדנה|הרצאה|שיעור|אירוע|הופעה|כנס|יריד|הרשמה|נרשמים|פתיחה|נפתח|סניף|חנות|שירות|משלוח|קייטרינג|מסעדה|סלון|מכון|סטודיו|מחיר|ש"ח|₪|לפרטים|להזמנות|הזמינו|בואו|מוזמנים|חדש!|חדש:/i;
+const NEWS_RE = /\b(breaking|police|accident|crash|killed|injured|wounded|arrested|suspect|terror|attack|rocket|siren|sirens|protest|demonstration|minister|knesset|government|election|court|verdict|weather|storm|flood|fire ?fighters|wildfire|earthquake|road (?:closed|closure)|traffic jam|light rail (?:fault|stopped)|evacuat|hostage|idf|hamas|hezbollah|iran|gaza|ceasefire|update:|report:|malfunction|missing (?:person|man|woman|boy|girl|child|\w+(?: \w+)? (?:was|has|is|were))|found dead|searches (?:for|have|continue)|rescue(?:d|rs)?|stabbing|shooting|fatal|passed away|funeral|levaya|urgent:|drivers (?:drove|were|are|who)|light rail (?:line|is|was|will)|train line|bus line \d|road ?works|demonstrat|mayor|municipality|lawsuit|soldiers?|army|reservists|was (?:attacked|arrested|injured|killed|found))\b|תאונה|נפצע|פצוע|הרוג|נהרג|משטרה|נעצר|חשוד|פיגוע|אזעק|טיל|רקטה|הפגנ|מחאה|השר |שר ה|ראש הממשלה|הממשלה|כנסת|בג"ץ|בית המשפט|מזג האוויר|סופה|שיטפון|שריפה|כבאי|רעידת|כביש חסום|חסימ|פקק|תקלה ברכבת|חטופ|צה"ל|חמאס|חיזבאללה|איראן|עזה|הפסקת אש|מבזק|עדכון:|דיווח|חדשות|ערוץ|כתבת|כתב |תקלה|נעדר|החיפושים|נפטר|הלוויה|נהגים|הרכבת הקלה|ראש העיר|עיריית|עתירה|חיילים|מילואים|הותקף|נדקר|פיגוע/i;
+const AD_RE = /\b(sale|discount|off\b|special|new (?:branch|store|shop)|open(?:ing|s)?\b|now open|course|class(?:es)?|workshop|lecture|shiur|event|concert|show|fair|registration|register|sign up|delivery|catering|store|shop|salon|clinic|studio|gym|lessons?|tutor|camp|chug|price|₪|nis|shekel|for rent|to rent|for sale|rental|sublet|looking for|seeking|wanted|needed|available|avail|babysit(?:ter|ting)?|cleaner|cleaning|giving away|free to|recommend(?:ation|ed|s)?|anyone know|does anyone|apartment|apt|room|job|hiring|position|vacancy|part[- ]time|full[- ]time|ride|driver|lift|tremp|selling|buy|sell|carpool|lost (?:a|an|my|our|:)|found (?:a|an|my|:)|minyan|kiddush|simcha|wedding|bar mitzvah|sheva brachos|gemach|chessed|volunteer)\b|מבצע|הנחה|חוג|חוגים|קורס|סדנה|הרצאה|שיעור|אירוע|הופעה|כנס|יריד|הרשמה|נרשמים|פתיחה|נפתח|סניף|חנות|שירות|משלוח|קייטרינג|מסעדה|סלון|מכון|סטודיו|מחיר|ש"ח|₪|לפרטים|להזמנות|הזמינו|בואו|מוזמנים|חדש!|חדש:|להשכרה|למכירה|מחפש|מחפשת|מחפשים|דרוש|דרושה|דרושים|מוסר|מוסרת|מסירה|המלצה|ממליץ|מישהו מכיר|מישהי מכירה|דירה|חדר|עבודה|משרה|טרמפ|נהג|בייביסיטר|מניין|גמ"ח|מתנדב/i;
 function isNewsMessage(m) {
   try {
     const inner = innerOf(m);
@@ -180,9 +180,12 @@ function isNewsMessage(m) {
     return NEWS_RE.test(t) && !AD_RE.test(t);
   } catch (e) { return false; }
 }
+const OVERSEAS_DEAL_RE = /\bamazon|\bprime\b|walmart|target\.com|costco|ebay|shein|temu|aliexpress|free shipping|\bships? to\b|\bus(?:a)? only\b/i;
 function isAdvertText(t, hasPic) {
   t = String(t || '');
   if (NEWS_RE.test(t) && !AD_RE.test(t)) return false;
+  // an overseas shopping deal ("Was $59 now $37", an Amazon link) is not for a Jerusalem board (Miriam's curating rules)
+  if ((/\$\s?\d|\d\s?\$/.test(t) && !/₪|\bnis\b|\bshekel|ש"ח/i.test(t) && /\b(?:was|now|off|deal|code|coupon|link)\b/i.test(t)) || OVERSEAS_DEAL_RE.test(t)) return false;
   return AD_RE.test(t) || phonesInText(t).length > 0 || /@|https?:\/\//.test(t) || (hasPic && t.length < 40);   // a flyer with a word or two is an advert
 }
 // ── Send one finished post into the admin review queue ───────────────────────
@@ -381,6 +384,23 @@ function hasTitleWords(body) {
   const t = smartTitle(body, '', '');
   return !!t && !/^From /.test(t) && t !== 'Apartment available' && t !== 'From a local business' && t !== 'A question for the community';
 }
+// the common message openings, turned into a title that says what the post is
+function shapeTitle(t) {
+  let x = String(t || '').trim().replace(/^[\s:;,.!-]+/, '');
+  const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+  const clean = (w) => String(w || '').replace(/[\s?.!,;:]+$/, '').replace(/^\s*(?:a |an |the |some |any )/i, '').trim();
+  let m;
+  if ((m = x.match(/^(?:selling|for sale:?|i am selling|i'm selling|we are selling)\s+(.+)/i))) return 'For sale: ' + clean(m[1]);
+  if ((m = x.match(/^(?:giving away|free to a good home|free:?|to give away|gifting)\s*:?\s*(.+)/i))) return 'Giving away: ' + clean(m[1]);
+  if ((m = x.match(/^(?:does |do )?(?:any ?one|any ?body|someone|somebody)\s+(?:know|knows|have|has|heard|got|use|used|recommend|recommends|tried)\s+(?:of |about |where |who |which |if |whether |a |an |the |some |any |good |a good )?(.+)/i))) return 'Seeking ' + clean(m[1]);
+  if ((m = x.match(/^(?:looking for|seeking|searching for|in search of|iso|need|needs|needed|wanted|want|i need|we need)\s*:?\s+(.+)/i))) return 'Seeking ' + clean(m[1]);
+  if ((m = x.match(/^(?:any|anyone have|anyone has)\s+(\w[\w' -]*?)(?:\s+(?:in|near|around|for|who|that|available|avail)\b.*)?[?.!]*$/i)) && m[1].length > 2) return 'Seeking ' + clean(m[0].replace(/^(?:any|anyone have|anyone has)\s+/i, ''));
+  if ((m = x.match(/^(?:which|what|where|who|when|how|is there|are there|has anyone|have you|did anyone|does anybody|do they|is anyone|can anyone|could anyone|would anyone)\b(.*)/i))) return 'Question: ' + clean(x.charAt(0).toLowerCase() + x.slice(1));
+  if ((m = x.match(/^(?:found|lost)\s*:?\s+(.+)/i))) return cap(x.slice(0, 5).toLowerCase().replace(/\s+$/, '')) + ': ' + clean(m[1]);
+  if ((m = x.match(/^(?:i have|i've got|have)\s*:?\s+((?:\$|₪|£|€)\s?\d[\d,]*.*)/i))) return 'Exchange: ' + clean(m[1]);
+  if (/^(?:was|now|only|just|save)\s*\$?\d/i.test(x) || /^\d+\s*\$|^\$\s*\d+\s*(?:off)?$/i.test(x)) return '';   // a bare price is not a title: the picture's words will do
+  return x;
+}
 function smartTitle(body, kind, chatName) {
   const lines = String(body || '').split('\n').map(l => stripEmoji(l).trim()).filter(Boolean);
   const junk = l => !l || l.length < 6
@@ -400,11 +420,12 @@ function smartTitle(body, kind, chatName) {
     || /^(?:Numbers mentioned|From the attached image)/i.test(l)
     || /^(?:hi|hello|hey|thanks|thank you|todah|shkoyach|b\"h|bh)\b[\s!.,]*$/i.test(l);
   EMAIL_RE.lastIndex = 0;
-  let first = lines.find(l => !junk(l)) || '';
+  let first = lines.map((l) => shapeTitle(l)).find(l => l && !junk(l)) || '';
   // WhatsApp shouting -> sentence case, so the feed doesn't scream
   if (first && first.length > 12 && first === first.toUpperCase() && /[A-Z]{4}/.test(first)) {
     first = first.charAt(0) + first.slice(1).toLowerCase();
   }
+  first = shapeTitle(first);
   first = first.replace(/\((?:\+)?\d{9,}\)/g, '')
                .replace(/^["'\u201c\u201d\u2018\u2019]+|["'\u201c\u201d\u2018\u2019]+$/g, '')
                .replace(/\s{2,}/g, ' ').replace(/[*_~`]/g, '').trim();
