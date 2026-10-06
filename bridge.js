@@ -149,6 +149,20 @@ async function sendToQueue(item) {
     return true;
   }
   delete item._contentKey; delete item._kind; delete item._msgIds;
+  // a business already listed on the site (same phone): the new advert joins its page as a dated
+  // comment instead of becoming another post (Miriam, 6 Oct 2026: "merge them")
+  try {
+    const d9 = String(item.contactPhone || '').replace(/\D/g, '').slice(-9);
+    if (d9.length === 9 && curatable(item)) {
+      const biz = Object.values(global._updItems || {}).find((u) => u && u.source === 'business' && String(u.contactPhone || '').replace(/\D/g, '').slice(-9) === d9);
+      if (biz) {
+        const r = await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
+          body: JSON.stringify({ file: 'updates', action: 'comment', group: item.group || '', target: { id: String(biz.id) }, comment: { author: biz.author || 'The business', content: (String(item.title || '') + '\n\n' + String(item.memo || '')).trim().slice(0, 2000), timestamp: item.created || Date.now() } }) });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok && j.ok) { log('   🏷️ joined the business page "' + String(biz.title || '').slice(0, 50) + '" as a comment'); return true; }
+      }
+    }
+  } catch (e) {}
   if (curatable(item) && item.status !== 'public') {
     const c = (await curateItems([item]))[String(item.id)];
     if (c) {
