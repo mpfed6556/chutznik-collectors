@@ -111,42 +111,45 @@ function build(SITE, st, member) {
   const item = (x, sub) => '<div style="padding:7px 0;border-bottom:1px solid ' + C.line + '">' + A(linkOf(SITE, x), esc(String(x.title || '').replace(/^wanted:\s*/i, '').slice(0, 60)), 'font-weight:700;font-size:14px') + (sub ? '<div style="' + sans + ';font-size:12px;color:' + C.mute + ';margin-top:2px">' + esc(sub) + '</div>' : '') + '</div>';
   const twoCols = (list, subOf) => { const half = Math.ceil(list.length / 2); const col = (arr) => '<td class="col" width="50%" style="vertical-align:top;padding:0 8px">' + arr.map((x) => item(x, subOf(x))).join('') + '</td>';
     return '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>' + col(list.slice(0, half)) + col(list.slice(half)) + '</tr></table>'; };
-  const section = (opts) => '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:14px;background:#fff;border:1px solid ' + C.line + ';border-radius:16px"><tr>'
-    + '<td class="photo" width="160" style="vertical-align:top;padding:0">' + (opts.photo ? '<img src="' + esc(opts.photo) + '" width="160" alt="" class="photo-img" style="display:block;width:160px;height:100%;min-height:180px;object-fit:cover;border-radius:16px 0 0 16px;border:0">' : '<div style="width:160px;min-height:180px;background:' + C.cream + ';border-radius:16px 0 0 16px;text-align:center;font-size:54px;line-height:180px">' + opts.emoji + '</div>') + '</td>'
-    + '<td style="vertical-align:top;padding:16px 14px 12px">'
-    + '<table width="100%" cellpadding="0" cellspacing="0"><tr><td style="vertical-align:top"><div style="' + serif + ';font-size:22px;font-weight:700;color:' + C.brown + '">' + esc(opts.title) + '</div><div style="' + sans + ';font-size:13px;color:' + C.mute + ';margin:2px 0 8px">' + esc(opts.sub) + '</div></td>'
-    + (opts.all ? '<td style="vertical-align:top;text-align:right;white-space:nowrap">' + A(SITE + opts.all[1], esc(opts.all[0]) + ' →', 'display:inline-block;border:1px solid ' + C.line + ';border-radius:99px;padding:7px 12px;font-size:12px;font-weight:700;background:' + C.cream) + '</td>' : '') + '</tr></table>'
-    + opts.body + '</td></tr></table>';
   const rentals = st.rentalList.slice(0, 6), jobs = st.jobList.slice(0, 6), wigs = st.wigList.slice(0, 10);
   const rentalPhoto = picOf(SITE, st.rentalList.find((x) => picOf(SITE, x))) || SITE + '/img/cal-jerusalem.webp';
   const wigPhoto = picOf(SITE, st.wigList.find((x) => picOf(SITE, x)));
   const jobPhoto = picOf(SITE, st.jobList.find((x) => picOf(SITE, x)));
+  const stat = (icon, num, label) => '<td class="stat" width="50%" style="padding:6px 10px;vertical-align:middle"><table cellpadding="0" cellspacing="0" style="margin:0 auto"><tr>'
+    + '<td style="vertical-align:middle;padding-right:12px"><img src="' + esc(SITE + '/img/' + icon) + '" width="52" height="52" alt="" style="display:block;width:52px;height:52px;border:0"></td>'
+    + '<td style="vertical-align:middle;text-align:left"><div class="n" style="' + serif + ';font-size:40px;font-weight:700;color:' + C.brown + ';line-height:1">' + esc(num) + '</div><div style="' + sans + ';font-size:12px;letter-spacing:2.5px;color:' + C.mute + ';margin-top:2px">' + esc(label) + '</div></td></tr></table></td>';
+  const section = (opts) => '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;margin-top:16px;background:#fff;border:1px solid ' + C.line + ';border-radius:18px"><tr>'
+    + '<td class="photo" width="190" style="vertical-align:top;padding:0;border-radius:18px 0 0 18px;overflow:hidden">' + (opts.photo ? '<img src="' + esc(opts.photo) + '" width="190" alt="" class="photo-img" style="display:block;width:190px;height:230px;object-fit:cover;border-radius:18px 0 0 18px;border:0">' : '<div class="photo-img" style="width:190px;height:230px;background:' + C.cream + ';border-radius:18px 0 0 18px;text-align:center;font-size:60px;line-height:230px">' + opts.emoji + '</div>') + '</td>'
+    + '<td class="sec-td" style="vertical-align:top;padding:16px 16px 10px">'
+    + '<table width="100%" cellpadding="0" cellspacing="0"><tr><td style="vertical-align:top"><table cellpadding="0" cellspacing="0"><tr><td style="vertical-align:middle;padding-right:10px">' + (opts.icon ? '<img src="' + esc(SITE + '/img/' + opts.icon) + '" width="40" height="40" alt="" style="display:block;width:40px;height:40px;border:0">' : '<div style="font-size:30px;line-height:40px;width:40px;text-align:center">' + opts.glyph + '</div>') + '</td>'
+    + '<td style="vertical-align:middle"><div style="' + serif + ';font-size:24px;font-weight:700;color:' + C.brown + ';line-height:1.1">' + esc(opts.title) + '</div><div style="' + sans + ';font-size:13px;color:' + C.mute + ';margin-top:3px">' + esc(opts.sub) + '</div></td></tr></table></td>'
+    + (opts.all ? '<td style="vertical-align:top;text-align:right;white-space:nowrap">' + A(SITE + opts.all[1], esc(opts.all[0]) + ' →', 'display:inline-block;border:1px solid ' + C.line + ';border-radius:99px;padding:8px 14px;font-size:12px;font-weight:700;background:' + C.cream) + '</td>' : '') + '</tr></table>'
+    + '<div style="height:8px"></div>' + opts.body + '</td></tr></table>';
   const html = '<!--[if mso]><style>table{border-collapse:collapse}</style><![endif]-->'
-    + '<style>@media only screen and (max-width:620px){ .wrap{padding:0 !important} .card{border-radius:0 !important} .tile{display:inline-block !important;width:32% !important;box-sizing:border-box} .col{display:block !important;width:100% !important} .photo{display:block !important;width:100% !important} .photo-img{width:100% !important;height:170px !important;border-radius:16px 16px 0 0 !important} .big{font-size:40px !important} .stat{display:inline-block !important;width:49% !important;box-sizing:border-box !important;padding:6px 2px !important} .stat .n{font-size:30px !important} }</style>'
+    + '<style>@media only screen and (max-width:620px){ .wrap{padding:0 !important} .card{border-radius:0 !important} .tile{display:inline-block !important;width:32% !important;box-sizing:border-box} .col{display:block !important;width:100% !important} .photo,.sec-td{display:block !important;width:100% !important;box-sizing:border-box !important} .photo{border-radius:18px 18px 0 0 !important} .photo-img{width:100% !important;height:170px !important;border-radius:18px 18px 0 0 !important} .big{font-size:34px !important} .stat{display:inline-block !important;width:49% !important;box-sizing:border-box !important;padding:6px 2px !important} .stat .n{font-size:30px !important} }</style>'
     + '<div class="wrap" style="background:' + C.bg + ';padding:16px 8px"><div class="card" style="max-width:680px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;' + sans + ';color:' + C.ink + ';line-height:1.45">'
-    // banner
-    + '<a href="' + esc(SITE + '/israel') + '" style="display:block;text-decoration:none"><img src="' + esc(SITE + '/img/cal-jerusalem.webp') + '" width="680" alt="" style="display:block;width:100%;max-height:220px;object-fit:cover;border:0"></a>'
-    + '<div style="text-align:center;padding:16px 16px 0"><div style="' + serif + ';font-size:34px;font-weight:700;color:' + C.brown + ';letter-spacing:.5px">Chutznik</div><div style="' + sans + ';font-size:11px;letter-spacing:3px;color:' + C.mute + ';margin-top:-2px">ISRAEL. TOGETHER.</div></div>'
+    // banner: the painting with the name on it, flowers at the sides, a curved edge
+    + '<a href="' + esc(SITE + '/israel') + '" style="display:block;text-decoration:none"><img src="' + esc(SITE + '/img/mail-banner.jpg') + '" width="680" alt="Chutznik — Israel. Together." style="display:block;width:100%;border:0"></a>'
     // greeting
-    + '<div style="text-align:center;padding:18px 20px 6px"><div style="font-size:16px;color:' + C.mute + '">Hi ' + esc(first) + ',</div>'
-    + '<div class="big" style="' + serif + ';font-size:36px;font-weight:700;color:' + C.brown + ';margin:4px 0 2px">Chutznik is 3 months old! <span style="color:#e06a5a">&#10084;</span></div></div>'
-    // two numbers
-    + '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:10px 0 6px"><tr>'
-    + '<td class="stat" width="50%" style="text-align:center;padding:10px;border-right:1px solid ' + C.line + '"><div style="font-size:30px;line-height:1">&#128172;</div><div class="n" style="' + serif + ';font-size:38px;font-weight:700;color:' + C.brown + ';line-height:1.1">' + n(st.total) + '</div><div style="font-size:12px;letter-spacing:2px;color:' + C.mute + '">POSTS</div></td>'
-    + '<td class="stat" width="50%" style="text-align:center;padding:10px"><div style="font-size:30px;line-height:1">&#127978;</div><div class="n" style="' + serif + ';font-size:38px;font-weight:700;color:' + C.brown + ';line-height:1.1">' + n(st.businesses) + '</div><div style="font-size:12px;letter-spacing:2px;color:' + C.mute + '">BUSINESS LISTINGS</div></td></tr></table>'
+    + '<div style="text-align:center;padding:8px 20px 4px"><div style="font-size:17px;color:' + C.mute + '">Hi ' + esc(first) + ',</div>'
+    + '<div class="big" style="' + serif + ';font-size:38px;font-weight:700;color:' + C.brown + ';margin:4px 0 0">Chutznik is 3 months old! <span style="color:#e06a5a">&#10084;</span></div></div>'
+    // two numbers with an icon beside each
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:14px 0 8px"><tr>' + stat('mail-ic-posts.png', n(st.total), 'POSTS') + stat('mail-ic-store.png', n(st.businesses), 'BUSINESS LISTINGS') + '</tr></table>'
     // tiles
-    + '<div style="margin:10px 12px 0;background:' + C.cream + ';border:1px solid ' + C.line + ';border-radius:16px;padding:12px 8px 8px">'
-    + '<div style="' + serif + ';font-size:22px;font-weight:700;color:' + C.brown + ';text-align:center;margin-bottom:8px">What are you looking for today?</div>'
+    + '<div style="margin:10px 14px 0;background:' + C.cream + ';border:1px solid ' + C.line + ';border-radius:18px;padding:14px 8px 8px">'
+    + '<div style="' + serif + ';font-size:24px;font-weight:700;color:' + C.brown + ';text-align:center;margin-bottom:10px">What are you looking for today?</div>'
     + '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>' + tiles.map(tile).join('') + '</tr></table></div>'
     // sections
-    + '<div style="padding:0 12px">'
-    + (rentals.length ? section({ photo: rentalPhoto, emoji: '🏠', title: 'Latest Rentals', sub: n(st.rentals) + ' apartments for rent', all: ['View all rentals', '/search/rentals'], body: twoCols(rentals, rentalLine) }) : '')
-    + (jobs.length ? section({ photo: jobPhoto, emoji: '💼', title: 'Latest Jobs', sub: n(st.jobs) + ' jobs', all: ['View all jobs', '/search/jobs'], body: twoCols(jobs, (x) => String(x.group || '').slice(0, 40)) }) : '')
-    + (wigs.length ? section({ photo: wigPhoto, emoji: '💇‍♀️', title: 'Shaitel machers', sub: 'wig stylists on Chutznik', all: null, body: twoCols(wigs, () => '') }) : '')
+    + '<div style="padding:0 14px">'
+    + (rentals.length ? section({ photo: rentalPhoto, emoji: '🏠', icon: 'mail-ic-rentals.png', title: 'Latest Rentals', sub: n(st.rentals) + ' apartments for rent', all: ['View all rentals', '/search/rentals'], body: twoCols(rentals, rentalLine) }) : '')
+    + (jobs.length ? section({ photo: jobPhoto, emoji: '💼', icon: 'mail-ic-jobs.png', title: 'Latest Jobs', sub: n(st.jobs) + ' jobs', all: ['View all jobs', '/search/jobs'], body: twoCols(jobs, (x) => String(x.group || '').slice(0, 40)) }) : '')
+    + (wigs.length ? section({ photo: wigPhoto, emoji: '💇‍♀️', icon: '', glyph: '\u2702\ufe0f', title: 'Shaitel machers', sub: 'wig stylists on Chutznik', all: ['View all', '/search/sheitel'], body: twoCols(wigs, () => '') }) : '')
     + '</div>'
-    // button + footer
-    + '<div style="text-align:center;padding:24px 16px 10px"><a href="' + esc(SITE + '/israel') + '" style="display:inline-block;background:' + C.brown + ';color:#fff;border-radius:10px;padding:13px 34px;text-decoration:none;font-weight:700;font-size:16px">Open Chutznik →</a></div>'
-    + '<div style="text-align:center;padding:6px 16px 18px;font-size:11px;color:#b8aa9c"><a href="' + esc(unsub) + '" style="color:#b8aa9c">Unsubscribe</a></div>'
+    // the button, and the faint skyline under it
+    + '<div style="text-align:center;padding:26px 16px 6px"><a href="' + esc(SITE + '/israel') + '" style="display:inline-block;background:' + C.brown + ';color:#fff;border-radius:10px;padding:13px 36px;text-decoration:none;font-weight:700;font-size:16px">Open Chutznik →</a>'
+    + '<div style="' + sans + ';font-size:12px;color:' + C.mute + ';margin-top:12px">New posts, rentals, jobs and recommendations are added every day.</div></div>'
+    + '<img src="' + esc(SITE + '/img/mail-foot.jpg') + '" width="680" alt="" style="display:block;width:100%;border:0;margin-top:-6px">'
+    + '<div style="text-align:center;padding:4px 16px 14px;font-size:11px;color:#b8aa9c;background:' + C.bg + '"><a href="' + esc(unsub) + '" style="color:#b8aa9c">Unsubscribe</a></div>'
     + '</div></div>';
   const text = 'Hi ' + first + ',\n\nChutznik is 3 months old!\n\n' + n(st.total) + ' posts · ' + n(st.businesses) + ' business listings\n\n'
     + 'What are you looking for today?\nRentals: ' + SITE + '/search/rentals\nRestaurants: ' + SITE + '/search/restaurants\nCleaners: ' + SITE + '/post/up_wa_CLEANERS\nBabysitters: ' + SITE + '/post/up_wa_BABYSIT\nMikvaot: ' + SITE + '/search/mikva\nDoctors: ' + SITE + '/search/doctors\n\n'
