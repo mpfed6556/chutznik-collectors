@@ -1534,7 +1534,7 @@ async function pullSettings() {
     // without dragging a week of everything else into the review queue at once.
     if (j.BACKFILL_CHATS !== undefined) { const list = (Array.isArray(j.BACKFILL_CHATS) ? j.BACKFILL_CHATS : []).map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._backfillChats || [])) { global._backfillChats = list; BACKFILL.chats = {}; saveBackfill(); log('⚙️  backfill limited to: ' + (list.join(' | ') || '(every group)')); } }
     // RETITLE {stamp}: business-first titles for the past posts, once per stamp (titles only, nothing is published)
-    if (j.RETITLE && typeof j.RETITLE === 'object' && j.RETITLE.stamp) { global._retitle = { stamp: String(j.RETITLE.stamp), days: Number(j.RETITLE.days) || 92 }; setTimeout(retitleBacklog, 3000); }
+    if (j.RETITLE && typeof j.RETITLE === 'object' && j.RETITLE.stamp) { global._retitle = { stamp: String(j.RETITLE.stamp), days: Number(j.RETITLE.days) || 92, all: !!j.RETITLE.all }; setTimeout(retitleBacklog, 3000); }
     // MILESTONES {stamp, to: 'preview'|'members'}: the "three months of Chutznik" email, once per stamp (Miriam, 5 Oct 2026)
     if (j.MILESTONES && typeof j.MILESTONES === 'object' && j.MILESTONES.stamp) { global._milestones = { stamp: String(j.MILESTONES.stamp), to: String(j.MILESTONES.to || 'preview').toLowerCase() }; setTimeout(milestonesRun, 2000); }
     // who gets the daily TODAY sheet (numbers with country code, no +)
@@ -1557,13 +1557,17 @@ async function retitleBacklog() {
     const since = Date.now() - want.days * 86400000;
     // every external post (WhatsApp, magazine, feeds): title and text checked against each other and
     // against the first picture; rentals and jobs included (Miriam, 6 Oct 2026: "review every single post")
-    const reviewable = (it) => it && !/^wa_(BABYSIT|CLEANERS)$/.test(String(it.id)) && it.curated !== 'reviewed';
+    const reviewable = (it) => it && !/^wa_(BABYSIT|CLEANERS)$/.test(String(it.id)) && (want.all || it.curated !== 'reviewed');
+    // the reader needs its key on the site; without it there is nothing to do (and nothing is marked)
+    const probe = await curateItems([{ id: 'probe', title: 'probe', memo: 'A test post for the reader.', group: '', attachments: [], contactPhone: '' }]);
+    if (!probe || !Object.keys(probe).length) { log('✍️ review (' + want.stamp + '): the site reader did not answer — nothing done, will try again next round'); delete done[want.stamp]; fs.writeFileSync(RETITLE_FILE, JSON.stringify(done)); return; }
     const list = (Array.isArray(all) ? all : []).filter((it) => reviewable(it) && (it.created || 0) >= since).sort((a, b) => (b.created || 0) - (a.created || 0));
     log('✍️ review (' + want.stamp + '): ' + list.length + ' post(s) to go through');
     let changed = 0, flagged = [];
     for (let i = 0; i < list.length; i += 8) {
       const batch = list.slice(i, i + 8);
       const out = await curateItems(batch, true);
+      if (!Object.keys(out).length) { await new Promise((res) => setTimeout(res, 5000)); continue; }   // a failed call: nothing is marked, the posts stay for next time
       for (const it of batch) {
         const c = out[String(it.id)]; if (!c) continue;
         const patch = { curated: 'reviewed' };

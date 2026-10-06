@@ -120,6 +120,89 @@ function timeIn(text) { const m = String(text || '').match(/\b(\d{1,2}(?::\d{2})
 
 // ── the sources ─────────────────────────────────────────────────────────────
 // each returns [{ title, link, desc, date (Date|null), time, place, published }]
+
+// ── Generic sources (Miriam, 6 Oct 2026: "there should be tons of things happening in JLM each day") ──
+//    One collector for any site that offers an iCal feed, an RSS/Atom feed, JSON-LD events, or
+//    event links on a page. Each source lists the addresses to try; the first that yields events wins.
+function icsUnfold(t) { return String(t || '').replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, ''); }
+function icsDate(v) { const m = String(v || '').match(/(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?/); if (!m) return { date: null, time: '' }; const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), m[4] ? Number(m[4]) : 0, m[5] ? Number(m[5]) : 0); return { date: isNaN(d) ? null : d, time: m[4] ? m[4] + ':' + m[5] : '' }; }
+function parseIcs(text, base) {
+  const out = []; const body = icsUnfold(text);
+  for (const block of body.split('BEGIN:VEVENT').slice(1)) {
+    const ev = block.split('END:VEVENT')[0]; const f = (k) => { const m = ev.match(new RegExp('^' + k + '(?:;[^:\\n]*)?:(.*)$', 'mi')); return m ? m[1].trim().replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\;/g, ';') : ''; };
+    const title = strip(f('SUMMARY')); if (!title) continue;
+    const { date, time } = icsDate(f('DTSTART')); const link = f('URL') || absUrl(base, base); const place = strip(f('LOCATION')); const desc = strip(f('DESCRIPTION')).slice(0, 600);
+    if (date && date.getTime() > Date.now() + 120 * 864e5) continue;   // far future: not for the next weeks
+    out.push({ title, link, desc, date, time: time && time !== '00:00' ? time : '', place, published: Date.now() });
+  }
+  return out;
+}
+function parseXmlFeed(text, base) {
+  const $ = cheerio.load(text, { xmlMode: true }); const out = [];
+  $('item, entry').each((i, el) => { const $e = $(el); const title = strip($e.find('title').first().text()); let link = $e.find('link').first().text().trim() || $e.find('link').first().attr('href') || '';
+    const rawHtml = $e.find('content\\:encoded').first().text() || $e.find('content').first().text() || $e.find('description').first().text() || $e.find('summary').first().text();
+    const desc = strip(rawHtml).slice(0, 700); const pub = Date.parse($e.find('pubDate').first().text() || $e.find('published').first().text() || $e.find('updated').first().text()) || Date.now();
+    const image = $e.find('enclosure[type^="image"]').attr('url') || $e.find('media\\:content[url]').attr('url') || $e.find('media\\:thumbnail[url]').attr('url') || imageInHtml(rawHtml, link || base);
+    if (title && link) out.push({ title, link: absUrl(link, base), desc, date: dateIn(title) || dateIn(desc), time: timeIn(desc), place: '', published: pub, image }); });
+  return out;
+}
+function parseJsonLd($, base) {
+  const out = [];
+  $('script[type="application/ld+json"]').each((i, el) => { try { const j = JSON.parse($(el).text()); const walk = (o) => { if (!o || typeof o !== 'object') return; if (Array.isArray(o)) { o.forEach(walk); return; }
+      if (/Event/i.test(String(o['@type']))) { const st = o.startDate ? new Date(o.startDate) : null; const loc = o.location && (typeof o.location === 'string' ? o.location : (o.location.name || (o.location.address && (o.location.address.streetAddress || o.location.address.addressLocality)) || ''));
+        out.push({ image: imageInObject(o.image, base), title: strip(o.name), link: absUrl(o.url || base, base), desc: strip(o.description).slice(0, 700), date: st && !isNaN(st) ? st : null, time: st && !isNaN(st) && /T\d{2}:\d{2}/.test(String(o.startDate)) ? String(st.getHours()).padStart(2, '0') + ':' + String(st.getMinutes()).padStart(2, '0') : '', place: strip(loc || ''), published: Date.now() }); }
+      for (const k of Object.keys(o)) if (k !== '@context') walk(o[k]); };
+    walk(j); } catch (e) {} });
+  return out.filter((x) => x.title);
+}
+function parseEventLinks($, base) {
+  const out = []; const seen = new Set();
+  $('a[href*="/event"], a[href*="/events/"], a[href*="/show"], a[href*="/whats-on"], a[href*="/calendar/"]').each((i, el) => { const $a = $(el); const href = $a.attr('href') || ''; const link = absUrl(href, base); if (!link || link === base || seen.has(link)) return;
+    const block = $a.closest('article, li, .card, .event, .item, div'); const text = strip(block.text() || $a.text()); const title = strip($a.attr('title') || block.find('h1,h2,h3,h4').first().text() || $a.text()).slice(0, 120);
+    if (!title || title.length < 4) return; const date = dateIn(text); if (!date) return; seen.add(link);
+    out.push({ title, link, desc: text.slice(0, 400), date, time: timeIn(text), place: '', published: Date.now(), image: absUrl(block.find('img').first().attr('src') || block.find('img').first().attr('data-src') || '', base) }); });
+  return out.slice(0, 20);
+}
+function generic(def) {
+  return { name: def.name, group: def.group || def.name, types: def.types || ['Events', 'Community'], area: def.area || 'Jerusalem & Surrounding', datedOnly: true, eventWords: def.eventWords,
+    async collect() {
+      let last = '';
+      for (const u of def.tries) {
+        let r; try { r = await get(u); } catch (e) { last = String(e && e.message); continue; }
+        if (!r.ok) { last = 'HTTP ' + r.status; continue; }
+        const t = r.text; let items = [];
+        try {
+          if (/BEGIN:VCALENDAR/.test(t)) items = parseIcs(t, u);
+          else if (/^\s*<\?xml|<rss\b|<feed\b/.test(t.slice(0, 400))) items = parseXmlFeed(t, u);
+          else { const $ = cheerio.load(t); items = parseJsonLd($, u); if (!items.length) items = parseEventLinks($, u); }
+        } catch (e) { last = 'parse: ' + (e && e.message); continue; }
+        items = items.filter((x) => x && x.title && x.link);
+        if (def.place) items.forEach((x) => { if (!x.place) x.place = def.place; });
+        if (items.length) { STATUS[this.name] = 'ok via ' + u + ' (' + items.length + ')'; return items.slice(0, 25); }
+        last = 'nothing parsed at ' + u;
+      }
+      STATUS[this.name] = 'no events · ' + snippet(last);
+      return [];
+    } };
+}
+const GENERIC_SOURCES = [
+  generic({ name: 'Fun In Jerusalem', group: 'Fun In Jerusalem', types: ['Events', 'Community'], tries: ['https://funinjerusalem.com/events/?ical=1', 'https://funinjerusalem.com/events/feed/', 'https://funinjerusalem.com/feed/', 'https://funinjerusalem.com/events/'] }),
+  generic({ name: 'OU Israel Center', group: 'OU Israel Center', types: ['Events', 'Spiritual'], place: 'OU Israel Center, Keren HaYesod 22', tries: ['https://www.ouisrael.org/events/?ical=1', 'https://www.ouisrael.org/events/feed/', 'https://www.ouisrael.org/events/', 'https://www.ouisrael.org/feed/'] }),
+  generic({ name: 'Nefesh B\'Nefesh', group: 'Nefesh B\'Nefesh', types: ['Events', 'Community'], tries: ['https://www.nbn.org.il/events/?ical=1', 'https://www.nbn.org.il/events/feed/', 'https://www.nbn.org.il/events/', 'https://www.nbn.org.il/feed/'] }),
+  generic({ name: 'Pardes', group: 'Pardes Institute', types: ['Events', 'Spiritual'], place: 'Pardes, Pierre Koenig 29', tries: ['https://www.pardes.org.il/events/?ical=1', 'https://www.pardes.org.il/events/feed/', 'https://www.pardes.org.il/events/', 'https://www.pardes.org.il/feed/'] }),
+  generic({ name: 'Beit Avi Chai', group: 'Beit Avi Chai', types: ['Events', 'Community'], place: 'Beit Avi Chai, King George 44', tries: ['https://www.bac.org.il/en/events', 'https://www.bac.org.il/en/feed', 'https://www.bac.org.il/en'] }),
+  generic({ name: 'Jerusalem Theatre', group: 'Jerusalem Theatre', types: ['Events', 'Community'], place: 'Jerusalem Theatre', tries: ['https://www.jerusalem-theatre.co.il/en/shows', 'https://www.jerusalem-theatre.co.il/en/', 'https://www.jerusalem-theatre.co.il/en/feed'] }),
+  generic({ name: 'Israel Museum', group: 'The Israel Museum', types: ['Events', 'Place'], place: 'Israel Museum', tries: ['https://www.imj.org.il/en/events', 'https://www.imj.org.il/en/rss.xml', 'https://www.imj.org.il/en/feed', 'https://www.imj.org.il/en'] }),
+  generic({ name: 'Tower of David', group: 'Tower of David Museum', types: ['Events', 'Place'], place: 'Tower of David, Old City', tries: ['https://www.tod.org.il/en/events/', 'https://www.tod.org.il/en/feed/', 'https://www.tod.org.il/en/'] }),
+  generic({ name: 'Bible Lands Museum', group: 'Bible Lands Museum', types: ['Events', 'Place'], place: 'Bible Lands Museum', tries: ['https://www.blmj.org/en/events/', 'https://www.blmj.org/en/feed/', 'https://www.blmj.org/en/'] }),
+  generic({ name: 'Bloomfield Science Museum', group: 'Bloomfield Science Museum', types: ['Events', 'Place'], place: 'Bloomfield Science Museum, Givat Ram', tries: ['https://www.mada.org.il/en/events', 'https://www.mada.org.il/en/feed', 'https://www.mada.org.il/en'] }),
+  generic({ name: 'Jerusalem Botanical Gardens', group: 'Jerusalem Botanical Gardens', types: ['Events', 'Place'], place: 'Botanical Gardens, Givat Ram', tries: ['https://www.botanic.co.il/en/events/', 'https://www.botanic.co.il/en/feed/', 'https://www.botanic.co.il/en/'] }),
+  generic({ name: 'Biblical Zoo', group: 'Jerusalem Biblical Zoo', types: ['Events', 'Place'], place: 'Biblical Zoo', tries: ['https://www.jerusalemzoo.org/en/events/', 'https://www.jerusalemzoo.org/feed/', 'https://www.jerusalemzoo.org/en/'] }),
+  generic({ name: 'Jerusalem Symphony', group: 'Jerusalem Symphony Orchestra', types: ['Events', 'Community'], tries: ['https://www.jso.co.il/en/concerts/', 'https://www.jso.co.il/en/', 'https://www.jso.co.il/feed/'] }),
+  generic({ name: 'Eventbrite Jerusalem', group: 'Eventbrite (Jerusalem)', types: ['Events', 'Community'], tries: ['https://www.eventbrite.com/d/israel--jerusalem/events/', 'https://www.eventbrite.com/d/israel--jerusalem/jewish/'] }),
+  generic({ name: 'Janglo events', group: 'Janglo (events)', types: ['Events', 'Community'], tries: ['https://www.janglo.net/jerusalem/events', 'https://www.janglo.net/rss/jerusalem/events', 'https://www.janglo.net/events'] }),
+  generic({ name: 'Secret Jerusalem', group: 'Secret Jerusalem', types: ['Events', 'Community'], tries: ['https://www.secretjerusalem.com/feed/', 'https://www.secretjerusalem.com/'] }),
+];
 const SOURCES = [
   { name: 'Reconnect Shiurim', group: 'Reconnect Shiurim', types: ['Events', 'Spiritual'], area: 'Jerusalem & Surrounding', datedOnly: true,
     async collect() {
@@ -273,7 +356,7 @@ const SOURCES = [
       } else STATUS[this.name] = (STATUS[this.name] || 'no events found') + ' · scripts: ' + $('script[src]').map((i, el) => $(el).attr('src')).get().filter((s) => /chunks\/(pages|app)|list/.test(s)).slice(0, 6).join(' ') + ' · ' + snippet(r.text, /<main|<body/i);
       return [];
     } },
-];
+].concat(GENERIC_SOURCES);
 
 async function forward(item) {
   try {
@@ -330,7 +413,7 @@ async function run(seenSet, statusObj, force) {
   log('=== events sync done — ' + sent + ' new ===');
   return sent;
 }
-module.exports = { run, SOURCES, VERSION: 'ev-2026-09-25a' };
+module.exports = { run, SOURCES, VERSION: 'ev-2026-10-06a' };
 
 if (require.main === module) {
   // standalone: node events-sync.js  (needs INGEST_URL / INGEST_KEY)
