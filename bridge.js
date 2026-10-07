@@ -195,12 +195,17 @@ async function sendToQueue(item) {
     log('   ⊘ duplicate of a post from another group — skipped');
     return true;
   }
-  delete item._contentKey; delete item._kind; delete item._msgIds;
-  // a business already listed on the site (same phone): the new advert joins its page as a dated
-  // comment instead of becoming another post (Miriam, 6 Oct 2026: "merge them")
+  const itemKind = item._kind || ''; const senderD9 = String(item._senderPhone || '').replace(/\D/g, '').slice(-9);
+  delete item._contentKey; delete item._kind; delete item._msgIds; delete item._senderPhone;
+  // a business already listed on the site: ITS OWN new advert joins its page as a dated comment
+  // instead of becoming another post (Miriam, 6 Oct 2026: "merge them"). Only when the business
+  // itself wrote it: a question like "does anyone have Frankels' number?" answered with the shop's
+  // number stays a question (Miriam, 7 Oct 2026)
   try {
     const d9 = String(item.contactPhone || '').replace(/\D/g, '').slice(-9);
-    if (d9.length === 9 && curatable(item)) {
+    const asksSomething = itemKind === 'question' || /\?/.test(String(item.title || '')) || /\b(?:anyone|anybody|someone|does any|seeking|looking for|recommend)\b/i.test(String(item.title || '') + ' ' + String(item.memo || '').slice(0, 200));
+    const ownAd = d9.length === 9 && !asksSomething && (senderD9 === d9 || (!senderD9 && isAdvertText(String(item.title || '') + ' ' + String(item.memo || ''), !!(item.attachments || []).length)));
+    if (ownAd && curatable(item)) {
       const biz = Object.values(global._updItems || {}).find((u) => u && u.source === 'business' && String(u.contactPhone || '').replace(/\D/g, '').slice(-9) === d9);
       if (biz) {
         const r = await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
@@ -1479,6 +1484,7 @@ async function buildPost(cluster, chatName) {
     comments,
     lastCommentTime: comments.length ? Math.max(...comments.map(c => c.timestamp)) : undefined,
     _msgIds: msgs.map(m => m.id),
+    _senderPhone: String(first.phone || ''),   // who wrote it (the business merge below needs the sender, not a number quoted in a reply)
     contactPhone: contacts.phones[0] || '',
     contactWebsite: contacts.urls[0] || '',
     // Rentals go live immediately; everything else still waits for Miriam.
