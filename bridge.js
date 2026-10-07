@@ -190,10 +190,11 @@ function isAdvertText(t, hasPic) {
 }
 // ── Send one finished post into the admin review queue ───────────────────────
 // the words that make a business name its own ("Frankels", not "Shoe Outlet")
+const COMMON_WORDS = new Set(('take more special best great good new old big small little super top first last next other another every some many most much very really just only also even still well back here there where when what which while about above after again against along among around before behind below between both during each either enough except from into like near over same since than that them then these they this those through under until upon with without within your their ours yours have having been being does doing done make makes made making want wants need needs look looking find found give gives come comes know knows think thought help helps call calls text please thank thanks hello today tonight tomorrow week weekend month year time times open opening close closed free sale sales price prices cheap deal deals offer offers order orders delivery fast quick easy quality service services place places people person family friend friends house home room rooms city area areas street road number numbers info information detail details question questions answer answers speaking english yiddish hebrew french spanish russian jewish frum heimish local online phone email whatsapp group groups chat message messages post posts site website page pages link links').split(' '));
 const NAME_GENERIC = new Set(('shoe shoes outlet salon center centre health store shop home house kosher jerusalem israel the and wig wigs hair gym cleaning cleaner service services food bakery pizza restaurant catering delivery beauty nails clinic dental dentist doctor taxi travel agency real estate moving movers repair repairs phone computer kids baby toys books judaica gifts flowers photography photo studio design printing print car cars garage market supermarket makolet grocery pharmacy optics optical glasses furniture appliances electric electrician plumber plumbing handyman tutor tutoring lessons music school gan daycare camp hotel apartments rentals properties insurance accountant lawyer sheitel sheitels shaitel wigmaker dry cleaners laundry tailor alterations fitness yoga pilates dance swimming pool party events hall catering sushi burgers cafe coffee ice cream chocolate wine liquor butcher fish fruit vegetables bagels bread cakes cake').split(' '));
 function nameTokens(title) {
   const name = String(title || '').split(/[:—–|(]/)[0];
-  return name.toLowerCase().replace(/['’]s\b/g, '').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).map((w) => w.replace(/s$/, '')).filter((w) => w.length >= 4 && !NAME_GENERIC.has(w) && !NAME_GENERIC.has(w + 's'));
+  return name.toLowerCase().replace(/['’]s\b/g, '').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).map((w) => w.replace(/s$/, '')).filter((w) => w.length >= 5 && !NAME_GENERIC.has(w) && !NAME_GENERIC.has(w + 's') && !COMMON_WORDS.has(w) && !COMMON_WORDS.has(w + 's'));
 }
 // the listed business a question is about, by its own name appearing in the question
 function pageAskedAbout(text) {
@@ -203,38 +204,73 @@ function pageAskedAbout(text) {
     if (!u || u.source !== 'business' || u.status !== 'public') continue;
     const toks = nameTokens(u.title); if (!toks.length) continue;
     const n = toks.filter((t) => words.has(t)).length;
-    if (n > bestN) { best = u; bestN = n; }
+    // a one-word name must be that word; a longer name needs two of its words (or its one distinctive word)
+    if (n && (n >= 2 || toks.length === 1 || (toks.length === 2 && n === 1 && toks.every((t) => t.length >= 6))) && n > bestN) { best = u; bestN = n; }
   }
   return best;
 }
 const ASKED_FILE = path.join(__dirname, 'asked.json');
 let ASKED = {}; try { ASKED = JSON.parse(fs.readFileSync(ASKED_FILE, 'utf8')) || {}; } catch (e) { ASKED = {}; }
+const saveAsked = () => { try { const cut = Date.now() - 14 * 86400000; for (const k of Object.keys(ASKED)) if ((ASKED[k].at || 0) < cut) delete ASKED[k]; fs.writeFileSync(ASKED_FILE, JSON.stringify(ASKED)); } catch (e) {} };
+// Miriam confirms on the site (Miriam, 7 Oct 2026: "sent from site, not open on WhatsApp app"): the
+// email's button opens chutznik.org with a one-time token; the site records the token; the bridge
+// sees it within a minute and sends the note from her number. Only the token travels — who gets
+// what is decided here, from a real question in a group, never by whoever holds the link.
 async function askerConfirmEmail(a) {
   try {
-    const key = (a.jid || a.phone || a.who) + '|' + a.page.id; if (ASKED[key]) return; ASKED[key] = Date.now();
-    try { fs.writeFileSync(ASKED_FILE, JSON.stringify(ASKED)); } catch (e) {}
+    const key = (a.jid || a.phone || a.who) + '|' + a.page.id;
+    if (Object.values(ASKED).some((x) => x.key === key)) return;
+    const hourAgo = Date.now() - 3600000;
+    if (Object.values(ASKED).filter((x) => (x.at || 0) > hourAgo).length >= 6) { log('   📧 confirm email: more than six this hour — this one is only on the page'); return; }
+    const jid = a.jid || (String(a.phone || '').replace(/\D/g, '') ? String(a.phone).replace(/\D/g, '').replace(/^0/, '972') + '@s.whatsapp.net' : '');
+    if (!jid) { log('   📧 confirm email: no way to reach the asker — only on the page'); return; }
     const link = SITE + '/post/up_' + encodeURIComponent(String(a.page.id));
-    let digits = String(a.phone || '').replace(/\D/g, ''); if (!digits && /@s\.whatsapp\.net$/.test(a.jid)) digits = digitsOf(a.jid); if (digits.startsWith('0')) digits = '972' + digits.slice(1);
     const first = a.who.split(/\s+/)[0]; const biz = String(a.page.title || '').split(/[:—–|(]/)[0].trim();
     const note = 'Hi' + (first && first !== 'A' ? ' ' + first : '') + ', you asked about ' + biz + ' — it\'s on Chutznik, with the number and details: ' + link;
-    const wa = digits.length >= 11 ? 'https://wa.me/' + digits + '?text=' + encodeURIComponent(note) : '';
+    const token = require('crypto').randomBytes(16).toString('hex');
+    ASKED[token] = { key, jid, note, who: a.who, biz, pageId: String(a.page.id), at: Date.now() }; saveAsked();
+    const approve = SITE + '/israel/#approve/' + token + '?who=' + encodeURIComponent(first) + '&what=' + encodeURIComponent(biz);
     const html = '<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:#3a2920;max-width:560px">'
       + '<div style="font-family:Georgia,serif;font-size:21px;font-weight:700;color:#6b2a0c">' + digestEsc(a.who) + ' asked about ' + digestEsc(biz) + '</div>'
-      + '<div style="color:#9a8c80;font-size:13px;margin:4px 0 14px">in ' + digestEsc(a.group || 'WhatsApp') + ' · the question is now on the ' + digestEsc(biz) + ' page under ' + digestEsc(a.who.split(/\s+/)[0]) + '\'s name</div>'
+      + '<div style="color:#9a8c80;font-size:13px;margin:4px 0 14px">in ' + digestEsc(a.group || 'WhatsApp') + ' · the question is now on the ' + digestEsc(biz) + ' page under ' + digestEsc(first) + '\'s name</div>'
       + '<blockquote style="margin:0 0 16px;padding:10px 14px;border-left:3px solid #e3d9cd;background:#fbf7f2;border-radius:0 10px 10px 0;white-space:pre-wrap">' + digestEsc(a.question) + '</blockquote>'
-      + '<div style="margin:0 0 10px">The WhatsApp that would go to ' + digestEsc(first) + ', from your phone:</div>'
+      + '<div style="margin:0 0 10px">The WhatsApp that would go to ' + digestEsc(first) + ', from your number:</div>'
       + '<blockquote style="margin:0 0 18px;padding:10px 14px;border-left:3px solid #c4845f;background:#fff8f2;border-radius:0 10px 10px 0;white-space:pre-wrap">' + digestEsc(note) + '</blockquote>'
-      + (wa ? '<a href="' + wa + '" style="display:inline-block;background:#25d366;color:#fff;border-radius:99px;padding:12px 26px;text-decoration:none;font-weight:700;font-size:16px">📲 Send it on WhatsApp</a>'
-            : '<div style="color:#9a3a1a;font-weight:700">Their number is hidden by WhatsApp privacy settings — reply to them in the group instead.</div>')
+      + '<a href="' + approve + '" style="display:inline-block;background:#7a2c0c;color:#fff;border-radius:99px;padding:12px 26px;text-decoration:none;font-weight:700;font-size:16px">✓ Send it from Chutznik</a>'
       + '<div style="margin:16px 0 0"><a href="' + link + '" style="color:#c4845f">Open the ' + digestEsc(biz) + ' page</a></div>'
-      + '<div style="color:#b8aa9c;font-size:11px;margin-top:22px">Nothing is sent until you tap the button: WhatsApp opens with the message ready, and you press send.</div></div>';
-    const text = a.who + ' asked about ' + biz + ' in ' + (a.group || 'WhatsApp') + ':\n\n' + a.question + '\n\nThe question is on the ' + biz + ' page: ' + link + '\n\n' + (wa ? 'Send them the WhatsApp (opens ready to send): ' + wa : 'Their number is hidden — reply in the group.');
+      + '<div style="color:#b8aa9c;font-size:11px;margin-top:22px">Nothing goes out until you press Send on the site. The bridge then sends it from your number within a minute. The link works for a week.</div></div>';
+    const text = a.who + ' asked about ' + biz + ' in ' + (a.group || 'WhatsApp') + ':\n\n' + a.question + '\n\nThe question is on the ' + biz + ' page: ' + link + '\n\nThe WhatsApp that would go to ' + first + ':\n' + note + '\n\nSend it from Chutznik: ' + approve;
     const to = (global._digestTo && global._digestTo.length) ? global._digestTo : DIGEST_DEFAULT_TO;
     const r = await fetch(SITE + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' },
       body: JSON.stringify({ type: 'custom', to, subject: 'Confirm: tell ' + first + ' that ' + biz + ' is on Chutznik', body: text, html }) });
     log('   📧 confirm-to-send email → ' + to.join(', ') + ' (HTTP ' + r.status + ')');
   } catch (e) { log('   📧 confirm email: ' + (e && e.message)); }
 }
+// the tokens Miriam pressed Send on, every minute
+let _approvalsBusy = false;
+async function approvalsRun() {
+  if (_approvalsBusy || !INGEST_KEY) return; _approvalsBusy = true;
+  try {
+    const waiting = Object.keys(ASKED).filter((t) => !ASKED[t].sent); if (!waiting.length) return;
+    const r = await fetch(SITE + '/api/live-data?type=approvals&t=' + Date.now(), { headers: { 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, signal: AbortSignal.timeout(30000) });
+    if (!r.ok) return;
+    const list = await r.json(); const tokens = (Array.isArray(list) ? list : []).map((x) => String((x && x.token) || x || ''));
+    const done = [];
+    for (const t of tokens) {
+      const a = ASKED[t]; if (!a || a.sent) { if (!a) done.push(t); continue; }
+      const sock = global._sock; if (!sock) { log('📨 approved note waiting: WhatsApp not connected yet'); break; }
+      const who = optKey({ jid: a.jid }); if (who && OPTOUT.has(who)) { a.sent = Date.now(); a.skipped = 'opted out'; done.push(t); continue; }
+      try { await sock.sendMessage(a.jid, { text: a.note }); a.sent = Date.now(); done.push(t); log('📨 sent to ' + a.who + ' (' + a.jid.split('@')[0] + '): ' + a.biz + ' is on Chutznik'); }
+      catch (e) { log('📨 note to ' + a.who + ' failed: ' + (e && e.message)); a.tries = (a.tries || 0) + 1; if (a.tries >= 3) { a.sent = Date.now(); a.skipped = 'failed'; done.push(t); } }
+      await new Promise((res) => setTimeout(res, 3000));
+    }
+    saveAsked();
+    if (done.length) await fetch(SITE + '/api/heartbeat?action=approve', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ done }) }).catch(() => {});
+  } catch (e) { log('📨 approvals: ' + (e && e.message)); }
+  finally { _approvalsBusy = false; }
+}
+setInterval(approvalsRun, 60 * 1000);
+setTimeout(approvalsRun, 45 * 1000);
 async function sendToQueue(item) {
   // Same text already came through another group in the last few hours? Skip.
   if (item._contentKey && isRecentDuplicate(item._contentKey, item.created || Date.now())) {
