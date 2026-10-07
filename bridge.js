@@ -1754,6 +1754,8 @@ async function pullSettings() {
     // without dragging a week of everything else into the review queue at once.
     if (j.BACKFILL_CHATS !== undefined) { const list = (Array.isArray(j.BACKFILL_CHATS) ? j.BACKFILL_CHATS : []).map((x) => String(x || '').trim()).filter(Boolean); if (JSON.stringify(list) !== JSON.stringify(global._backfillChats || [])) { global._backfillChats = list; BACKFILL.chats = {}; saveBackfill(); log('⚙️  backfill limited to: ' + (list.join(' | ') || '(every group)')); } }
     // RETITLE {stamp}: business-first titles for the past posts, once per stamp (titles only, nothing is published)
+    // Chaim V'Chesed's articles as posts: once per stamp, and again every week on its own (Miriam, 7 Oct 2026)
+    if (j.CVC && typeof j.CVC === 'object' && j.CVC.stamp) { global._cvc = { stamp: String(j.CVC.stamp), limit: Number(j.CVC.limit) || 0 }; setTimeout(cvcRun, 5000); }
     if (j.RETITLE && typeof j.RETITLE === 'object' && j.RETITLE.stamp) { global._retitle = { stamp: String(j.RETITLE.stamp), days: Number(j.RETITLE.days) || 92, all: !!j.RETITLE.all }; setTimeout(retitleBacklog, 3000); }
     // MILESTONES {stamp, to: 'preview'|'members'}: the "three months of Chutznik" email, once per stamp (Miriam, 5 Oct 2026)
     if (j.MILESTONES && typeof j.MILESTONES === 'object' && j.MILESTONES.stamp) { global._milestones = { stamp: String(j.MILESTONES.stamp), to: String(j.MILESTONES.to || 'preview').toLowerCase() }; setTimeout(milestonesRun, 2000); }
@@ -1766,6 +1768,27 @@ async function pullSettings() {
 setInterval(pullSettings, 5 * 60 * 1000); setTimeout(pullSettings, 20 * 1000);
 const RETITLE_FILE = path.join(__dirname, 'retitle-done.json');
 let _retitleBusy = false;
+const CVC_FILE = path.join(__dirname, 'cvc-done.json');
+let _cvcBusy = false;
+async function cvcRun(force) {
+  if (_cvcBusy || !INGEST_KEY) return;
+  let done = {}; try { done = JSON.parse(fs.readFileSync(CVC_FILE, 'utf8')) || {}; } catch (e) {}
+  const want = global._cvc; const stampNew = want && !done[want.stamp];
+  const weekly = (Date.now() - (done._lastRun || 0)) > 7 * 86400000 && !!done._lastRun;
+  if (!stampNew && !weekly && !force) return;
+  _cvcBusy = true;
+  try {
+    if (!fs.existsSync(path.join(__dirname, 'scripts', 'cvc-sync.js'))) { try { await syncExtras(); } catch (e) {} }
+    try { delete require.cache[require.resolve('./scripts/cvc-sync.js')]; } catch (e) {}
+    let C; try { C = require('./scripts/cvc-sync.js'); } catch (e) { log('📚 Chaim V\'Chesed: script not here yet — next round'); return; }
+    if (stampNew) { done[want.stamp] = { startedAt: Date.now() }; fs.writeFileSync(CVC_FILE, JSON.stringify(done)); }
+    const report = await C.run({ SITE, KEY: INGEST_KEY, log, limit: want ? want.limit : 0 });
+    done._lastRun = Date.now(); if (stampNew) done[want.stamp].report = report; fs.writeFileSync(CVC_FILE, JSON.stringify(done));
+    log('📚 ' + report);
+  } catch (e) { log('📚 Chaim V\'Chesed: ' + (e && e.message)); }
+  finally { _cvcBusy = false; }
+}
+setInterval(cvcRun, 6 * 3600 * 1000);
 async function retitleBacklog() {
   const want = global._retitle; if (!want || !INGEST_KEY || _retitleBusy) return;
   let done = {}; try { done = JSON.parse(fs.readFileSync(RETITLE_FILE, 'utf8')) || {}; } catch (e) {}
@@ -2062,7 +2085,7 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+const EXTRA_FILES = ['scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
