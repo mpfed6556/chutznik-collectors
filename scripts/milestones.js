@@ -27,7 +27,7 @@ async function gather(SITE, KEY) {
     getJson(SITE + '/api/live-data?type=updates' + t).catch(() => []),
     getJson(SITE + '/api/live-data?type=views' + t).catch(() => ({})),
     getJson(SITE + '/api/live-data?type=searches' + t, H).catch(() => []),
-    getJson(SITE + '/api/live-data?type=members' + t, H).catch(() => []),
+    getJson(SITE + '/api/live-data?type=members&withMentioned=1' + t, H).catch(() => []),
   ]);
   const now = Date.now(), since = now - 92 * 86400000;
   const live = (Array.isArray(updates) ? updates : []).filter((u) => u && u.status === 'public' && tsOf(u) >= since && tsOf(u) <= now + 60000 && !/^wa_(BABYSIT|CLEANERS)$/.test(String(u.id)));
@@ -79,7 +79,7 @@ async function gather(SITE, KEY) {
     total: all.length, external: live.length, mine: mine.length, dayCount: dayKeys.length,
     perDay: dayKeys.length ? Math.round(all.length / dayKeys.length) : 0, busiest, busiestN: busiest ? days[busiest] : 0, firstDay,
     rentals: cat('rental'), businesses: cat('company'), jobs: cat('jobs'), events: cat('events'), healthcare: cat('healthcare'), places: cat('place'),
-    comments, members: (Array.isArray(members) ? members : []).length, newMembers, top, searches: topTerms,
+    comments, members: (Array.isArray(members) ? members : []).filter((m) => !m.mentioned).length, newMembers, top, searches: topTerms,
     siteVisits: visitDays.reduce((a, b) => a + b, 0), memberList: Array.isArray(members) ? members : [],
   };
 }
