@@ -898,18 +898,21 @@ function rentalFacts(text) {
     if (re === P[3]) n *= 1000;
     if (n < 100 || n > 200000) continue;
     out.price = String(n);
+    const hit = mm[0]; out.currency = /\$|usd/.test(hit) ? '$' : /€|eur/.test(hit) ? '€' : /₪|nis|shek|\bsh\b/.test(hit) ? '₪' : '';
     const unit = mm[2] || '';
     if (/night|nite/.test(unit)) out.priceMode = 'night';
     else if (/month|mo/.test(unit)) out.priceMode = 'month';
-    else if (/week/.test(unit)) out.priceMode = 'night';
+    else if (/week/.test(unit)) out.priceMode = 'week';
     break;
   }
+  // a unit only when the ad gave one; long term is monthly by nature; a short-term ad with a bare
+  // number stays bare — it may be the price of the whole chag, not a night (Miriam, 7 Oct 2026)
   if (out.price && !out.priceMode) {
     if (/\b(per night|\/night|a night|nightly|\/n\b)\b/.test(low)) out.priceMode = 'night';
     else if (/\b(per month|\/month|a month|monthly|\/m\b)\b/.test(low)) out.priceMode = 'month';
-    else out.priceMode = out.term === 'short' ? 'night' : 'month';
+    else if (/\b(per week|\/week|a week|weekly|\/wk\b)\b/.test(low)) out.priceMode = 'week';
+    else if (out.term === 'long') out.priceMode = 'month';
   }
-  if (!out.priceMode && out.term) out.priceMode = out.term === 'short' ? 'night' : 'month';
   return out;
 }
 
