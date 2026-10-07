@@ -189,6 +189,52 @@ function isAdvertText(t, hasPic) {
   return AD_RE.test(t) || phonesInText(t).length > 0 || /@|https?:\/\//.test(t) || (hasPic && t.length < 40);   // a flyer with a word or two is an advert
 }
 // ── Send one finished post into the admin review queue ───────────────────────
+// the words that make a business name its own ("Frankels", not "Shoe Outlet")
+const NAME_GENERIC = new Set(('shoe shoes outlet salon center centre health store shop home house kosher jerusalem israel the and wig wigs hair gym cleaning cleaner service services food bakery pizza restaurant catering delivery beauty nails clinic dental dentist doctor taxi travel agency real estate moving movers repair repairs phone computer kids baby toys books judaica gifts flowers photography photo studio design printing print car cars garage market supermarket makolet grocery pharmacy optics optical glasses furniture appliances electric electrician plumber plumbing handyman tutor tutoring lessons music school gan daycare camp hotel apartments rentals properties insurance accountant lawyer sheitel sheitels shaitel wigmaker dry cleaners laundry tailor alterations fitness yoga pilates dance swimming pool party events hall catering sushi burgers cafe coffee ice cream chocolate wine liquor butcher fish fruit vegetables bagels bread cakes cake').split(' '));
+function nameTokens(title) {
+  const name = String(title || '').split(/[:—–|(]/)[0];
+  return name.toLowerCase().replace(/['’]s\b/g, '').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).map((w) => w.replace(/s$/, '')).filter((w) => w.length >= 4 && !NAME_GENERIC.has(w) && !NAME_GENERIC.has(w + 's'));
+}
+// the listed business a question is about, by its own name appearing in the question
+function pageAskedAbout(text) {
+  const words = new Set(String(text || '').toLowerCase().replace(/['’]s\b/g, '').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).map((w) => w.replace(/s$/, '')).filter(Boolean));
+  let best = null, bestN = 0;
+  for (const u of Object.values(global._updItems || {})) {
+    if (!u || u.source !== 'business' || u.status !== 'public') continue;
+    const toks = nameTokens(u.title); if (!toks.length) continue;
+    const n = toks.filter((t) => words.has(t)).length;
+    if (n > bestN) { best = u; bestN = n; }
+  }
+  return best;
+}
+const ASKED_FILE = path.join(__dirname, 'asked.json');
+let ASKED = {}; try { ASKED = JSON.parse(fs.readFileSync(ASKED_FILE, 'utf8')) || {}; } catch (e) { ASKED = {}; }
+async function askerConfirmEmail(a) {
+  try {
+    const key = (a.jid || a.phone || a.who) + '|' + a.page.id; if (ASKED[key]) return; ASKED[key] = Date.now();
+    try { fs.writeFileSync(ASKED_FILE, JSON.stringify(ASKED)); } catch (e) {}
+    const link = SITE + '/post/up_' + encodeURIComponent(String(a.page.id));
+    let digits = String(a.phone || '').replace(/\D/g, ''); if (!digits && /@s\.whatsapp\.net$/.test(a.jid)) digits = digitsOf(a.jid); if (digits.startsWith('0')) digits = '972' + digits.slice(1);
+    const first = a.who.split(/\s+/)[0]; const biz = String(a.page.title || '').split(/[:—–|(]/)[0].trim();
+    const note = 'Hi' + (first && first !== 'A' ? ' ' + first : '') + ', you asked about ' + biz + ' — it\'s on Chutznik, with the number and details: ' + link;
+    const wa = digits.length >= 11 ? 'https://wa.me/' + digits + '?text=' + encodeURIComponent(note) : '';
+    const html = '<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:#3a2920;max-width:560px">'
+      + '<div style="font-family:Georgia,serif;font-size:21px;font-weight:700;color:#6b2a0c">' + digestEsc(a.who) + ' asked about ' + digestEsc(biz) + '</div>'
+      + '<div style="color:#9a8c80;font-size:13px;margin:4px 0 14px">in ' + digestEsc(a.group || 'WhatsApp') + ' · the question is now on the ' + digestEsc(biz) + ' page under ' + digestEsc(a.who.split(/\s+/)[0]) + '\'s name</div>'
+      + '<blockquote style="margin:0 0 16px;padding:10px 14px;border-left:3px solid #e3d9cd;background:#fbf7f2;border-radius:0 10px 10px 0;white-space:pre-wrap">' + digestEsc(a.question) + '</blockquote>'
+      + '<div style="margin:0 0 10px">The WhatsApp that would go to ' + digestEsc(first) + ', from your phone:</div>'
+      + '<blockquote style="margin:0 0 18px;padding:10px 14px;border-left:3px solid #c4845f;background:#fff8f2;border-radius:0 10px 10px 0;white-space:pre-wrap">' + digestEsc(note) + '</blockquote>'
+      + (wa ? '<a href="' + wa + '" style="display:inline-block;background:#25d366;color:#fff;border-radius:99px;padding:12px 26px;text-decoration:none;font-weight:700;font-size:16px">📲 Send it on WhatsApp</a>'
+            : '<div style="color:#9a3a1a;font-weight:700">Their number is hidden by WhatsApp privacy settings — reply to them in the group instead.</div>')
+      + '<div style="margin:16px 0 0"><a href="' + link + '" style="color:#c4845f">Open the ' + digestEsc(biz) + ' page</a></div>'
+      + '<div style="color:#b8aa9c;font-size:11px;margin-top:22px">Nothing is sent until you tap the button: WhatsApp opens with the message ready, and you press send.</div></div>';
+    const text = a.who + ' asked about ' + biz + ' in ' + (a.group || 'WhatsApp') + ':\n\n' + a.question + '\n\nThe question is on the ' + biz + ' page: ' + link + '\n\n' + (wa ? 'Send them the WhatsApp (opens ready to send): ' + wa : 'Their number is hidden — reply in the group.');
+    const to = (global._digestTo && global._digestTo.length) ? global._digestTo : DIGEST_DEFAULT_TO;
+    const r = await fetch(SITE + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' },
+      body: JSON.stringify({ type: 'custom', to, subject: 'Confirm: tell ' + first + ' that ' + biz + ' is on Chutznik', body: text, html }) });
+    log('   📧 confirm-to-send email → ' + to.join(', ') + ' (HTTP ' + r.status + ')');
+  } catch (e) { log('   📧 confirm email: ' + (e && e.message)); }
+}
 async function sendToQueue(item) {
   // Same text already came through another group in the last few hours? Skip.
   if (item._contentKey && isRecentDuplicate(item._contentKey, item.created || Date.now())) {
@@ -196,7 +242,30 @@ async function sendToQueue(item) {
     return true;
   }
   const itemKind = item._kind || ''; const senderD9 = String(item._senderPhone || '').replace(/\D/g, '').slice(-9);
-  delete item._contentKey; delete item._kind; delete item._msgIds; delete item._senderPhone;
+  const senderPhone = String(item._senderPhone || ''), senderJid = String(item._senderJid || ''), senderName = String(item.senderName || '').trim();
+  delete item._contentKey; delete item._kind; delete item._msgIds; delete item._senderPhone; delete item._senderJid;
+  // someone asks about something Chutznik already has — a listed business ("does anyone have
+  // Frankels' number?"): her question goes onto that page under her own name, and Miriam gets an
+  // email with a one-tap WhatsApp telling the asker it is on Chutznik (Miriam, 7 Oct 2026:
+  // "keep doing that! … with their name … email me to confirm before sending")
+  try {
+    const asks = itemKind === 'question' || /\?/.test(String(item.title || '') + String(item.memo || '').slice(0, 300)) || /\b(?:anyone|anybody|someone|does any|seeking|looking for|recommend)\b/i.test(String(item.title || '') + ' ' + String(item.memo || '').slice(0, 200));
+    if (asks && curatable(item)) {
+      const page = pageAskedAbout(String(item.title || '') + ' ' + String(item.memo || ''));
+      if (page) {
+        const who = senderName && !/^\+?\d[\d\s-]*$/.test(senderName) ? senderName : 'A member';
+        const question = String(item.memo || item.title || '').replace(/\n\n🌐 Translated from[\s\S]*$/, '').trim().slice(0, 1200);
+        const r = await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
+          body: JSON.stringify({ file: 'updates', action: 'comment', group: item.group || '', target: { id: String(page.id) }, comment: { author: who, content: question, timestamp: item.created || Date.now() } }) });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok && j.ok) {
+          log('   💬 ' + who + ' asked about "' + String(page.title || '').slice(0, 40) + '" — the question is on that page');
+          await askerConfirmEmail({ who, question, page, group: item.group || '', phone: senderPhone, jid: senderJid });
+          return true;
+        }
+      }
+    }
+  } catch (e) { log('   💬 asked-about: ' + (e && e.message)); }
   // a business already listed on the site: ITS OWN new advert joins its page as a dated comment
   // instead of becoming another post (Miriam, 6 Oct 2026: "merge them"). Only when the business
   // itself wrote it: a question like "does anyone have Frankels' number?" answered with the shop's
@@ -1485,6 +1554,7 @@ async function buildPost(cluster, chatName) {
     lastCommentTime: comments.length ? Math.max(...comments.map(c => c.timestamp)) : undefined,
     _msgIds: msgs.map(m => m.id),
     _senderPhone: String(first.phone || ''),   // who wrote it (the business merge below needs the sender, not a number quoted in a reply)
+    _senderJid: String(first.jid || ''),
     contactPhone: contacts.phones[0] || '',
     contactWebsite: contacts.urls[0] || '',
     // Rentals go live immediately; everything else still waits for Miriam.
