@@ -949,6 +949,7 @@ async function intake(sock, m, chatName) {
   // a home offered or looked for is a Rental in ANY group — "studios to rent in Rechavia?",
   // "vacation rental on Paran after Sukkos" — so it goes public with the rentals (Miriam, 25 Sep 2026)
   if (kind !== 'rental' && kind !== 'chatter' && HOUSING_RE.test(body) && RENT_WORD_RE.test(body) && body.length > 20 && !GROUP_NOTICE_RE.test(body)) kind = 'rental';
+  if (kind === 'rental' && isRaffle(body)) kind = 'info';
   return { id: key.id || String(Date.now()+Math.random()), ts, chat: chatName, sender, phone, body, media, docText, kind,
            quotedId, quotedText, mentions, cards, link,
            // where a private "your post is up" note can be sent (real number first, privacy id as fallback)
@@ -1192,6 +1193,10 @@ const NOT_JOB_RE = /\b(this (?:chat|group)|the (?:chat|group)|admins?|rules|clog
 // group it arrived in (Miriam, 11 Sep 2026)
 const APPEAL_RE = /\b(appeal|tzedak\w*|tzedok\w*|charity|charidy|gofundme|rayze|jgive|donat(?:e|ion|ions) (?:to|for|now|here|today|generously)|please (?:donate|give|help)|help (?:us|her|him|them|the \w+ family) (?:pay|cover|afford|continue|raise)|chesed fund|hachnosas kallah|hachnasat kallah|medical (?:bills|treatments?|expenses)|cancer|chemo|dialysis|in the (?:zechus|merit) of|refuah shl\w+|yeshuah|tehillim|mi shebeirach|a devoted (?:mother|father|wife|husband)|mother of \d+|father of \d+|widow|orphans?|yesomim|almanah)\b/i;
 function isAppeal(text) { return APPEAL_RE.test(String(text || '')); }
+// a lottery, raffle or prize draw is a fundraiser, never a rental, whatever home it offers as the
+// prize ("3 days left to join the huge United Hatzalah lottery" was filed as a ₪120,000 rental; Miriam, 7 Oct 2026)
+const RAFFLE_RE = /\b(lottery|lotteries|raffle|raffles|prize draw|the draw will|grand prize|winner will|chinese auction|silent auction)\b|הגרלה|הגרלת|פרס ראשון/i;
+function isRaffle(text) { const t = String(text || ''); return RAFFLE_RE.test(t) && !/\bfor rent\b|\bto let\b|\bsublet\b|להשכרה/i.test(t); }
 function looksLikeJob(text) {
   const t = String(text || '');
   return JOB_RE.test(t) && !NOT_JOB_RE.test(t) && !isAppeal(t);
@@ -1444,6 +1449,7 @@ async function buildPost(cluster, chatName) {
   if (kind !== 'rental' && isRentalChat(chatName) && RENT_STRONG.test(allText)) { kind = 'rental'; title = rentalTitle(first.body + ' ' + allText); }
   const jobChat = isJobChat(chatName);
   if (jobChat && kind !== 'rental' && looksLikeJob(allText)) kind = 'job';
+  if (isRaffle(allText)) kind = 'appeal';
   if (isAppeal(allText) && kind !== 'rental') kind = 'appeal';
   // A rental is a Rental. The generic classifier was tagging plenty of them
   // "Items / Questions", which is why apartments showed up under questions.
