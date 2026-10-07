@@ -1781,7 +1781,7 @@ async function cvcRun(force) {
     if (!fs.existsSync(path.join(__dirname, 'scripts', 'cvc-sync.js'))) { try { await syncExtras(); } catch (e) {} }
     try { delete require.cache[require.resolve('./scripts/cvc-sync.js')]; } catch (e) {}
     let C; try { C = require('./scripts/cvc-sync.js'); } catch (e) { log('📚 Chaim V\'Chesed: script not here yet — next round'); return; }
-    if (stampNew) { done[want.stamp] = { startedAt: Date.now() }; fs.writeFileSync(CVC_FILE, JSON.stringify(done)); }
+    if (stampNew) done[want.stamp] = { startedAt: Date.now() };   // on disk only when finished: a restart resumes where it stopped
     const report = await C.run({ SITE, KEY: INGEST_KEY, log, limit: want ? want.limit : 0 });
     done._lastRun = Date.now(); if (stampNew) done[want.stamp].report = report; fs.writeFileSync(CVC_FILE, JSON.stringify(done));
     log('📚 ' + report);
@@ -1795,7 +1795,7 @@ async function retitleBacklog() {
   if (done[want.stamp]) return;
   _retitleBusy = true;
   try {
-    done[want.stamp] = { startedAt: Date.now() }; fs.writeFileSync(RETITLE_FILE, JSON.stringify(done));
+    done[want.stamp] = { startedAt: Date.now(), running: true };   // written to disk only when finished, so a restart resumes it
     const r = await fetch(SITE + '/api/live-data?type=updates&queue=1&t=' + Date.now()); const all = r.ok ? await r.json() : [];
     const since = Date.now() - want.days * 86400000;
     // every external post (WhatsApp, magazine, feeds): title and text checked against each other and
@@ -2123,6 +2123,11 @@ async function selfUpdate() {
     if (code.length < 20000 || !/^\/\/|^'use strict'|^const |^#!/.test(code)) return;
     const cur = fs.readFileSync(__filename, 'utf8');
     if (code === cur) return;
+    const hash = require('crypto').createHash('sha256').update(code).digest('hex');
+    const verFile = path.join(__dirname, 'self-version.txt');
+    let applied = ''; try { applied = fs.readFileSync(verFile, 'utf8').trim(); } catch (e) {}
+    if (applied === hash) return;   // this very version was already applied: not a new one, no restart (7 Oct 2026: the bridge was restarting every ten minutes)
+    fs.writeFileSync(verFile, hash);
     const tmp = path.join(__dirname, 'bridge.next.js');
     fs.writeFileSync(tmp, code);
     try { require('child_process').execFileSync(process.execPath, ['--check', tmp], { stdio: 'ignore' }); }
