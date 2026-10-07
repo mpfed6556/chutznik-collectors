@@ -68,10 +68,10 @@ async function gather(SITE, KEY) {
   const isLong = (u) => !/\bshort[- ]term\b/i.test(u.title || '') && (u.term === 'long' || (u.term !== 'short' && u.priceMode === 'month') || /\blong[- ]term\b/i.test(u.title || ''));
   const offers = pubAll.filter((u) => (u.types || []).includes('Rental') && !/^wanted/i.test(u.title || '') && isLong(u)).sort(byTime);
   let rentals = offers.filter((u) => !junkTitle(u) && now - tsOf(u) < 86400000); if (rentals.length < 10) rentals = offers.slice(0, 12);
-  const jobs = pubAll.filter((u) => !junkTitle(u) && (u.types || []).includes('Jobs') && !/^wa_(BABYSIT|CLEANERS)$/.test(String(u.id)) && !/\bflying to\b|\bseeking (?:someone|a )|^(?:my name|i'?m |i am |we are a )/i.test(u.title || '')).sort(byTime).slice(0, 10);
+  const jobs = pubAll.filter((u) => !junkTitle(u) && (u.types || []).includes('Jobs') && !/^wa_(BABYSIT|CLEANERS)$/.test(String(u.id)) && !/\bflying to\b|\bseeking (?:someone|a )|^(?:my name|i'?m |i am |we are a |we have |for rent|seeking|looking for|wanted)/i.test(u.title || '') && !/\bin the us\b|\busa\b|\bremote\b|\+1\d{10}|\$\s?\d/i.test((u.title || '') + ' ' + (u.memo || '').slice(0, 300))).sort(byTime).slice(0, 10);
   const wigRe = /sheitel|shaitel|sheitl|shaytel|\bwigs?\b/i, wigWork = /macher|stylist|salon|wash|\bset\b|cut|styl|repair|colou?r|wigs|hair/i;
   const wigs = pubAll.concat((Array.isArray(posts) ? posts : []).filter((p) => p && !p.isExternal))
-    .filter((x) => { const t = (x.title || '') + ' ' + (x.memo || ''); return wigRe.test(t) && wigWork.test(t) && !/looking to hire|seeking .*salons|wanted:/i.test(x.title || ''); })
+    .filter((x) => { const t = (x.title || '') + ' ' + (x.memo || ''); return wigRe.test(t) && wigWork.test(t) && !/looking to hire|seeking .*salons|wanted:|for sale|pre-owned|selling|\bsale\b|giving away/i.test(x.title || ''); })
     .sort(byTime);
   const seenPhone = new Set(); const wigList = wigs.filter((x) => { const k = String(x.contactPhone || '').replace(/\D/g, '').slice(-9) || x.id; if (seenPhone.has(k)) return false; seenPhone.add(k); return true; });
   return {
@@ -96,66 +96,55 @@ function rentalLine(x) {
   const price = x.price ? '₪' + n(x.price) + (x.priceMode === 'night' ? '/night' : '/month') : '';
   return [area, beds, price].filter(Boolean).join(' · ');
 }
-// Miriam's design (6 Oct 2026): banner, greeting, two big numbers, six picture tiles, three
-// sections each with a photo and a two-column list, one button. Fluid on a phone.
+// The daily sheet's own stationery (Miriam, 7 Oct 2026: "the same exact template as the
+// calendar PDF I get each day"): the watercolour header with the title baked in, one card per
+// listing with a coloured bar, a round badge, the title and the facts, the skyline at the foot.
+// Shaitel machers first, then the newest rentals, then the newest jobs. Every card opens its post.
+const SHEET = { paper: '#fdf6ea', head: '#a3541a', rule: '#d9b48c', card: '#14161b', sub: '#6d5a4e', chev: '#c07a4a',
+  wig: { bar: '#e0648a', pale: '#fbdde6', glyph: '✂' }, rent: { bar: '#c4845f', pale: '#f5e2d6', glyph: '⌂' }, job: { bar: '#0ea5e9', pale: '#d3eefb', glyph: '⚒' } };
+const clean = (v) => String(v || '').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '').replace(/\s+/g, ' ').trim();
+const bedsOf = (x) => { if (x.beds === 0 || x.beds === '0') return 'Studio'; const b = parseInt(x.beds, 10) || parseInt((String(x.title || '').match(/(\d)\s*bdrm/i) || [])[1], 10); return b > 0 ? b + ' bdrm' : ''; };
+const whereOf = (x) => clean((Array.isArray(x.communities) && x.communities.filter(Boolean)[0]) || String(x.area || '').replace(/ & Surrounding/, '') || 'Jerusalem');
+const rentSub = (x) => [whereOf(x), x.term === 'short' ? 'short term' : 'long term', x.price ? 'NIS ' + n(parseInt(String(x.price).replace(/\D/g, ''), 10) || 0) + (x.priceMode === 'night' ? ' / night' : ' / month') : '', x.size ? x.size + ' m²' : '', clean(x.contactPhone)].filter(Boolean).join('  ·  ');
+const firstLine = (x) => { const parts = String(x.memo || '').split(/\n|(?<=[.!?])\s/).map(clean).filter((l) => l.length > 12 && !/^(?:hi|hello|hey|shalom|please see|see (?:the )?(?:flyer|attached)|attached|flyer attached|🌐|translated from)/i.test(l) && !/^[\d\s+()-]+$/.test(l)); return (parts[0] || '').slice(0, 90); };
+const jobSub = (x) => [whereOf(x), firstLine(x) !== clean(x.title) ? firstLine(x) : '', clean(x.contactPhone)].filter(Boolean).join('  ·  ');
+const wigSub = (x) => [whereOf(x), firstLine(x) !== clean(x.title) ? firstLine(x) : '', clean(x.contactPhone)].filter(Boolean).join('  ·  ');
+function sheetLists(st) {
+  return { wigs: st.wigList.slice(0, 12), rentals: st.rentalList.slice(0, 10), jobs: st.jobList.slice(0, 10) };
+}
 function build(SITE, st, member) {
   const first = (member && member.name ? String(member.name).trim().split(' ')[0] : '') || 'there';
   const unsub = member && member.email ? SITE + '/api/email-unsubscribe?token=' + Buffer.from(String(member.email).toLowerCase()).toString('base64url') : SITE;
-  const A = (href, label, extra) => '<a href="' + esc(href) + '" style="color:' + C.brown + ';text-decoration:none;' + (extra || '') + '">' + label + '</a>';
-  const serif = "font-family:Georgia,'Times New Roman',serif";
-  const sans = "font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif";
-  const tiles = [['ic-rentals-mail.png', 'Rentals', '/search/rentals'], ['ic-place-mail.png', 'Restaurants', '/search/restaurants'], ['ic-cleaners-mail.png', 'Cleaners', '/post/up_wa_CLEANERS'],
-    ['ic-person-mail.png', 'Babysitters', '/post/up_wa_BABYSIT'], ['ic-mikva-mail.png', 'Mikvaot', '/search/mikva'], ['ic-doctors-mail.png', 'Doctors', '/search/doctors']];
-  const tile = (t) => '<td class="tile" width="16.6%" style="padding:4px;vertical-align:top"><a href="' + esc(SITE + t[2]) + '" style="display:block;text-decoration:none;background:#fff;border:1px solid ' + C.line + ';border-radius:14px;padding:14px 2px 10px;text-align:center">'
-    + '<img src="' + esc(SITE + '/img/' + t[0]) + '" width="44" height="44" alt="" style="display:block;margin:0 auto 6px;width:44px;height:44px;border:0"><span style="' + sans + ';font-size:13px;font-weight:700;color:' + C.ink + '">' + esc(t[1]) + '</span></a></td>';
-  const item = (x, sub) => '<div style="padding:7px 0;border-bottom:1px solid ' + C.line + '">' + A(linkOf(SITE, x), esc(String(x.title || '').replace(/^wanted:\s*/i, '').slice(0, 60)), 'font-weight:700;font-size:14px') + (sub ? '<div style="' + sans + ';font-size:12px;color:' + C.mute + ';margin-top:2px">' + esc(sub) + '</div>' : '') + '</div>';
-  const twoCols = (list, subOf) => { const half = Math.ceil(list.length / 2); const col = (arr) => '<td class="col" width="50%" style="vertical-align:top;padding:0 8px">' + arr.map((x) => item(x, subOf(x))).join('') + '</td>';
-    return '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>' + col(list.slice(0, half)) + col(list.slice(half)) + '</tr></table>'; };
-  const rentals = st.rentalList.slice(0, 6), jobs = st.jobList.slice(0, 6), wigs = st.wigList.slice(0, 10);
-  const rentalPhoto = picOf(SITE, st.rentalList.find((x) => picOf(SITE, x))) || SITE + '/img/cal-jerusalem.webp';
-  const wigPhoto = picOf(SITE, st.wigList.find((x) => picOf(SITE, x)));
-  const jobPhoto = picOf(SITE, st.jobList.find((x) => picOf(SITE, x)));
-  const stat = (icon, num, label) => '<td class="stat" width="50%" style="padding:6px 10px;vertical-align:middle"><table cellpadding="0" cellspacing="0" style="margin:0 auto"><tr>'
-    + '<td style="vertical-align:middle;padding-right:12px"><img src="' + esc(SITE + '/img/' + icon) + '" width="52" height="52" alt="" style="display:block;width:52px;height:52px;border:0"></td>'
-    + '<td style="vertical-align:middle;text-align:left"><div class="n" style="' + serif + ';font-size:40px;font-weight:700;color:' + C.brown + ';line-height:1">' + esc(num) + '</div><div style="' + sans + ';font-size:12px;letter-spacing:2.5px;color:' + C.mute + ';margin-top:2px">' + esc(label) + '</div></td></tr></table></td>';
-  const section = (opts) => '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;margin-top:16px;background:#fff;border:1px solid ' + C.line + ';border-radius:18px"><tr>'
-    + '<td class="photo" width="190" style="vertical-align:top;padding:0;border-radius:18px 0 0 18px;overflow:hidden">' + (opts.photo ? '<img src="' + esc(opts.photo) + '" width="190" alt="" class="photo-img" style="display:block;width:190px;height:230px;object-fit:cover;border-radius:18px 0 0 18px;border:0">' : '<div class="photo-img" style="width:190px;height:230px;background:' + C.cream + ';border-radius:18px 0 0 18px;text-align:center;font-size:60px;line-height:230px">' + opts.emoji + '</div>') + '</td>'
-    + '<td class="sec-td" style="vertical-align:top;padding:16px 16px 10px">'
-    + '<table width="100%" cellpadding="0" cellspacing="0"><tr><td style="vertical-align:top"><table cellpadding="0" cellspacing="0"><tr><td style="vertical-align:middle;padding-right:10px">' + (opts.icon ? '<img src="' + esc(SITE + '/img/' + opts.icon) + '" width="40" height="40" alt="" style="display:block;width:40px;height:40px;border:0">' : '<div style="font-size:30px;line-height:40px;width:40px;text-align:center">' + opts.glyph + '</div>') + '</td>'
-    + '<td style="vertical-align:middle"><div style="' + serif + ';font-size:24px;font-weight:700;color:' + C.brown + ';line-height:1.1">' + esc(opts.title) + '</div><div style="' + sans + ';font-size:13px;color:' + C.mute + ';margin-top:3px">' + esc(opts.sub) + '</div></td></tr></table></td>'
-    + (opts.all ? '<td style="vertical-align:top;text-align:right;white-space:nowrap">' + A(SITE + opts.all[1], esc(opts.all[0]) + ' →', 'display:inline-block;border:1px solid ' + C.line + ';border-radius:99px;padding:8px 14px;font-size:12px;font-weight:700;background:' + C.cream) + '</td>' : '') + '</tr></table>'
-    + '<div style="height:8px"></div>' + opts.body + '</td></tr></table>';
-  const html = '<!--[if mso]><style>table{border-collapse:collapse}</style><![endif]-->'
-    + '<style>@media only screen and (max-width:620px){ .wrap{padding:0 !important} .card{border-radius:0 !important} .tile{display:inline-block !important;width:32% !important;box-sizing:border-box} .col{display:block !important;width:100% !important} .photo,.sec-td{display:block !important;width:100% !important;box-sizing:border-box !important} .photo{border-radius:18px 18px 0 0 !important} .photo-img{width:100% !important;height:170px !important;border-radius:18px 18px 0 0 !important} .big{font-size:34px !important} .stat{display:inline-block !important;width:49% !important;box-sizing:border-box !important;padding:6px 2px !important} .stat .n{font-size:30px !important} }</style>'
-    + '<div class="wrap" style="background:' + C.bg + ';padding:16px 8px"><div class="card" style="max-width:680px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;' + sans + ';color:' + C.ink + ';line-height:1.45">'
-    // banner: the painting with the name on it, flowers at the sides, a curved edge
-    + '<a href="' + esc(SITE + '/israel') + '" style="display:block;text-decoration:none"><img src="' + esc(SITE + '/img/mail-banner.jpg') + '" width="680" alt="Chutznik — Israel. Together." style="display:block;width:100%;border:0"></a>'
-    // greeting
-    + '<div style="text-align:center;padding:8px 20px 4px"><div style="font-size:17px;color:' + C.mute + '">Hi ' + esc(first) + ',</div>'
-    + '<div class="big" style="' + serif + ';font-size:38px;font-weight:700;color:' + C.brown + ';margin:4px 0 0">Chutznik is 3 months old! <span style="color:#e06a5a">&#10084;</span></div></div>'
-    // two numbers with an icon beside each
-    + '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:14px 0 8px"><tr>' + stat('mail-ic-posts.png', n(st.total), 'POSTS') + stat('mail-ic-store.png', n(st.businesses), 'BUSINESS LISTINGS') + '</tr></table>'
-    // tiles
-    + '<div style="margin:10px 14px 0;background:' + C.cream + ';border:1px solid ' + C.line + ';border-radius:18px;padding:14px 8px 8px">'
-    + '<div style="' + serif + ';font-size:24px;font-weight:700;color:' + C.brown + ';text-align:center;margin-bottom:10px">What are you looking for today?</div>'
-    + '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>' + tiles.map(tile).join('') + '</tr></table></div>'
-    // sections
-    + '<div style="padding:0 14px">'
-    + (rentals.length ? section({ photo: rentalPhoto, emoji: '🏠', icon: 'mail-ic-rentals.png', title: 'Latest Rentals', sub: n(st.rentals) + ' apartments for rent', all: ['View all rentals', '/search/rentals'], body: twoCols(rentals, rentalLine) }) : '')
-    + (jobs.length ? section({ photo: jobPhoto, emoji: '💼', icon: 'mail-ic-jobs.png', title: 'Latest Jobs', sub: n(st.jobs) + ' jobs', all: ['View all jobs', '/search/jobs'], body: twoCols(jobs, (x) => String(x.group || '').slice(0, 40)) }) : '')
-    + (wigs.length ? section({ photo: wigPhoto, emoji: '💇‍♀️', icon: '', glyph: '\u2702\ufe0f', title: 'Shaitel machers', sub: 'wig stylists on Chutznik', all: ['View all', '/search/sheitel'], body: twoCols(wigs, () => '') }) : '')
+  const serif = "font-family:'Playfair Display',Georgia,'Times New Roman',serif";
+  const body = "font-family:Lora,Georgia,'Times New Roman',serif";
+  const { wigs, rentals, jobs } = sheetLists(st);
+  const heading = (label) => '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:14px 0 8px"><tr>'
+    + '<td style="white-space:nowrap;padding:0 10px 0 4px;' + serif + ';font-size:19px;font-weight:700;color:' + SHEET.head + '">' + esc(label) + '</td>'
+    + '<td width="100%" style="border-top:1px solid ' + SHEET.rule + ';font-size:1px;line-height:1px">&nbsp;</td></tr></table>';
+  const card = (x, k, badge, sub) => { const href = esc(linkOf(SITE, x)); const title = esc(clean(x.title).replace(/^wanted:\s*/i, '').slice(0, 70) || 'Post');
+    return '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;background:#ffffff;border-radius:15px;margin:0 0 9px"><tr>'
+      + '<td width="11" style="width:11px;background:' + k.bar + ';border-radius:15px 0 0 15px">&nbsp;</td>'
+      + '<td width="70" style="width:70px;padding:9px 4px 9px 12px;vertical-align:middle"><a href="' + href + '" style="text-decoration:none"><div style="width:54px;height:54px;line-height:54px;border-radius:27px;background:' + k.pale + ';color:' + k.bar + ';text-align:center;' + serif + ';font-weight:700;font-size:' + (badge.length > 3 ? '13px' : '24px') + '">' + esc(badge) + '</div></a></td>'
+      + '<td style="padding:10px 8px 10px 10px;vertical-align:middle;border-left:1px solid #f0d7c6"><a href="' + href + '" style="text-decoration:none;color:' + SHEET.card + ';' + body + ';font-weight:700;font-size:17px;line-height:1.25;display:block">' + title + '</a>'
+      + (sub ? '<div style="' + body + ';font-size:13px;color:' + SHEET.sub + ';margin-top:3px;line-height:1.3">' + esc(sub) + '</div>' : '') + '</td>'
+      + '<td width="30" style="width:30px;vertical-align:middle;text-align:center"><a href="' + href + '" style="text-decoration:none;color:' + SHEET.chev + ';font-size:26px;font-weight:700">›</a></td></tr></table>'; };
+  const html = '<div style="background:#f3ece2;padding:12px 6px"><div style="max-width:680px;margin:0 auto;background:' + SHEET.paper + ';border-radius:14px;overflow:hidden;' + body + '">'
+    + '<a href="' + esc(SITE + '/israel') + '" style="display:block"><img src="' + esc(SITE + '/img/sheet-head-3mo.jpg') + '" width="680" alt="Chutznik is 3 months old!" style="display:block;width:100%;height:auto;border:0"></a>'
+    + '<div style="padding:4px 14px 0;font-size:15px;color:' + SHEET.sub + '">Hi ' + esc(first) + ', here is what three months of Chutznik look like: ' + esc(n(st.total)) + ' posts, ' + esc(n(st.businesses)) + ' businesses and ' + esc(n(st.members)) + ' members. The newest of what people ask for most:</div>'
+    + '<div style="padding:4px 14px 10px">'
+    + (wigs.length ? heading('Shaitel machers') + wigs.map((x) => card(x, SHEET.wig, SHEET.wig.glyph, wigSub(x))).join('') : '')
+    + (rentals.length ? heading('Latest rentals') + rentals.map((x) => card(x, SHEET.rent, bedsOf(x) || 'Rental', rentSub(x))).join('') : '')
+    + (jobs.length ? heading('Latest jobs') + jobs.map((x) => card(x, SHEET.job, 'Job', jobSub(x))).join('') : '')
+    + '<div style="text-align:center;padding:14px 0 4px"><a href="' + esc(SITE + '/israel') + '" style="display:inline-block;background:#7a2c0c;color:#fff;border-radius:99px;padding:12px 30px;text-decoration:none;font-weight:700;font-size:16px;' + serif + '">Open Chutznik ›</a></div>'
     + '</div>'
-    // the button, and the faint skyline under it
-    + '<div style="text-align:center;padding:26px 16px 6px"><a href="' + esc(SITE + '/israel') + '" style="display:inline-block;background:' + C.brown + ';color:#fff;border-radius:10px;padding:13px 36px;text-decoration:none;font-weight:700;font-size:16px">Open Chutznik →</a>'
-    + '<div style="' + sans + ';font-size:12px;color:' + C.mute + ';margin-top:12px">New posts, rentals, jobs and recommendations are added every day.</div></div>'
-    + '<img src="' + esc(SITE + '/img/mail-foot.jpg') + '" width="680" alt="" style="display:block;width:100%;border:0;margin-top:-6px">'
-    + '<div style="text-align:center;padding:4px 16px 14px;font-size:11px;color:#b8aa9c;background:' + C.bg + '"><a href="' + esc(unsub) + '" style="color:#b8aa9c">Unsubscribe</a></div>'
+    + '<img src="' + esc(SITE + '/img/sheet-foot.jpg') + '" width="680" alt="" style="display:block;width:100%;height:auto;border:0">'
+    + '<div style="text-align:center;padding:6px 16px 12px;font-size:11px;color:#b8aa9c"><a href="' + esc(unsub) + '" style="color:#b8aa9c">Unsubscribe</a></div>'
     + '</div></div>';
-  const text = 'Hi ' + first + ',\n\nChutznik is 3 months old!\n\n' + n(st.total) + ' posts · ' + n(st.businesses) + ' business listings\n\n'
-    + 'What are you looking for today?\nRentals: ' + SITE + '/search/rentals\nRestaurants: ' + SITE + '/search/restaurants\nCleaners: ' + SITE + '/post/up_wa_CLEANERS\nBabysitters: ' + SITE + '/post/up_wa_BABYSIT\nMikvaot: ' + SITE + '/search/mikva\nDoctors: ' + SITE + '/search/doctors\n\n'
-    + (rentals.length ? 'Latest rentals (' + n(st.rentals) + ' apartments for rent):\n' + rentals.map((x) => '- ' + String(x.title || '').slice(0, 60) + ' (' + rentalLine(x) + ') ' + linkOf(SITE, x)).join('\n') + '\nAll rentals: ' + SITE + '/search/rentals\n\n' : '')
-    + (jobs.length ? 'Latest jobs (' + n(st.jobs) + '):\n' + jobs.map((x) => '- ' + String(x.title || '').slice(0, 60) + ' ' + linkOf(SITE, x)).join('\n') + '\nAll jobs: ' + SITE + '/search/jobs\n\n' : '')
-    + (wigs.length ? 'Shaitel machers (wig stylists):\n' + wigs.map((x) => '- ' + String(x.title || '').slice(0, 60) + ' ' + linkOf(SITE, x)).join('\n') + '\n\n' : '')
+  const line = (x, sub) => '- ' + clean(x.title).slice(0, 70) + (sub ? ' (' + sub + ')' : '') + ' ' + linkOf(SITE, x);
+  const text = 'Hi ' + first + ',\n\nChutznik is 3 months old! ' + n(st.total) + ' posts, ' + n(st.businesses) + ' businesses, ' + n(st.members) + ' members.\n\n'
+    + (wigs.length ? 'Shaitel machers:\n' + wigs.map((x) => line(x, wigSub(x))).join('\n') + '\n\n' : '')
+    + (rentals.length ? 'Latest rentals:\n' + rentals.map((x) => line(x, rentSub(x))).join('\n') + '\n\n' : '')
+    + (jobs.length ? 'Latest jobs:\n' + jobs.map((x) => line(x, jobSub(x))).join('\n') + '\n\n' : '')
     + 'Open Chutznik: ' + SITE + '/israel\n\nUnsubscribe: ' + unsub;
   return { subject: 'Chutznik is 3 months old!', html, text };
 }
@@ -178,4 +167,4 @@ async function sendMilestones({ SITE, KEY, mode, previewTo, log, pause }) {
   return mode + ': ' + ok + ' sent, ' + failed + ' failed · ' + st.total + ' posts, ' + st.rentals + ' rentals, ' + st.businesses + ' businesses, ' + st.members + ' members';
 }
 
-module.exports = { gather, build, sendMilestones };
+module.exports = { gather, build, sendMilestones, sheetLists, bedsOf, rentSub, jobSub, wigSub, clean };

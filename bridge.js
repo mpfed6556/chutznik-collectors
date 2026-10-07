@@ -1752,6 +1752,7 @@ async function retitleBacklog() {
       const batch = list.slice(i, i + 8);
       const out = await curateItems(batch, true);
       if (!Object.keys(out).length) { await new Promise((res) => setTimeout(res, 5000)); continue; }   // a failed call: nothing is marked, the posts stay for next time
+      await new Promise((res) => setTimeout(res, 6500));   // the free Gemini tier allows a handful of calls a minute (Miriam, 7 Oct 2026: no paid key)
       for (const it of batch) {
         const c = out[String(it.id)]; if (!c) continue;
         const patch = { curated: 'reviewed' };
@@ -1785,6 +1786,19 @@ async function milestonesRun() {
     const report = await M.sendMilestones({ SITE, KEY: INGEST_KEY, mode: want.to === 'members' ? 'members' : 'preview', previewTo: ['mpfederman@gmail.com'], log, pause: 900 });
     sent[want.stamp].report = report; sent[want.stamp].doneAt = Date.now(); fs.writeFileSync(MILESTONES_FILE, JSON.stringify(sent));
     log('📈 milestones (' + want.stamp + ') → ' + report);
+    // the same sheet as a PDF, to Miriam's WhatsApp like the daily one (ready for a status)
+    try {
+      const sock = global._sock; const me = sock && sock.user ? String(sock.user.id || '').split(':')[0].split('@')[0] : '';
+      const num = MY_NUMBERS[0] || me;
+      if (sock && num) {
+        try { delete require.cache[require.resolve('./scripts/milestones-pdf.js')]; } catch (e) {}
+        const P = require('./scripts/milestones-pdf.js');
+        const { pdf } = await P.makeMilestonesSheet(SITE, INGEST_KEY);
+        await Promise.race([sock.sendMessage(num + '@s.whatsapp.net', { document: pdf, mimetype: 'application/pdf', fileName: 'Chutznik-3-months.pdf', caption: '📈 *Chutznik is 3 months old* — the sheet with the newest shaitel machers, rentals and jobs, every card opens its post. powered by chutznik.org' }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('send timed out')), 90000))]);
+        log('📈 milestones sheet (PDF) → ' + num);
+      }
+    } catch (e) { log('📈 milestones sheet: ' + (e && e.message)); }
   } catch (e) { log('📈 milestones: ' + (e && e.message)); }
   finally { _milestonesBusy = false; }
 }
@@ -2012,7 +2026,7 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/milestones.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+const EXTRA_FILES = ['scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
