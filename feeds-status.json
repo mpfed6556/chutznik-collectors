@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-07T23:47:27.596Z",
+  "lastRun": "2026-10-08T03:07:01.555Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,10 +61,10 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-07T23:47:27.594Z",
+      "lastRun": "2026-10-08T03:07:01.553Z",
       "sent": 0,
       "sources": {
-        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (4 upcoming)",
+        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
@@ -196,28 +196,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Faces of October 7th",
-            "date": "2026-10-07",
+            "title": "High Tea & Torah in the Garden",
+            "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/faces-of-october-7th/"
-          },
-          {
-            "title": "October 7th | Three Years Later, Stories that connect",
-            "date": "2026-10-07",
-            "time": "",
-            "link": "https://www.nbn.org.il/events/october-7th-three-years-later-stories-that-connect/"
-          },
-          {
-            "title": "Witnessing October 7: Some places can’t be understood from a headline or a photograph.",
-            "date": "2026-10-07",
-            "time": "",
-            "link": "https://www.nbn.org.il/events/witnessing-october-7-some-places-cant-be-understood-from-a-headline-or-a-photograph/"
+            "link": "https://www.nbn.org.il/events/high-tea-torah-in-the-garden/"
           },
           {
             "title": "Faces of October 7th",
             "date": "2026-10-07",
             "time": "",
             "link": "https://www.nbn.org.il/events/faces-of-october-7th/"
+          },
+          {
+            "title": "Nishmat Online Beit Midrash",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
+          },
+          {
+            "title": "JUST WRITE!",
+            "date": null,
+            "time": "",
+            "link": "https://israelwriterstudio.com/classes/"
+          },
+          {
+            "title": "Art Wednesday",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/art-wednesday/"
           }
         ],
         "Pardes": [],
