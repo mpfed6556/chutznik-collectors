@@ -21,6 +21,9 @@ const { classify, categoriesFor, topicTitle, clusterWindow, fingerprint, phonesI
 const INGEST_URL = process.env.INGEST_URL || 'https://chutznik.org/api/ingest-whatsapp';
 const INGEST_KEY = process.env.INGEST_KEY || '';
 const SITE = INGEST_URL.replace(/\/api\/.*/, '');
+// every call the bridge (and its scripts) makes to the site carries the key: the site's data
+// now answers only its own pages, the bridge and the admin (8 Oct 2026)
+{ const _fetch = global.fetch; global.fetch = (u, o) => { try { if (INGEST_KEY && String(u).startsWith(SITE)) { o = Object.assign({}, o || {}); const h = new Headers(o.headers || {}); if (!h.has('x-ingest-key')) h.set('x-ingest-key', INGEST_KEY); if (!h.has('user-agent')) h.set('user-agent', 'chutznik-bridge'); o.headers = h; } } catch (e) {} return _fetch(u, o); }; }
 const FLUSH_MINUTES = Number(process.env.FLUSH_MINUTES || 1);
 const OCR = String(process.env.OCR || 'on') !== 'off';
 const EXCLUDE = (process.env.EXCLUDE_CHATS || '').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
