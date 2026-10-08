@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-08T03:07:01.555Z",
+  "lastRun": "2026-10-08T10:35:24.203Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "ok via RSS (6 items)",
+    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -58,13 +58,13 @@
     "Chaim V'Chessed": "blocked: robots.txt unreachable — skipping to be safe",
     "Moovit": "ok via RSS (6 items)",
     "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
-    "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
-    "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
+    "Shaare Zedek Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
+    "Herzog Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
     "_events": {
-      "lastRun": "2026-10-08T03:07:01.553Z",
-      "sent": 0,
+      "lastRun": "2026-10-08T10:35:24.201Z",
+      "sent": 1,
       "sources": {
-        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
+        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
@@ -73,7 +73,7 @@
         "iTravelJerusalem": "13 cards, nothing new (13 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (1 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (17 upcoming)",
-        "Pardes": "no events · HTTP 403",
+        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (4 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · nothing parsed at https://www.imj.org.il/en",
@@ -196,34 +196,10 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "High Tea & Torah in the Garden",
-            "date": null,
+            "title": "Speed dating",
+            "date": "2026-10-08",
             "time": "",
-            "link": "https://www.nbn.org.il/events/high-tea-torah-in-the-garden/"
-          },
-          {
-            "title": "Faces of October 7th",
-            "date": "2026-10-07",
-            "time": "",
-            "link": "https://www.nbn.org.il/events/faces-of-october-7th/"
-          },
-          {
-            "title": "Nishmat Online Beit Midrash",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
-          },
-          {
-            "title": "JUST WRITE!",
-            "date": null,
-            "time": "",
-            "link": "https://israelwriterstudio.com/classes/"
-          },
-          {
-            "title": "Art Wednesday",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/art-wednesday/"
+            "link": "https://www.nbn.org.il/events/speed-dating-2/"
           }
         ],
         "Pardes": [],
