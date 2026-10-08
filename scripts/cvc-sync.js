@@ -34,6 +34,7 @@ async function discover(log) {
   };
   for (const sm of ['/sitemap.xml', '/sitemap_index.xml', '/wp-sitemap.xml', '/post-sitemap.xml', '/page-sitemap.xml']) await fromSitemap(HOME + sm, 0);
   if (log) log('📚 ' + ORG + ': ' + urls.size + ' page(s) in the sitemaps');
+  if (!urls.size && log) { try { const r = await get(HOME + '/'); log('📚 ' + ORG + ' home page: HTTP ' + r.status + ' ' + r.ct + ' (' + r.text.length + ' chars)'); } catch (e) { log('📚 ' + ORG + ' home page: ' + (e && e.message)); } }
   if (urls.size < 15) {
     // no usable sitemap: walk the site from the home page, two levels deep
     const seen = new Set(), queue = [[HOME + '/', 0]];

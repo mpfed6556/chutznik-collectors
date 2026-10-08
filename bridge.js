@@ -1761,6 +1761,8 @@ async function pullSettings() {
     if (j.CVC && typeof j.CVC === 'object' && j.CVC.stamp) { global._cvc = { stamp: String(j.CVC.stamp), limit: Number(j.CVC.limit) || 0 }; setTimeout(cvcRun, 5000); }
     if (j.RETITLE && typeof j.RETITLE === 'object' && j.RETITLE.stamp) { global._retitle = { stamp: String(j.RETITLE.stamp), days: Number(j.RETITLE.days) || 92, all: !!j.RETITLE.all }; setTimeout(retitleBacklog, 3000); }
     // MILESTONES {stamp, to: 'preview'|'members'}: the "three months of Chutznik" email, once per stamp (Miriam, 5 Oct 2026)
+    // BIZLIST {stamp, to:[numbers], email:[addresses]}: every business with the number its advert came from (Miriam, 8 Oct 2026)
+    if (j.BIZLIST && typeof j.BIZLIST === 'object' && j.BIZLIST.stamp) { global._bizlist = { stamp: String(j.BIZLIST.stamp), to: Array.isArray(j.BIZLIST.to) ? j.BIZLIST.to.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8) : [], email: Array.isArray(j.BIZLIST.email) ? j.BIZLIST.email.map((x) => String(x).trim().toLowerCase()).filter((x) => x.includes('@')) : [] }; setTimeout(bizlistRun, 4000); }
     if (j.MILESTONES && typeof j.MILESTONES === 'object' && j.MILESTONES.stamp) { global._milestones = { stamp: String(j.MILESTONES.stamp), to: String(j.MILESTONES.to || 'preview').toLowerCase() }; setTimeout(milestonesRun, 2000); }
     // who gets the daily TODAY sheet (numbers with country code, no +)
     if (Array.isArray(j.DIGEST_TO)) { const list = j.DIGEST_TO.map((x) => String(x || '').trim().toLowerCase()).filter((x) => x.includes('@')); if (JSON.stringify(list) !== JSON.stringify(global._digestTo || [])) { global._digestTo = list; log('\u2699\ufe0f  WhatsApp digest goes to: ' + (list.join(', ') || '(admin)')); } }
@@ -1773,6 +1775,26 @@ const RETITLE_FILE = path.join(__dirname, 'retitle-done.json');
 let _retitleBusy = false;
 const CVC_FILE = path.join(__dirname, 'cvc-done.json');
 let _cvcBusy = false;
+const BIZLIST_FILE = path.join(__dirname, 'bizlist-done.json');
+let _bizlistBusy = false;
+async function bizlistRun() {
+  const want = global._bizlist; if (!want || !INGEST_KEY || _bizlistBusy) return;
+  let done = {}; try { done = JSON.parse(fs.readFileSync(BIZLIST_FILE, 'utf8')) || {}; } catch (e) {}
+  if (done[want.stamp]) return;
+  if (!global._sock) { log('📇 business list: WhatsApp not connected yet — next round'); return; }
+  _bizlistBusy = true;
+  try {
+    if (!fs.existsSync(path.join(__dirname, 'scripts', 'bizlist.js'))) { try { await syncExtras(); } catch (e) {} }
+    try { delete require.cache[require.resolve('./scripts/bizlist.js')]; } catch (e) {}
+    let B; try { B = require('./scripts/bizlist.js'); } catch (e) { log('📇 business list: script not here yet — next round'); return; }
+    const to = want.to.length ? want.to : ((global._todayTo && global._todayTo.length) ? global._todayTo : (MY_NUMBERS[0] ? [MY_NUMBERS[0]] : []));
+    const emailTo = want.email.length ? want.email : ((global._digestTo && global._digestTo.length) ? global._digestTo : DIGEST_DEFAULT_TO);
+    const report = await B.run({ SITE, KEY: INGEST_KEY, log, posted: POSTED, to, emailTo, sock: global._sock });
+    done[want.stamp] = { doneAt: Date.now(), report }; fs.writeFileSync(BIZLIST_FILE, JSON.stringify(done));
+    log('📇 ' + report);
+  } catch (e) { log('📇 business list: ' + (e && e.message)); }
+  finally { _bizlistBusy = false; }
+}
 async function cvcRun(force) {
   if (_cvcBusy || !INGEST_KEY) return;
   let done = {}; try { done = JSON.parse(fs.readFileSync(CVC_FILE, 'utf8')) || {}; } catch (e) {}
@@ -1786,8 +1808,11 @@ async function cvcRun(force) {
     let C; try { C = require('./scripts/cvc-sync.js'); } catch (e) { log('📚 Chaim V\'Chesed: script not here yet — next round'); return; }
     if (stampNew) done[want.stamp] = { startedAt: Date.now() };   // on disk only when finished: a restart resumes where it stopped
     const report = await C.run({ SITE, KEY: INGEST_KEY, log, limit: want ? want.limit : 0 });
-    done._lastRun = Date.now(); if (stampNew) done[want.stamp].report = report; fs.writeFileSync(CVC_FILE, JSON.stringify(done));
-    log('📚 ' + report);
+    // nothing read at all (their site unreachable, the reader down): not done — the next round tries again
+    const empty = /: 0 new post\(s\), 0 skipped, 0 failed/.test(String(report));
+    if (empty) { if (stampNew) delete done[want.stamp]; log('📚 ' + report + ' — nothing could be read this time; trying again in six hours'); }
+    else { done._lastRun = Date.now(); if (stampNew) done[want.stamp].report = report; log('📚 ' + report); }
+    fs.writeFileSync(CVC_FILE, JSON.stringify(done));
   } catch (e) { log('📚 Chaim V\'Chesed: ' + (e && e.message)); }
   finally { _cvcBusy = false; }
 }
@@ -2088,7 +2113,7 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+const EXTRA_FILES = ['scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/bizlist.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
