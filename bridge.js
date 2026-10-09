@@ -2488,6 +2488,21 @@ async function nudgeDraftEmails() {
   } catch (e) { /* the next nudge will get it */ }
 }
 setInterval(nudgeDraftEmails, 3 * 60 * 1000);
+
+// ── The words on every picture and PDF (Miriam, 9 Oct 2026: "all PDF and pics needs to have their content
+//    transcribed so if someone searches … it should come up"). The site reads a few picture posts at a time
+//    with its AI reader; this machine, always on, gives it the nudge. New posts are read within minutes and
+//    the older ones are worked through, newest first.
+async function nudgePictureReading() {
+  try {
+    const r = await fetch(SITE + '/api/live-data?type=readpics', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ max: 3 }), signal: AbortSignal.timeout(60000) });
+    const j = await r.json().catch(() => ({}));
+    if (j && j.done) log('🖼️  words read off ' + j.done + ' picture post' + (j.done === 1 ? '' : 's') + ((j.read || []).length < j.done ? ' (' + (j.read || []).length + ' had words)' : ''));
+    if (j && j.errors && j.errors.length) log('🖼️  picture reader: ' + j.errors[0]);
+  } catch (e) { /* the next nudge will get it */ }
+}
+setInterval(nudgePictureReading, 4 * 60 * 1000);
+setTimeout(nudgePictureReading, 45 * 1000);
 setTimeout(nudgeDraftEmails, 20 * 1000);
 
 
