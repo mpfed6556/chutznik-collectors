@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-09T02:33:54.575Z",
+  "lastRun": "2026-10-09T09:41:11.997Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "ok via RSS (6 items)",
+    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-09T02:33:54.573Z",
-      "sent": 0,
+      "lastRun": "2026-10-09T09:41:11.995Z",
+      "sent": 1,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -73,7 +73,7 @@
         "iTravelJerusalem": "13 cards, nothing new (13 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (1 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (17 upcoming)",
-        "Pardes": "no events · HTTP 403",
+        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (4 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · nothing parsed at https://www.imj.org.il/en",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
+        "Secret Jerusalem": "no events · fetch failed"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -164,12 +164,6 @@
         ],
         "OU Israel Center": [
           {
-            "title": "Women's Lachish Tour",
-            "date": "2026-10-08",
-            "time": "09:00",
-            "link": "https://www.ouisrael.org/events/lachishtour2026/"
-          },
-          {
             "title": "Rosh Chodesh Cheshvan Seminar- Yerushalayim",
             "date": "2026-10-11",
             "time": "09:15",
@@ -192,6 +186,12 @@
             "date": "2026-10-13",
             "time": "09:15",
             "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-10-13/"
+          },
+          {
+            "title": "Yerushalayim Bat Mitzvah and Beyond 2026-2027",
+            "date": "2026-10-13",
+            "time": "19:00",
+            "link": "https://www.ouisrael.org/events/yerushalayim-bm27/"
           }
         ],
         "Nefesh B'Nefesh": [
