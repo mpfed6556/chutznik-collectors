@@ -201,14 +201,28 @@ function nameTokens(title) {
 }
 // the listed business a question is about, by its own name appearing in the question
 function pageAskedAbout(text) {
-  const words = new Set(String(text || '').toLowerCase().replace(/['’]s\b/g, '').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).map((w) => w.replace(/s$/, '')).filter(Boolean));
+  const raw = String(text || '');
+  const norm = (x) => ' ' + String(x || '').toLowerCase().replace(/['’]s\b/g, '').replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim() + ' ';
+  const flat = norm(raw);
+  const words = new Set(flat.trim().split(' ').map((w) => w.replace(/s$/, '')).filter(Boolean));
   let best = null, bestN = 0;
   for (const u of Object.values(global._updItems || {})) {
     if (!u || u.source !== 'business' || u.status !== 'public') continue;
     const toks = nameTokens(u.title); if (!toks.length) continue;
     const n = toks.filter((t) => words.has(t)).length;
-    // a one-word name must be that word; a longer name needs two of its words (or its one distinctive word)
-    if (n && (n >= 2 || toks.length === 1 || (toks.length === 2 && n === 1 && toks.every((t) => t.length >= 6))) && n > bestN) { best = u; bestN = n; }
+    if (!n) continue;
+    // the whole name, as written, in the message ("C Nature", not just "nature" — 9 Oct 2026: "human nature"
+    // in a joke was taken for the shop). Two distinctive words of a longer name also do.
+    const fullName = norm(String(u.title || '').split(/[:—–|(]/)[0]);
+    const phrase = fullName.trim().length >= 4 && flat.includes(fullName);
+    let ok = phrase || n >= 2;
+    // a name that is one ordinary-looking word must also be written as a name (capitalised, not at the start of a sentence)
+    if (ok && !phrase && toks.length === 1) ok = false;
+    if (ok && phrase && fullName.trim().split(' ').length === 1) {
+      const w = fullName.trim(); const re = new RegExp('(?:[^.!?\\n]\\s)(' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'i');
+      const m = raw.match(re); ok = !!(m && /^\p{Lu}/u.test(m[1]));
+    }
+    if (ok && n > bestN) { best = u; bestN = n; }
   }
   return best;
 }
@@ -288,7 +302,10 @@ async function sendToQueue(item) {
   // email with a one-tap WhatsApp telling the asker it is on Chutznik (Miriam, 7 Oct 2026:
   // "keep doing that! … with their name … email me to confirm before sending")
   try {
-    const asks = itemKind === 'question' || /\?/.test(String(item.title || '') + String(item.memo || '').slice(0, 300)) || /\b(?:anyone|anybody|someone|does any|seeking|looking for|recommend)\b/i.test(String(item.title || '') + ' ' + String(item.memo || '').slice(0, 200));
+    // a real request, not any text with a question mark in it (9 Oct 2026: a joke's dialogue — "What's the matter
+    // Adam?" — counted as asking about a shop)
+    const askHead = String(item.title || '') + ' ' + String(item.memo || '').slice(0, 200);
+    const asks = itemKind === 'question' || /\b(?:anyone|anybody|someone|does any|seeking|looking for|recommend\w*|number for|contact for|phone for|where can i|who has|know of|has anyone used)\b/i.test(askHead);
     if (asks && curatable(item)) {
       const page = pageAskedAbout(String(item.title || '') + ' ' + String(item.memo || ''));
       if (page) {
