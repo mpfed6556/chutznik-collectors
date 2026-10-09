@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-08T22:31:47.378Z",
+  "lastRun": "2026-10-09T02:33:54.575Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,10 +61,10 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-08T22:31:47.374Z",
+      "lastRun": "2026-10-09T02:33:54.573Z",
       "sent": 0,
       "sources": {
-        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
+        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
@@ -196,10 +196,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
+            "title": "ACADEMY BY SAR-EL",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/academy-by-sar-el/"
+          },
+          {
+            "title": "JUST WRITE!",
+            "date": null,
+            "time": "",
+            "link": "https://israelwriterstudio.com/classes/"
+          },
+          {
             "title": "Speed dating",
             "date": "2026-10-08",
             "time": "",
             "link": "https://www.nbn.org.il/events/speed-dating-2/"
+          },
+          {
+            "title": "Night Seder Program!",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/night-seder-program/"
+          },
+          {
+            "title": "Israel Portnoy — *Live & Unplugged!*",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/israel-portnoy-live-unplugged/"
           }
         ],
         "Pardes": [],
