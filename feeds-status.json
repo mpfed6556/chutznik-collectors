@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-10T01:05:12.629Z",
+  "lastRun": "2026-10-10T07:06:43.201Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-10T01:05:12.627Z",
+      "lastRun": "2026-10-10T07:06:43.198Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
