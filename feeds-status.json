@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-11T18:27:34.996Z",
+  "lastRun": "2026-10-11T22:25:02.906Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -34,7 +34,7 @@
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
     "AACI": "no feed, no scannable items, nothing in the news last 48h",
     "Janglo": "ok via page-scan (5 items) — no RSS found",
-    "Gvahim": "blocked: robots.txt unreachable — skipping to be safe",
+    "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
     "Drushim": "ok via page-scan (4 items) — no RSS found",
     "Jerusalem Light Rail (Cfir)": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-11T18:27:34.994Z",
+      "lastRun": "2026-10-11T22:25:02.905Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -74,7 +74,7 @@
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (1 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (17 upcoming)",
         "Pardes": "no events · HTTP 403",
-        "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (4 upcoming)",
+        "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (3 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
         "Tower of David": "no events · nothing parsed at https://www.tod.org.il/en/",
@@ -228,12 +228,6 @@
         ],
         "Pardes": [],
         "Beit Avi Chai": [
-          {
-            "title": "Today The Hasmonean Civil War Prof. Daniel R. Schwartz Series: Conflicts in Ancient Judean Society: The Second Temple Pe",
-            "date": "2026-10-11",
-            "time": "7pm",
-            "link": "https://www.bac.org.il/en/events/?eventID=25815"
-          },
           {
             "title": "What Destroyed the Temple and Jerusalem? Prof. Daniel R. Schwartz Series: Conflicts in Ancient Judean Society: The Secon",
             "date": "2026-10-18",
