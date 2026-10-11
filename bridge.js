@@ -1785,6 +1785,7 @@ async function pullSettings() {
     if (j.BIZLIST && typeof j.BIZLIST === 'object' && j.BIZLIST.stamp) { global._bizlist = { stamp: String(j.BIZLIST.stamp), to: Array.isArray(j.BIZLIST.to) ? j.BIZLIST.to.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8) : [], email: Array.isArray(j.BIZLIST.email) ? j.BIZLIST.email.map((x) => String(x).trim().toLowerCase()).filter((x) => x.includes('@')) : [] }; setTimeout(bizlistRun, 4000); }
     if (j.MILESTONES && typeof j.MILESTONES === 'object' && j.MILESTONES.stamp) { global._milestones = { stamp: String(j.MILESTONES.stamp), to: String(j.MILESTONES.to || 'preview').toLowerCase() }; setTimeout(milestonesRun, 2000); }
     // who gets the daily TODAY sheet (numbers with country code, no +)
+    if (j.DIGEST !== undefined) { const v = String(j.DIGEST || 'off').toLowerCase(); if (v !== (global._digest || 'off')) { global._digest = v; log('\u2699\ufe0f  WhatsApp digest email: ' + v); } }
     if (Array.isArray(j.DIGEST_TO)) { const list = j.DIGEST_TO.map((x) => String(x || '').trim().toLowerCase()).filter((x) => x.includes('@')); if (JSON.stringify(list) !== JSON.stringify(global._digestTo || [])) { global._digestTo = list; log('\u2699\ufe0f  WhatsApp digest goes to: ' + (list.join(', ') || '(admin)')); } }
     if (Array.isArray(j.RENTALS_TO)) { const list = j.RENTALS_TO.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._rentalsTo || [])) { global._rentalsTo = list; log('\u2699\ufe0f  RENTALS sheet goes to: ' + (list.join(', ') || '(same as TODAY)')); } }
     if (Array.isArray(j.TODAY_TO)) { const list = j.TODAY_TO.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._todayTo || [])) { global._todayTo = list; log('⚙️  TODAY sheet goes to: ' + (list.join(', ') || '(own number)')); } }
@@ -2330,7 +2331,10 @@ const DIGEST_SLOTS = [8, 20];
 const DIGEST_DEFAULT_TO = ['mpfederman@gmail.com'];
 let _digestBusy = false;
 function digestEsc(v) { return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+// off unless DIGEST is "on" in bridge-settings.json (Miriam, 11 Oct 2026: "stop sending these")
+const digestOn = () => String(global._digest || 'off').toLowerCase() === 'on';
 async function waDigest() {
+  if (!digestOn()) return;
   if (_digestBusy) return; _digestBusy = true;
   try {
     const hour = israelHour();
