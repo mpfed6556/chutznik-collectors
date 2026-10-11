@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-11T13:28:23.185Z",
+  "lastRun": "2026-10-11T18:27:34.996Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -34,7 +34,7 @@
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
     "AACI": "no feed, no scannable items, nothing in the news last 48h",
     "Janglo": "ok via page-scan (5 items) — no RSS found",
-    "Gvahim": "blocked: robots.txt disallows this path",
+    "Gvahim": "blocked: robots.txt unreachable — skipping to be safe",
     "AllJobs": "blocked: robots.txt disallows this path",
     "Drushim": "ok via page-scan (4 items) — no RSS found",
     "Jerusalem Light Rail (Cfir)": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-11T13:28:23.184Z",
-      "sent": 1,
+      "lastRun": "2026-10-11T18:27:34.994Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -70,7 +70,7 @@
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "14 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
-        "iTravelJerusalem": "ok via listing cards (1 new of 14)",
+        "iTravelJerusalem": "14 cards, nothing new (14 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (1 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (17 upcoming)",
         "Pardes": "no events · HTTP 403",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
+        "Secret Jerusalem": "no events · fetch failed"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -153,15 +153,7 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [
-          {
-            "title": "\"Touring with a Researcher – Jerusalem Tours with Scholars and Experts\"",
-            "date": "2026-11-06",
-            "time": "09:00",
-            "link": "https://www.itraveljerusalem.com/event/city-of-david-researcher-tour",
-            "raw": "1 dates; first {\"startDate\":\"2026-11-06T07:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"09:00\",\"endTime\":\"11:00\",\"repeats\":\"no\"}"
-          }
-        ],
+        "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
             "title": "Art of The Ark Presentation at the Biblical Museum of Natural History",
