@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-11T06:29:48.224Z",
+  "lastRun": "2026-10-11T13:28:23.185Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "ok via RSS (1 items)",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,22 +61,22 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-11T06:29:48.223Z",
-      "sent": 0,
+      "lastRun": "2026-10-11T13:28:23.184Z",
+      "sent": 1,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
-        "iTravelJerusalem hints": "13 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
-        "iTravelJerusalem": "13 cards, nothing new (13 distinct)",
+        "iTravelJerusalem hints": "14 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
+        "iTravelJerusalem": "ok via listing cards (1 new of 14)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (1 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (17 upcoming)",
-        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
+        "Pardes": "no events · HTTP 403",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (4 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
-        "Israel Museum": "no events · nothing parsed at https://www.imj.org.il/en",
+        "Israel Museum": "no events · fetch failed",
         "Tower of David": "no events · nothing parsed at https://www.tod.org.il/en/",
         "Bible Lands Museum": "no events · nothing parsed at https://www.blmj.org/en/",
         "Bloomfield Science Museum": "no events · HTTP 404",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · fetch failed"
+        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -153,7 +153,15 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [],
+        "iTravelJerusalem": [
+          {
+            "title": "\"Touring with a Researcher – Jerusalem Tours with Scholars and Experts\"",
+            "date": "2026-11-06",
+            "time": "09:00",
+            "link": "https://www.itraveljerusalem.com/event/city-of-david-researcher-tour",
+            "raw": "1 dates; first {\"startDate\":\"2026-11-06T07:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"09:00\",\"endTime\":\"11:00\",\"repeats\":\"no\"}"
+          }
+        ],
         "Fun In Jerusalem": [
           {
             "title": "Art of The Ark Presentation at the Biblical Museum of Natural History",
@@ -196,10 +204,16 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "ACADEMY BY SAR-EL",
+            "title": "Nishmat Online Beit Midrash",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/academy-by-sar-el/"
+            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
+          },
+          {
+            "title": "Lecture Series",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/lecture-series-2/"
           },
           {
             "title": "JUST WRITE!",
@@ -208,22 +222,16 @@
             "link": "https://israelwriterstudio.com/classes/"
           },
           {
-            "title": "Speed dating",
-            "date": "2026-10-08",
-            "time": "",
-            "link": "https://www.nbn.org.il/events/speed-dating-2/"
-          },
-          {
-            "title": "Night Seder Program!",
+            "title": "Let’s Talk Giyus",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/night-seder-program/"
+            "link": "https://www.nbn.org.il/events/lets-talk-giyus/"
           },
           {
-            "title": "Israel Portnoy — *Live & Unplugged!*",
+            "title": "Genealogy Lecture: All About Jewish Galicia and Gesher Galicia",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/israel-portnoy-live-unplugged/"
+            "link": "https://www.nbn.org.il/events/genealogy-lecture-all-about-jewish-galicia-and-gesher-galicia/"
           }
         ],
         "Pardes": [],
