@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-12T01:42:51.578Z",
+  "lastRun": "2026-10-12T08:07:23.013Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "ok via RSS (1 items)",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-12T01:42:51.577Z",
-      "sent": 0,
+      "lastRun": "2026-10-12T08:07:23.012Z",
+      "sent": 1,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -73,7 +73,7 @@
         "iTravelJerusalem": "14 cards, nothing new (14 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (1 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (17 upcoming)",
-        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
+        "Pardes": "no events · HTTP 403",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (3 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · fetch failed"
+        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -196,34 +196,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
+            "title": "Discover the beauty of the Ramon Crater",
+            "date": null,
+            "time": "",
+            "link": "https://natureisrael.org/ramon-crater-earth-space-and-time-2026/"
+          },
+          {
+            "title": "KKL & SAR-EL Volunteer Experience",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/kkl-sar-el-volunteer-experience/"
+          },
+          {
+            "title": "Caesarea: Where Empires Meet the Sea",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/caesarea-where-empires-meet-the-sea/"
+          },
+          {
+            "title": "Chesed Experience!",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/chesed-experience/"
+          },
+          {
             "title": "Nishmat Online Beit Midrash",
             "date": null,
             "time": "",
             "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
-          },
-          {
-            "title": "Lecture Series",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/lecture-series-2/"
-          },
-          {
-            "title": "JUST WRITE!",
-            "date": null,
-            "time": "",
-            "link": "https://israelwriterstudio.com/classes/"
-          },
-          {
-            "title": "Let’s Talk Giyus",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/lets-talk-giyus/"
-          },
-          {
-            "title": "Genealogy Lecture: All About Jewish Galicia and Gesher Galicia",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/genealogy-lecture-all-about-jewish-galicia-and-gesher-galicia/"
           }
         ],
         "Pardes": [],
