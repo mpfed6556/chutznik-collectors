@@ -52,16 +52,29 @@ const JOB_RE = /\b(job|jobs|position|hiring|hire|employment|vacancy|opening|open
 const SEEK_RE = /\b(looking for|seeking|searching for|in search of|iso\b|wanted|need(?:s|ed)? (?:a|an|to find)|anyone (?:know|have|renting)|does anyone|is there|any(?:body|one) (?:looking|renting|hiring)|want(?:s|ed)? to rent|wtb|looking to rent|need (?:an? )?(?:apartment|apt|place|job|work)|am looking|we are looking|i am looking|i'm looking|we're looking|looking to (?:rent|find|work|hire))\b/i;
 const OFFER_RE = /\b(available|avail\b|for rent|to rent out|renting out|now hiring|we are hiring|we're hiring|hiring\b|is hiring|position (?:available|open)|job (?:opening|offer|opportunity)|opportunity|sublet available|for sublet|for sale)\b/i;
 
+// real signs of a rental or a job, not just the word "apartment" in a story (13 Oct 2026: a
+// "what made you feel you belonged in Israel?" discussion was taken for a rental)
+const RENTAL_SURE = /(?:\b\d(?:\.5)?\s*(?:br|bdrm|bed|beds|bedroom|bedrooms|room|rooms|rm)\b|\b(?:for rent|to rent|to let|for let|sublet|sub-let|rent(?:al)? available|available (?:from|now|immediately|for)|furnished|unfurnished|long.?term|short.?term|per month|a month|\/month|pcm|\bnis\b|₪|shekel|\$\s?\d|\d\s?\$|looking (?:for|to rent) (?:an? )?(?:\d+ ?(?:br|bdrm|bedroom|room)|apartment|apt|flat|studio|sublet|place to (?:rent|live)|room(?:mate)?)|seeking (?:an? )?(?:apartment|apt|flat|sublet|rental|room)|need(?:s|ed)? (?:an? )?(?:apartment|apt|flat|sublet|rental|room)|apartment (?:for|to) rent|apt (?:for|to) rent|flat (?:for|to) rent|(?:apartment|apt|flat|house|studio|penthouse|unit) (?:available|for sale|wanted)|wanted:? (?:apartment|apt|flat|room))\b)/i;
+const JOB_SURE = /\b(?:hiring|we are looking for an? (?:\w+ ){0,3}(?:teacher|assistant|secretary|bookkeeper|nanny|babysitter|cleaner|tutor|driver|manager|worker|employee|rep|representative|agent|aide|caregiver|therapist|nurse|coordinator|receptionist|developer|designer|writer|editor|salesperson)|position|positions|vacancy|vacancies|job (?:opening|offer|opportunity|available|wanted)|openings?\b|full.?time|part.?time|salary|resume|\bcv\b|looking for (?:a job|work|employment)|seeking (?:a job|work|employment)|available for work|work from home|remote (?:job|work|position)|freelance|per hour|an hour|\/hr\b|apply (?:to|at|by|here)|send (?:your )?(?:cv|resume))\b/i;
+const CHATTER = /\b(?:what made you|how do you feel|curious|i'm curious|anyone else|poll|survey|discussion|thoughts\?|opinions?|does anyone else|what do you think|share your|tell me about|story|stories|sharing|in case it helps|what i learned|lessons?|rant|vent)\b/i;
+// a job post is "seeking" only when the writer wants work for herself; "seeking a babysitter" is a job on offer
+const WANT_WORK = /\b(?:looking for (?:a job|work|employment|a position)|seeking (?:a job|work|employment|a position)|available for work|open to (?:work|offers|positions)|my (?:cv|resume)|i am (?:a|an) (?:\w+ ){0,2}(?:teacher|assistant|bookkeeper|nanny|babysitter|cleaner|tutor|driver|nurse|therapist|designer|developer|writer|editor)|years? (?:of )?experience|i have experience|experienced (?:\w+ ){0,2}(?:looking|available|seeking))\b/i;
+
 function classify(subject, text) {
-  const s = String(subject || '') + '\n' + String(text || '');
-  const isRental = RENTAL_RE.test(s);
-  const isJob = JOB_RE.test(s) && !/\b(apartment|apt|bedroom|bdrm|rental)\b/i.test(subject || '');
+  const subj = String(subject || ''), body = String(text || '');
+  const s = subj + '\n' + body;
+  const head = subj + '\n' + body.split('\n').slice(0, 3).join('\n');
+  const isRental = RENTAL_RE.test(s) && RENTAL_SURE.test(s);
+  const isJob = JOB_RE.test(s) && JOB_SURE.test(s) && !/\b(apartment|apt|bedroom|bdrm|rental)\b/i.test(subj);
   let kind = isRental ? 'rental' : (isJob ? 'job' : '');
   if (!kind) return null;
+  // a question to the group ("what made you feel at home?") is a conversation, not a listing
+  if (/\?\s*$/.test(subj.trim()) && CHATTER.test(head) && !SEEK_RE.test(head)) return null;
+  if (CHATTER.test(subj) && !RENTAL_SURE.test(subj) && !JOB_SURE.test(subj)) return null;
   // "looking for a job" beats "job available" when both appear: the subject decides, then the first line
-  const head = String(subject || '') + '\n' + String(text || '').split('\n').slice(0, 3).join('\n');
-  let seek = SEEK_RE.test(head) && !OFFER_RE.test(String(subject || ''));
+  let seek = SEEK_RE.test(head) && !OFFER_RE.test(subj);
   if (!SEEK_RE.test(head) && !OFFER_RE.test(head)) seek = SEEK_RE.test(s) && !OFFER_RE.test(s);
+  if (kind === 'job') seek = WANT_WORK.test(s);
   return { kind, seek };
 }
 
@@ -253,6 +266,12 @@ if (require.main === module) {
     ['Hiring: office assistant, part time', 'English speaking office in Givat Shaul…'],
     ['Looking for work — bookkeeper', 'I have 5 years experience, available mornings'],
     ['Dentist recommendation?', 'Anyone know a good dentist in Har Nof'],
+    ['What made you feel like you actually BELONGED in Israel?', "For those of you who've moved to Israel from abroad (which is most of you), I'm curious about something: What made one apartment building or neighborhood feel like *home*, while another just felt like a place you lived? I'm especially interested in the little everyday things"],
+    ['Sublet in Nachlaot', '1 bedroom, available from Nov 1 to Jan 15, 4500 NIS'],
+    ['Looking for a place to live', 'Young couple looking for a 2 room apartment in the Katamon area from December'],
+    ['Thoughts on the new bus routes?', 'Our neighborhood lost the 15 line, anyone else?'],
+    ['Seeking babysitter', 'Looking for a babysitter twice a week in Ramat Eshkol, 50 NIS per hour'],
+    ['My job hunt story', "After months of looking for work I finally learned what matters, sharing in case it helps someone"],
   ];
   for (const [s, t] of tests) { const c = classify(s, t); console.log(JSON.stringify(c), '←', s, c ? '→ ' + noteFor(c).subject : ''); }
 }
