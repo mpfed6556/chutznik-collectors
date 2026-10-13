@@ -2164,8 +2164,11 @@ const EXTRA_FILES = ['scripts/milestones.js', 'scripts/milestones-pdf.js', 'scri
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
+// helper modules the bridge holds in memory: a new copy on disk does nothing until a restart
+// (13 Oct 2026: the jerusaguide rules were updated three times on disk and the old ones kept running)
+const LOADED_HELPERS = /jerusaguide-mail\.js|rental-match\.js|events-lib\.js|events-sync\.js|milestones(?:-pdf)?\.js|cvc-sync\.js|bizlist\.js|today-pdf\.js|rentals-pdf\.js$/;
 async function syncExtras() {
-  let n = 0;
+  let n = 0, reload = [];
   for (const rel of EXTRA_FILES) {
     try {
       const dst = path.join(__dirname, rel);
@@ -2181,12 +2184,14 @@ async function syncExtras() {
         fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.writeFileSync(tmp, buf);
         try { require('child_process').execFileSync(process.execPath, ['--check', tmp], { stdio: 'ignore' }); } catch (e) { try { fs.unlinkSync(tmp); } catch (e2) {} continue; }
         fs.renameSync(tmp, dst);
+        if (LOADED_HELPERS.test(rel) && require.cache[require.resolve(dst)]) reload.push(rel);
       } else { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.writeFileSync(dst, buf); }
       n++;
       if (/events-sync/.test(rel)) setTimeout(() => { try { eventsRound(); } catch (e) {} }, 5000);   // a new collector runs at once
     } catch (e) {}
   }
   if (n) log('⬆️  ' + n + ' helper file(s) updated');
+  if (reload.length) { log('⬆️  ' + reload.join(', ') + ' changed and is already loaded — restarting'); try { await flush(); } catch (e) {} setTimeout(() => process.exit(0), 1500); }
 }
 async function selfUpdate() {
   if (_updating) return; _updating = true;

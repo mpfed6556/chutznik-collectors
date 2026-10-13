@@ -64,7 +64,7 @@ const WANT_WORK = /\b(?:looking for (?:a job|work|employment|a position)|seeking
 // ── a recommendation request: "anyone know of a good sheitel macher…" (Miriam, 13 Oct 2026:
 //    "she isn't looking for work, she's looking for a wig lady") ────────────────────────────
 const ASK_RE = /\b(?:anyone know(?:s)? (?:of |a |an |any |where |who |which )?|can (?:anyone|someone|anybody) recommend (?:a |an |any )?|recommendations? (?:for|of|on) (?:a |an |any )?|looking for (?:a |an |the |any )?|does anyone (?:know|have|use) (?:of |a |an |any )?|in need of (?:a |an )?|need(?:s|ed)? (?:a |an |to find a )|searching for (?:a |an )?|who (?:is|does|has) (?:a |an |the )?(?:good |great |reliable )?|where can i (?:find|get) (?:a |an )?)/i;
-const FLUFF = /^(?:good|great|reliable|experienced|recommended|cheap|affordable|frum|heimish|english[- ]speaking|anglo|local|nice|decent|honest|trusted|really|very|excellent|amazing|wonderful|kosher|female|male|woman|lady|the|a|an|any|some)\s+/i;
+const FLUFF = /^(?:good|great|reliable|steady|regular|experienced|recommended|cheap|affordable|frum|heimish|english[- ]speaking|anglo|local|nice|decent|honest|trusted|really|very|excellent|amazing|wonderful|kosher|female|male|woman|lady|the|a|an|any|some|desperately|urgently)[\s,]+/i;
 const STOP = /\s+(?:that|who|which|whom|to|for|in|near|around|with|and|or|from|at|by|on|please|pls|thanks|thank|asap|urgently|today|tomorrow|tonight|this|next)\b[\s\S]*$|[,.;:!?()\n][\s\S]*$/i;
 // what the site calls it, so the search finds the posts
 const SYN = [
@@ -322,7 +322,7 @@ const pendingCount = () => Object.values(PENDING).filter((p) => p && !p.sent).le
 // JG_RESUGGEST {stamp} in the site settings: the suggested-but-unsent notes are forgotten and the
 // last two days are read again under the current rules (once per stamp)
 const RESUG_FILE = path.join(__dirname, '..', 'jg-resuggest.txt');
-const RULES = 4;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
+const RULES = 5;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
 function resuggest(stamp, log) {
   let done = ''; try { done = fs.readFileSync(RESUG_FILE, 'utf8').trim(); } catch (e) {}
   if (!stamp || done === String(stamp)) return false;
@@ -365,6 +365,8 @@ if (require.main === module) {
     ['Question', 'Looking for how to get a teudat zehut renewed quickly, any ideas?'],
     ['Maccabident Agripas best dentist', 'Have you used a dentist in the maccabident dentist on agripas that you were happy with? specifically looking for an adult dentist. Please pm me. Thanks a mill'],
     ['Advice', 'Anyone know of something good for a toddler who will not sleep?'],
+    ['Desperately looking for good, steady cleaning lady', 'For twice a week if possible. Please send me any leads Thank you so much!'],
+    ['Help', 'Looking for what I need for a bris, where do people buy?'],
   ];
   for (const [s, t0] of tests) { const t = cleanText(t0); const c = classify(s, t); console.log(JSON.stringify(c), '←', s, c ? '→ ' + noteFor(c).text.split('\n')[0] : ''); }
 }
