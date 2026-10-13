@@ -594,6 +594,7 @@ function smartTitle(body, kind, chatName) {
     first = first.charAt(0) + first.slice(1).toLowerCase();
   }
   first = shapeTitle(first);
+  first = first.replace(/(?:https?:\/\/|www\.)\S+/gi, '').replace(/\b[\w.-]+\.(?:com|net|org|co\.il|me|ly|link|app|io|info)\/\S*/gi, '').trim();   // a title is never a link (13 Oct 2026: "Https://chat.whatsapp.com/…")
   first = first.replace(/\((?:\+)?\d{9,}\)/g, '')
                .replace(/^["'\u201c\u201d\u2018\u2019]+|["'\u201c\u201d\u2018\u2019]+$/g, '')
                .replace(/\s{2,}/g, ' ').replace(/[*_~`]/g, '').trim();
@@ -1113,7 +1114,10 @@ async function intake(sock, m, chatName) {
   let kind = classify(body + (docText && !body ? ' ' + docText.slice(0, 300) : ''), !!media || !!docText);
   // a group's own etiquette reminder ("please say if you can't make it", "no ads") is never a post (Miriam, 24 Sep 2026)
   if (GROUP_NOTICE_RE.test(body)) kind = 'chatter';
-  const inviteOnly = /chat\.whatsapp\.com\//i.test(body) && body.replace(/https?:\/\/\S+/g, ' ').replace(/whatsapp group invite|group invite|join (?:the |our )?group|invite link/gi, ' ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean).length < 6;
+  // a group invite is never a post, however it is dressed up ("looking for a remote job click the link below",
+  // "the chat is full, here is the new one") — Miriam, 13 Oct 2026, again
+  const inviteWords = body.replace(/https?:\/\/\S+/g, ' ').replace(/whatsapp group invite|group invite|join (?:the |our |this )?(?:group|chat)|invite link|click (?:on )?(?:the |this )?link|the link below|link below|here is the new one|chat is full|new (?:chat|group)|link to (?:the )?chat|see link|press (?:the )?link|tap (?:the )?link/gi, ' ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter((w) => w && !/^(?:the|a|an|to|for|of|in|on|and|or|is|are|be|this|that|here|there|new|our|your|you|we|us|all|everyone|please|pls|now|also|just|get|more|info|looking|job|jobs|remote|chat|group|link|below|above|click|join|welcome|share|forward)$/i.test(w));
+  const inviteOnly = /chat\.whatsapp\.com\//i.test(body) && inviteWords.length < 8 && !normalizePhone(body) && !/\d{3,}\s*(?:nis|₪|\$|shekel)|\$\s*\d/i.test(body);
   // a personal message with a video link ("this came up on my feed… hatzlocha raba tomorrow in court") is
   // chatter, not an answer (Miriam, 13 Oct 2026: it became a public post)
   const personalNote = PERSONAL_RE.test(body) && (!link || VIDEO_LINK_RE.test(link) || VIDEO_LINK_RE.test(body)) && !cards.length;
