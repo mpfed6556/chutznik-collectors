@@ -56,6 +56,7 @@ const OFFER_RE = /\b(available|avail\b|for rent|to rent out|renting out|now hiri
 // "what made you feel you belonged in Israel?" discussion was taken for a rental)
 const RENTAL_SURE = /(?:\b\d(?:\.5)?\s*(?:br|bdrm|bed|beds|bedroom|bedrooms|room|rooms|rm)\b|\b(?:for rent|to rent|to let|for let|sublet|sub-let|rent(?:al)? available|available (?:from|now|immediately|for)|furnished|unfurnished|long.?term|short.?term|per month|a month|\/month|pcm|\bnis\b|₪|shekel|\$\s?\d|\d\s?\$|looking (?:for|to rent) (?:an? )?(?:\d+ ?(?:br|bdrm|bedroom|room)|apartment|apt|flat|studio|sublet|place to (?:rent|live)|room(?:mate)?)|seeking (?:an? )?(?:apartment|apt|flat|sublet|rental|room)|need(?:s|ed)? (?:an? )?(?:apartment|apt|flat|sublet|rental|room)|apartment (?:for|to) rent|apt (?:for|to) rent|flat (?:for|to) rent|(?:apartment|apt|flat|house|studio|penthouse|unit) (?:available|for sale|wanted)|wanted:? (?:apartment|apt|flat|room))\b)/i;
 const JOB_SURE = /\b(?:hiring|we are looking for an? (?:\w+ ){0,3}(?:teacher|assistant|secretary|bookkeeper|nanny|babysitter|cleaner|tutor|driver|manager|worker|employee|rep|representative|agent|aide|caregiver|therapist|nurse|coordinator|receptionist|developer|designer|writer|editor|salesperson)|position|positions|vacancy|vacancies|job (?:opening|offer|opportunity|available|wanted)|openings?\b|full.?time|part.?time|salary|resume|\bcv\b|looking for (?:a job|work|employment)|seeking (?:a job|work|employment)|available for work|work from home|remote (?:job|work|position)|freelance|per hour|an hour|\/hr\b|apply (?:to|at|by|here)|send (?:your )?(?:cv|resume))\b/i;
+const DWELLING = /\b(?:apartment|apartments|apt|apts|flat|flats|dira|dirah|sublet|studio|penthouse|rooms?|bedrooms?|bdrm|\d\s?br|house|unit|villa|cottage|basement|duplex|vacation rental|holiday (?:apartment|rental)|place to (?:live|stay|rent)|accommodation)\b/i;
 const CHATTER = /\b(?:what made you|how do you feel|curious|i'm curious|anyone else|poll|survey|discussion|thoughts\?|opinions?|does anyone else|what do you think|share your|tell me about|story|stories|sharing|in case it helps|what i learned|lessons?|rant|vent)\b/i;
 // a job post is "seeking" only when the writer wants work for herself; "seeking a babysitter" is a job on offer
 const WANT_WORK = /\b(?:looking for (?:a job|work|employment|a position)|seeking (?:a job|work|employment|a position)|available for work|open to (?:work|offers|positions)|my (?:cv|resume)|i am (?:a|an) (?:\w+ ){0,2}(?:teacher|assistant|bookkeeper|nanny|babysitter|cleaner|tutor|driver|nurse|therapist|designer|developer|writer|editor)|years? (?:of )?experience|i have experience|experienced (?:\w+ ){0,2}(?:looking|available|seeking))\b/i;
@@ -109,7 +110,7 @@ function classify(subject, text) {
   const subj = String(subject || ''), body = String(text || '');
   const s = subj + '\n' + body;
   const head = subj + '\n' + body.split('\n').slice(0, 3).join('\n');
-  const isRental = RENTAL_RE.test(s) && RENTAL_SURE.test(s);
+  const isRental = RENTAL_RE.test(s) && RENTAL_SURE.test(s) && DWELLING.test(s);   // "maternity gown to buy or rent" is not a rental
   const isJob = JOB_RE.test(s) && JOB_SURE.test(s) && !/\b(apartment|apt|bedroom|bdrm|rental)\b/i.test(subj);
   let kind = isRental ? 'rental' : (isJob ? 'job' : '');
   if (!kind) { const topic = askTopic(subject, text); return topic ? { kind: 'ask', seek: true, topic } : null; }
@@ -119,7 +120,7 @@ function classify(subject, text) {
   // "looking for a job" beats "job available" when both appear: the subject decides, then the first line
   let seek = SEEK_RE.test(head) && !OFFER_RE.test(subj);
   if (!SEEK_RE.test(head) && !OFFER_RE.test(head)) seek = SEEK_RE.test(s) && !OFFER_RE.test(s);
-  if (kind === 'job') seek = WANT_WORK.test(s);
+  if (kind === 'job') seek = WANT_WORK.test(s) || (/\?\s*$/.test(head.trim()) && !/\b(?:hiring|we are looking for|position|vacancy|opening)\b/i.test(subj)) || /\b(?:where (?:are|can i find|do i find|to find)|any groups?|job (?:groups?|boards?|listings?|sites?)|are there (?:any )?(?:groups?|sites?|places?)|where .{0,30}jobs? (?:are )?posted)\b/i.test(s);
   // an advert with a price, "realty" or what the apartment includes is an offer, whatever its footer says
   if (kind === 'rental' && seek && !/^\s*(?:urgently |urgent:? )?(?:wanted|seeking|looking for|iso|searching for|need)\b/i.test(subj)) {
     let strength = 0; try { strength = require('./rental-match.js').offerStrength(subj + '\n' + body.slice(0, 600)); } catch (e) {}
@@ -134,11 +135,11 @@ function noteFor(c, matchText) {
   const subject = rental ? 'rental info' : c.kind === 'ask' ? (c.topic + ' info') : 'job info';
   let text;
   if (matchText) text = matchText;   // her matches, in Miriam's words (rental-match.js)
-  else if (c.kind === 'ask') text = 'hi! I saw you\'re looking for a ' + c.topic + ' on jerusaguide. there are a few recommended here 👉 ' + SITE + '/israel/search/' + encodeURIComponent(c.topic).replace(/%20/g, '+') + '\nhatzlachah!';
-  else if (rental && !c.seek) text = 'hi! I saw you just posted a rental on jerusaguide. there are people looking to rent here 👉 ' + SITE + '\nhatzlachah!';
-  else if (rental && c.seek) text = 'hi! I saw you\'re looking for a rental on jerusaguide. there are tons listed here 👉 ' + SITE + '/israel/rental\nhatzlachah!';
-  else if (!rental && !c.seek) text = 'hi! I saw you just posted a job on jerusaguide. there are people looking for work here 👉 ' + SITE + '\nhatzlachah!';
-  else text = 'hi! I saw you\'re looking for work on jerusaguide. there are tons of jobs listed here 👉 ' + SITE + '/israel/jobs\nhatzlachah!';
+  else if (c.kind === 'ask') text = 'hi! I saw you\'re looking for a ' + c.topic + '. there are a few recommended here 👉 ' + SITE + '/israel/search/' + encodeURIComponent(c.topic).replace(/%20/g, '+') + '\nhatzlachah!';
+  else if (rental && !c.seek) text = 'hi! I saw you just posted a rental. there are people looking to rent here 👉 ' + SITE + '/israel/rental\nhatzlachah!';
+  else if (rental && c.seek) text = 'hi! I saw you\'re looking for a rental. there are tons listed here 👉 ' + SITE + '/israel/rental\nhatzlachah!';
+  else if (!rental && !c.seek) text = 'hi! I saw you just posted a job. there are people looking for work here 👉 ' + SITE + '/israel/jobs\nhatzlachah!';
+  else text = 'hi! I saw you\'re looking for work. there are tons of jobs listed here 👉 ' + SITE + '/israel/jobs\nhatzlachah!';
   const html = '<div style="font-family:Georgia,serif;font-size:16px;line-height:1.55;color:#3a2f27">'
     + text.split('\n').map(l => l.replace(/(https?:\/\/\S+)/g, '<a href="$1" style="color:#a8483f">$1</a>')).join('<br>')
     + '</div>';
@@ -207,7 +208,7 @@ async function sendSuggestions(list, opts, log) {
   const to = (opts && opts.to && opts.to.length) ? opts.to : SUGGEST_DEFAULT_TO;
   const site = (opts && opts.site) || SITE, key = opts && opts.ingestKey;
   if (!key) { log('📬 jerusaguide: no site key for the suggestions email'); return false; }
-  const what = (x) => x.kind === 'ask' ? 'a ' + x.topic : (x.seek ? 'the ' : 'your ') + x.kind + ' on jerusaguide';
+  const what = (x) => x.kind === 'ask' ? 'a ' + x.topic : (x.seek ? 'the ' : 'your ') + x.kind;
   const label = (x) => x.kind === 'ask' ? 'is looking for a ' + x.topic : (x.seek ? 'is looking for a ' : 'posted a ') + x.kind;
   const approve = (x) => site + '/israel/#approve/' + x.token + '?who=' + encodeURIComponent(x.who) + '&what=' + encodeURIComponent(what(x)) + '&via=email';
   const block = (x) => '<div style="border:1px solid #eadfd3;border-radius:12px;padding:12px 14px;margin:0 0 14px">'
@@ -217,13 +218,13 @@ async function sendSuggestions(list, opts, log) {
     + '<div style="background:#fbf6f0;border-radius:8px;padding:8px 10px;font-family:Georgia,serif;font-size:14px;white-space:pre-wrap;color:#3a2f27">' + esc(x.note.text) + '</div>'
     + '<div style="margin-top:10px"><a href="' + approve(x) + '" style="display:inline-block;background:#7a2c0c;color:#fff;border-radius:99px;padding:10px 22px;text-decoration:none;font-weight:700;font-size:14px">✓ Send it from Chutznik</a></div></div>';
   const html = '<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px;line-height:1.5;color:#3a2920;max-width:640px">'
-    + '<div style="font-family:Georgia,serif;font-size:20px;font-weight:700;color:#6b2a0c;margin-bottom:4px">' + list.length + ' jerusaguide poster' + (list.length === 1 ? '' : 's') + ' to write to</div>'
+    + '<div style="font-family:Georgia,serif;font-size:20px;font-weight:700;color:#6b2a0c;margin-bottom:4px">' + list.length + ' poster' + (list.length === 1 ? '' : 's') + ' to write to</div>'
     + '<div style="color:#9a8c80;font-size:13px;margin-bottom:14px">Each one posted or asked about a rental or a job, or asked for a recommendation Chutznik has. Nothing was sent yet. Press a button and that note goes out from info@chutznik.org within a minute. Nobody is suggested twice.</div>'
     + list.map(block).join('')
-    + '<div style="color:#b8aa9c;font-size:11px;margin-top:10px">Suggestions by the bridge, from the jerusaguide posts in ' + esc(process.env.GMAIL_USER || 'the inbox') + '. Set JG_MODE to live on the site settings and the bridge sends them itself.</div></div>';
+    + '<div style="color:#b8aa9c;font-size:11px;margin-top:10px">Suggestions by the bridge, from the group posts in ' + esc(process.env.GMAIL_USER || 'the inbox') + '. Nobody is written to twice.</div></div>';
   const text = list.map((x) => x.who + ' (' + label(x) + '): ' + (x.subject || '') + '\n--- suggested note (subject: ' + x.note.subject + ') ---\n' + x.note.text + '\nSend it from Chutznik: ' + approve(x) + '\n').join('\n');
   const r = await fetch(site + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': key, 'User-Agent': 'chutznik-bridge' },
-    body: JSON.stringify({ type: 'custom', to, subject: 'jerusaguide: ' + list.length + ' suggested note' + (list.length === 1 ? '' : 's') + ' to send', body: text, html }) });
+    body: JSON.stringify({ type: 'custom', to, subject: list.length + ' suggested note' + (list.length === 1 ? '' : 's') + ' to send', body: text, html }) });
   const rt = (await r.text().catch(() => '')).slice(0, 160);
   if (!r.ok) { log('📬 jerusaguide: suggestions mail failed ' + r.status + ' ' + rt); return false; }
   log('📬 jerusaguide: ' + list.length + ' suggestion(s) emailed to ' + to.join(', '));
@@ -317,9 +318,11 @@ const pendingCount = () => Object.values(PENDING).filter((p) => p && !p.sent).le
 // JG_RESUGGEST {stamp} in the site settings: the suggested-but-unsent notes are forgotten and the
 // last two days are read again under the current rules (once per stamp)
 const RESUG_FILE = path.join(__dirname, '..', 'jg-resuggest.txt');
+const RULES = 3;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
 function resuggest(stamp, log) {
   let done = ''; try { done = fs.readFileSync(RESUG_FILE, 'utf8').trim(); } catch (e) {}
   if (!stamp || done === String(stamp)) return false;
+  const need = Number((String(stamp).match(/rules-(\d+)$/) || [])[1] || 0); if (need > RULES) return false;   // the bridge has not updated yet
   let n = 0;
   for (const k of Object.keys(TOLD)) if (TOLD[k] && (TOLD[k].suggested || TOLD[k].dry) && !TOLD[k].approved && !TOLD[k].via) { delete TOLD[k]; n++; }
   for (const k of Object.keys(PENDING)) if (PENDING[k] && !PENDING[k].sent) delete PENDING[k];
@@ -352,6 +355,9 @@ if (require.main === module) {
     ['Selling a stroller', 'Bugaboo in great condition, 800 NIS'],
     ['New in the aka project', 'New in the aka project 4 bedrooms 3 bathrooms Sukkah balcony 6th floor The apartment includes: Beds in all rooms Refrigerator, oven, washing machine Living room table with 8 chairs Rent 16,000 Rosenbaum realty 0534681265 * Want Daily Property Updates? Choose What Works Best for You: looking for something specific? write to us'],
     ['Urgently Looking for Apt for 3 week Rental', 'anyone know of a 2-3 bedroom apt in Gush 80 /Tzfanya area for rental from Thurs Oct 15 - Nov 8?'],
+    ['Groups -Remote job', 'Are there any groups where remote jobs are posted? Thanks'],
+    ['looking for maternity gown', 'Looking for maternity gown to buy or rent! pls email z0553395935@gmail.com with pics and price thanks'],
+    ['Secretary needed', 'Busy office in Geula is looking for a full time secretary, good English, send CV to office@x.com'],
   ];
   for (const [s, t0] of tests) { const t = cleanText(t0); const c = classify(s, t); console.log(JSON.stringify(c), '←', s, c ? '→ ' + noteFor(c).text.split('\n')[0] : ''); }
 }
