@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-12T17:55:21.225Z",
+  "lastRun": "2026-10-13T00:33:05.024Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "ok via RSS (1 items)",
-    "Yad Sarah": "ok via RSS (6 items)",
+    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-12T17:55:21.224Z",
-      "sent": 1,
+      "lastRun": "2026-10-13T00:33:05.022Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -71,9 +71,9 @@
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "14 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
         "iTravelJerusalem": "14 cards, nothing new (14 distinct)",
-        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (1 upcoming)",
+        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/feed/ (10 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (17 upcoming)",
-        "Pardes": "no events · HTTP 403",
+        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (3 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
@@ -156,10 +156,34 @@
         "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
-            "title": "Art of The Ark Presentation at the Biblical Museum of Natural History",
-            "date": "2026-10-12",
+            "title": "Kahoot Family Fun in support of Crossroads",
+            "date": null,
             "time": "",
-            "link": "https://www.funinjerusalem.com/events/art-of-the-ark-at-bmnh/"
+            "link": "https://www.funinjerusalem.com/events/kahoot-crossroads-sukkot/"
+          },
+          {
+            "title": "Sukkot Screenings at the Jerusalem Cinematheque",
+            "date": null,
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/sukkot-cinematheque/"
+          },
+          {
+            "title": "Sukkot Family Fair at the Jerusalem International YMCA!",
+            "date": "2026-09-28",
+            "time": "10am",
+            "link": "https://www.funinjerusalem.com/events/sukkot-ymca/"
+          },
+          {
+            "title": "Women’s Prayer Event at National Library",
+            "date": null,
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/womens-prayer-event-at-national-library/"
+          },
+          {
+            "title": "The Sukkot Kindness Booth with Just One Chesed",
+            "date": null,
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/the-kindness-booth-sukkot/"
           }
         ],
         "OU Israel Center": [
