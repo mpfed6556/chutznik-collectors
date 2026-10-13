@@ -34,8 +34,15 @@ const cleanMemo = (p) => String(p.memo || '').replace(/\(From the Romema Door 2 
 const textOf = (p) => String(p.title || '') + '\n' + cleanMemo(p);
 const isAd = (p) => /^(magazine|aptitem|events)$/i.test(String(p.source || ''));   // an advert or a listing feed is never someone asking
 function isRental(p) { return (p.types || []).some((t) => /rental/i.test(String(t))) || RENT_RE.test(textOf(p)); }
+// an advert's own signs: a price, "realty", what the apartment includes — the poster is renting out, whatever
+// a footer says ("Want daily property updates? … looking for …", 13 Oct 2026: a Rosenbaum realty listing was
+// read as someone looking for a 4-bedroom)
+const OFFER_STRONG = /\b(?:rent(?:al)?\s*:?\s*\d|\d{1,3},\d{3}\b|\d{3,}\s*(?:nis|₪|shekel|shekels|\$)|\$\s*\d{3,}|₪\s*\d|realty|real estate|realtor|brokerage|broker|agency|the (?:apartment|apt|flat|unit) includes|fully furnished|furnished|sukkah balcony|\d+(?:st|nd|rd|th) floor|\d+ bathrooms?|immediate(?:ly)? available|available (?:from|now|immediately)|for rent|to let|no agent fee|exclusive)\b/i;
+function offerStrength(text) { const m = String(text || '').match(new RegExp(OFFER_STRONG.source, 'gi')); return m ? m.length : 0; }
 function isWanted(p) {
+  if (typeof p._seek === 'boolean') return p._seek;   // decided by whoever built the item (jerusaguide-mail.js)
   const title = String(p.title || ''), t = textOf(p);
+  if (kindOf(p) === 'rental' && offerStrength(title + '\n' + t.slice(0, 600)) >= 2 && !/^\s*(?:wanted|seeking|looking for|iso)\b/i.test(title)) return false;
   if (/^\s*(?:wanted|seeking|looking for)\b/i.test(title)) return true;   // said plainly in the title, advert or not
   if (kindOf(p) === 'job') return !isAd(p) && JOB_SEEK_RE.test(t);   // jobs run the other way: the person looking for work is the one asking
   if (isAd(p)) return false;
@@ -147,14 +154,16 @@ function message(item, matches, SITE) {
 function prepare(arr, kind) { return (Array.isArray(arr) ? arr : []).filter((p) => p && (!p.status || p.status === 'public') && fresh(p) && !SKIP_IDS.test(String(p.id))).map((p) => Object.assign({}, p, { _kind: kind })); }
 async function fetchRecent(SITE) {
   const base = (SITE || 'https://chutznik.org').replace(/\/$/, '');
-  const get = async (q) => { try { const r = await fetch(base + '/api/live-data?type=' + q, { signal: AbortSignal.timeout(20000) }); return r.ok ? await r.json() : []; } catch (e) { return []; } };
+  // the site's data answers only its own pages, the bridge (with its key) and the admin (8 Oct 2026)
+  const hdr = process.env.INGEST_KEY ? { 'x-ingest-key': process.env.INGEST_KEY, 'User-Agent': 'chutznik-bridge' } : { 'User-Agent': 'chutznik-bridge' };
+  const get = async (q) => { try { const r = await fetch(base + '/api/live-data?type=' + q, { headers: hdr, signal: AbortSignal.timeout(20000) }); return r.ok ? await r.json() : []; } catch (e) { return []; } };
   // the last three days only: the matches never look further back (the whole file was 2 MB a time — Miriam, 30 Sep 2026)
   let ups = await get('updates&since=' + (Date.now() - 3 * 86400e3)); if (ups && ups.delta) ups = ups.items || [];
   const posts = await get('posts');
   return prepare(Array.isArray(ups) ? ups : [], 'up').concat(prepare(posts, 'post'));
 }
 // a poster we only know by the words of her message (jerusaguide)
-function itemFromText(subject, text) { const t = String(subject || '') + '\n' + String(text || ''); const types = RENT_RE.test(t) ? ['Rental'] : (JOB_RE.test(t) ? ['Jobs'] : []); return { id: 'mail', title: String(subject || '').slice(0, 120), memo: String(text || '').slice(0, 3000), types, author: '' }; }
+function itemFromText(subject, text, seek) { const t = String(subject || '') + '\n' + String(text || ''); const types = RENT_RE.test(t) ? ['Rental'] : (JOB_RE.test(t) ? ['Jobs'] : []); const it = { id: 'mail', title: String(subject || '').slice(0, 120), memo: String(text || '').slice(0, 3000), types, author: '' }; if (typeof seek === 'boolean') it._seek = seek; return it; }
 
 module.exports = { fetchRecent, findMatches, message, isRental, isWanted, kindOf, facts, describe, topic, itemFromText, prepare, link };
 
