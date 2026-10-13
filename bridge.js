@@ -1713,7 +1713,8 @@ async function pollJobMail() {
     }
     saveSeen();
   } catch (e) {
-    log('✉️  jobs mail: ' + (e && e.message ? e.message.slice(0, 160) : e));
+    const inner = e && e.errors && e.errors[0] && e.errors[0].message;   // AggregateError: the first of the connection errors
+    log('✉️  jobs mail: ' + (e && e.message ? e.message.slice(0, 160) : e) + (inner ? ' (' + String(inner).slice(0, 120) + ')' : ''));
   } finally { try { await client.logout(); } catch (e) {} }
   if (sent) log('✉️  jobs mail: ' + sent + ' new job post(s) published');
 }
@@ -1728,15 +1729,18 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
 // ── Jerusaguide: one email to whoever posts or asks about a rental or a job ──
 //    (built 15 Sep 2026; JG_MODE=off in .env until Miriam is in the group —
 //    JG_MODE=dry rehearses in the log, JG_MODE=live sends. See scripts/jerusaguide-mail.js)
+//    JG_MODE in bridge-settings.json on the site overrides the .env (off | dry | suggest | live);
+//    suggest emails Miriam the notes to send herself (13 Oct 2026). The round runs
+//    either way and looks at the mode each time, so a switch on the site needs no restart.
 (function () {
   const modPath = path.join(__dirname, 'scripts', 'jerusaguide-mail.js');
-  const mode = String(process.env.JG_MODE || 'off').toLowerCase();
-  if (mode === 'off' || !fs.existsSync(modPath)) { log('📬 jerusaguide notes: off (JG_MODE=dry or live in .env to start)'); return; }
+  if (!fs.existsSync(modPath)) { log('📬 jerusaguide notes: off (scripts/jerusaguide-mail.js missing)'); return; }
   const JG = require(modPath);
   const every = Number(process.env.JG_MINUTES || 10);
-  setTimeout(() => JG.run(log), 45 * 1000);
-  setInterval(() => JG.run(log), every * 60 * 1000);
-  log('📬 jerusaguide notes: ' + mode + ' · watching ' + (process.env.GMAIL_USER || '?') + ' for ' + (process.env.JG_GROUP || 'jerusaguide@googlegroups.com') + ' every ' + every + ' min');
+  const opts = () => ({ site: SITE, ingestKey: INGEST_KEY, to: global._jgTo || [] });
+  setTimeout(() => JG.run(log, opts()), 75 * 1000);
+  setInterval(() => JG.run(log, opts()), every * 60 * 1000);
+  log('📬 jerusaguide notes: ' + JG.modeNow() + ' (.env; the site settings may change it) · watching ' + (process.env.GMAIL_USER || '?') + ' for ' + (process.env.JG_GROUP || 'jerusaguide@googlegroups.com') + ' every ' + every + ' min');
 })();
 
 // ── "Your post is up on Chutznik" — a private WhatsApp note to the poster ────
@@ -1785,6 +1789,8 @@ async function pullSettings() {
     if (j.BIZLIST && typeof j.BIZLIST === 'object' && j.BIZLIST.stamp) { global._bizlist = { stamp: String(j.BIZLIST.stamp), to: Array.isArray(j.BIZLIST.to) ? j.BIZLIST.to.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8) : [], email: Array.isArray(j.BIZLIST.email) ? j.BIZLIST.email.map((x) => String(x).trim().toLowerCase()).filter((x) => x.includes('@')) : [] }; setTimeout(bizlistRun, 4000); }
     if (j.MILESTONES && typeof j.MILESTONES === 'object' && j.MILESTONES.stamp) { global._milestones = { stamp: String(j.MILESTONES.stamp), to: String(j.MILESTONES.to || 'preview').toLowerCase() }; setTimeout(milestonesRun, 2000); }
     // who gets the daily TODAY sheet (numbers with country code, no +)
+    if (j.JG_MODE !== undefined) { const v = String(j.JG_MODE || 'off').toLowerCase(); if (['off', 'dry', 'suggest', 'live'].includes(v) && v !== (global._jgMode || '')) { global._jgMode = v; log('\u2699\ufe0f  jerusaguide notes: ' + v + ' (from the site settings)'); } }
+    if (Array.isArray(j.JG_TO)) { const list = j.JG_TO.map((x) => String(x || '').trim().toLowerCase()).filter((x) => x.includes('@')); if (JSON.stringify(list) !== JSON.stringify(global._jgTo || [])) { global._jgTo = list; log('\u2699\ufe0f  jerusaguide suggestions go to: ' + (list.join(', ') || '(Miriam)')); } }
     if (j.DIGEST !== undefined) { const v = String(j.DIGEST || 'off').toLowerCase(); if (v !== (global._digest || 'off')) { global._digest = v; log('\u2699\ufe0f  WhatsApp digest email: ' + v); } }
     if (Array.isArray(j.DIGEST_TO)) { const list = j.DIGEST_TO.map((x) => String(x || '').trim().toLowerCase()).filter((x) => x.includes('@')); if (JSON.stringify(list) !== JSON.stringify(global._digestTo || [])) { global._digestTo = list; log('\u2699\ufe0f  WhatsApp digest goes to: ' + (list.join(', ') || '(admin)')); } }
     if (Array.isArray(j.RENTALS_TO)) { const list = j.RENTALS_TO.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._rentalsTo || [])) { global._rentalsTo = list; log('\u2699\ufe0f  RENTALS sheet goes to: ' + (list.join(', ') || '(same as TODAY)')); } }

@@ -11,7 +11,7 @@
 // Nobody ever hears from us twice: every address written to is kept in
 // jg-told.json for good, whatever they post later.
 //
-// .env:  JG_MODE=off|dry|live   (off = built but not running — the default)
+// .env:  JG_MODE=off|dry|suggest|live   (off = built but not running — the default)
 //        JG_GROUP=jerusaguide@googlegroups.com
 //        JG_FROM="Chutznik <info@chutznik.org>"   JG_REPLY_TO=info@chutznik.org   (from and replies: info@)
 //        RESEND_API_KEY=…  (the same key the site uses; else Gmail SMTP through nodemailer)
@@ -20,7 +20,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const MODE = String(process.env.JG_MODE || 'off').toLowerCase();
+// off | dry | suggest | live.  suggest (Miriam, 13 Oct 2026: "start sending suggestions of
+// what to send ppl"): nothing goes to the poster; Miriam gets one email per round with
+// each poster's address, what they wrote and the ready note, with a one-click compose link.
+// JG_MODE in bridge-settings.json on the site overrides the .env (global._jgMode).
+const modeNow = () => String(global._jgMode || process.env.JG_MODE || 'off').toLowerCase();
+let MODE = modeNow();
+const SUGGEST_DEFAULT_TO = ['mpfederman@gmail.com'];
 const GROUP = String(process.env.JG_GROUP || 'jerusaguide@googlegroups.com').toLowerCase();
 const GROUP_KEY = GROUP.split('@')[0];                       // "jerusaguide"
 const FROM = process.env.JG_FROM || 'Chutznik <info@chutznik.org>';
@@ -119,8 +125,36 @@ function cleanText(t) {
 }
 
 let busy = false, sentToday = 0, dayKey = '';
-async function run(log) {
+// the suggestions email, through the site's own mail function (logged like every other email)
+function esc(v) { return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+async function sendSuggestions(list, opts, log) {
+  const to = (opts && opts.to && opts.to.length) ? opts.to : SUGGEST_DEFAULT_TO;
+  const site = (opts && opts.site) || SITE, key = opts && opts.ingestKey;
+  if (!key) { log('📬 jerusaguide: no site key for the suggestions email'); return false; }
+  const compose = (x) => 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(x.who) + '&su=' + encodeURIComponent(x.note.subject) + '&body=' + encodeURIComponent(x.note.text);
+  const block = (x) => '<div style="border:1px solid #eadfd3;border-radius:12px;padding:12px 14px;margin:0 0 14px">'
+    + '<div style="font-size:12px;color:#9a8c80">' + esc(x.who) + ' · ' + (x.seek ? 'is looking for' : 'posted') + ' a ' + esc(x.kind) + '</div>'
+    + '<div style="font-weight:700;color:#3a2920;margin:2px 0 6px">' + esc(x.subject || '(no subject)') + '</div>'
+    + (x.snippet ? '<div style="font-size:13px;color:#6b5d50;white-space:pre-wrap;margin-bottom:8px">' + esc(x.snippet) + '</div>' : '')
+    + '<div style="background:#fbf6f0;border-radius:8px;padding:8px 10px;font-family:Georgia,serif;font-size:14px;white-space:pre-wrap;color:#3a2f27">' + esc(x.note.text) + '</div>'
+    + '<div style="margin-top:8px"><a href="' + compose(x) + '" style="display:inline-block;background:#c4845f;color:#fff;border-radius:99px;padding:7px 16px;text-decoration:none;font-weight:700;font-size:13px">Send this in Gmail →</a>'
+    + ' <a href="mailto:' + esc(x.who) + '?subject=' + encodeURIComponent(x.note.subject) + '&body=' + encodeURIComponent(x.note.text) + '" style="color:#a8483f;font-size:12px;margin-left:8px">or in your mail app</a></div></div>';
+  const html = '<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px;line-height:1.5;color:#3a2920;max-width:640px">'
+    + '<div style="font-family:Georgia,serif;font-size:20px;font-weight:700;color:#6b2a0c;margin-bottom:4px">' + list.length + ' jerusaguide poster' + (list.length === 1 ? '' : 's') + ' to write to</div>'
+    + '<div style="color:#9a8c80;font-size:13px;margin-bottom:14px">Each one posted or asked about a rental or a job. Nothing was sent; every note below is a suggestion. Press the button and Gmail opens with it filled in. Nobody is suggested twice.</div>'
+    + list.map(block).join('')
+    + '<div style="color:#b8aa9c;font-size:11px;margin-top:10px">Suggestions by the bridge, from the jerusaguide posts in ' + esc(process.env.GMAIL_USER || 'the inbox') + '. Set JG_MODE to live on the site settings and the bridge sends them itself.</div></div>';
+  const text = list.map((x) => x.who + ' (' + (x.seek ? 'looking for' : 'posted') + ' a ' + x.kind + '): ' + (x.subject || '') + '\n--- suggested note (subject: ' + x.note.subject + ') ---\n' + x.note.text + '\n').join('\n');
+  const r = await fetch(site + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': key, 'User-Agent': 'chutznik-bridge' },
+    body: JSON.stringify({ type: 'custom', to, subject: 'jerusaguide: ' + list.length + ' suggested note' + (list.length === 1 ? '' : 's') + ' to send', body: text, html }) });
+  const rt = (await r.text().catch(() => '')).slice(0, 160);
+  if (!r.ok) { log('📬 jerusaguide: suggestions mail failed ' + r.status + ' ' + rt); return false; }
+  log('📬 jerusaguide: ' + list.length + ' suggestion(s) emailed to ' + to.join(', '));
+  return true;
+}
+async function run(log, opts) {
   log = log || ((s) => console.log(s));
+  MODE = modeNow();
   if (MODE === 'off') return;
   if (busy) return; busy = true;
   const today = new Date().toISOString().slice(0, 10); if (today !== dayKey) { dayKey = today; sentToday = 0; }
@@ -131,6 +165,7 @@ async function run(log) {
   const client = new ImapFlow({ host: 'imap.gmail.com', port: 993, secure: true, auth: { user, pass }, logger: false });
   const ours = new Set([user.toLowerCase(), REPLY_TO.toLowerCase(), (FROM.match(/<([^>]+)>/) || [])[1] || ''].filter(Boolean));
   let sent = 0, skipped = 0, recent = null;   // recent: the site's rentals of the last three days, for the matches
+  const suggestions = [];
   try {
     await client.connect();
     let box = '[Gmail]/All Mail';
@@ -163,6 +198,7 @@ async function run(log) {
         try { const RM = require('./rental-match.js'); const it = RM.itemFromText(subject, text); if (!recent) recent = await RM.fetchRecent(SITE); const m = RM.findMatches(it, recent); if (m.length) matchText = RM.message(it, m, SITE); } catch (e) { log('🤝 matches: ' + (e && e.message)); }
       }
       const note = noteFor(c, matchText);
+      if (MODE === 'suggest') { suggestions.push({ mid, who, kind: c.kind, seek: c.seek, subject: subject.slice(0, 120), snippet: text.replace(/\s+/g, ' ').trim().slice(0, 280), note }); sent++; sentToday++; continue; }
       if (MODE === 'dry') { log('📬 jerusaguide (dry): would email ' + who + ' — ' + note.subject + ' — ' + (c.seek ? 'asking' : 'posting') + ' · "' + subject.slice(0, 60) + '"'); TOLD[who] = { ts: Date.now(), kind: c.kind, seek: c.seek, dry: true, subject: subject.slice(0, 80) }; sent++; sentToday++; continue; }
       try {
         const via = await sendMail(who, note, log);
@@ -172,13 +208,18 @@ async function run(log) {
         await new Promise((r) => setTimeout(r, 4000));
       } catch (e) { log('📬 jerusaguide: ' + who + ' failed: ' + (e && e.message)); }
     }
+    if (suggestions.length) {
+      const ok = await sendSuggestions(suggestions, opts, log);
+      if (ok) for (const x of suggestions) TOLD[x.who] = { ts: Date.now(), kind: x.kind, seek: x.seek, suggested: true, subject: x.subject.slice(0, 80) };
+      else { sent -= suggestions.length; sentToday -= suggestions.length; for (const x of suggestions) SEEN.delete(x.mid); }
+    }
     saveSeen(); saveTold();
-  } catch (e) { log('📬 jerusaguide: ' + (e && e.message ? e.message.slice(0, 160) : e)); }
+  } catch (e) { const inner = e && e.errors && e.errors[0] && e.errors[0].message; log('📬 jerusaguide: ' + (e && e.message ? e.message.slice(0, 160) : e) + (inner ? ' (' + String(inner).slice(0, 120) + ')' : '')); }
   finally { try { await client.logout(); } catch (e) {} busy = false; }
-  if (sent || skipped) log('📬 jerusaguide: ' + sent + ' note(s) ' + (MODE === 'dry' ? 'rehearsed' : 'sent') + ', ' + skipped + ' left alone');
+  if (sent || skipped) log('📬 jerusaguide: ' + sent + ' note(s) ' + (MODE === 'dry' ? 'rehearsed' : MODE === 'suggest' ? 'suggested' : 'sent') + ', ' + skipped + ' left alone');
 }
 
-module.exports = { run, classify, noteFor, posterAddress, MODE };
+module.exports = { run, classify, noteFor, posterAddress, modeNow, get MODE() { return modeNow(); } };
 
 if (require.main === module) {
   // a quick look at the classifier: node scripts/jerusaguide-mail.js
