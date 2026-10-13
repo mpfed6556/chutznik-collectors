@@ -536,7 +536,41 @@ function shapeTitle(t) {
   if (/^(?:was|now|only|just|save)\s*\$?\d/i.test(x) || /^\d+\s*\$|^\$\s*\d+\s*(?:off)?$/i.test(x)) return '';   // a bare price is not a title: the picture's words will do
   return x;
 }
+// a message that lists several jobs ("Recruiter Remote~Full Time / Territory Manager Remote - Full Time / …")
+// is a listing, and its title says so (Miriam, 13 Oct 2026: "a general listing of newly posted remote jobs")
+function jobListTitle(body) {
+  const text = stripEmoji(String(body || '')).replace(/\r/g, '');
+  const parts = text.split(/\b(?:full|part)[\s-]?time\b/i);
+  if (parts.length < 4) return '';   // three jobs or more
+  const names = [];
+  let remote = 0;
+  for (const seg of parts.slice(0, -1)) {
+    let tail = seg.replace(/https?:\/\/\S+/g, '\n').replace(/\bjobsgemach\.com\S*/gi, '\n').split('\n').map((x) => x.trim()).filter(Boolean).pop() || '';
+    if (/\b(?:fully )?remote\b|hybrid/i.test(tail)) remote++;
+    tail = tail.replace(/\b(?:fully\s+)?(?:remote|hybrid|on-?site|in[- ]office|us[- ]based|israel[- ]based)\b/gi, '').replace(/[~\-–|·:,\s]+$/g, '').replace(/^[~\-–|·:,\s]+/g, '').replace(/\s{2,}/g, ' ').trim();
+    if (tail.length >= 3 && tail.length <= 60 && !/^(?:job|jobs|position|location|salary)\b/i.test(tail)) names.push(tail);
+  }
+  // the other shape: one job per paragraph, its name on the first line and "Remote ~ Full Time" under it
+  if (names.length < 3) {
+    const blocks = text.split(/\n\s*\n/).map((b) => b.split('\n').map((x) => x.trim()).filter(Boolean)).filter((b) => b.length >= 2 && b.length <= 4);
+    const alt = []; let altRemote = 0;
+    for (const b of blocks) {
+      const rest = b.slice(1).join(' ');
+      if (!/\b(?:remote|hybrid|full[\s-]?time|part[\s-]?time|f\/t|p\/t)\b/i.test(rest) || /https?:\/\//i.test(b[0]) || b[0].length > 60 || b[0].length < 3) continue;
+      if (/remote|hybrid/i.test(rest)) altRemote++;
+      alt.push(b[0].replace(/[~\-–|·:,\s]+$/g, '').trim());
+    }
+    if (alt.length >= 3 && alt.length > names.length) { names.length = 0; names.push(...alt); remote = altRemote; }
+  }
+  if (names.length < 3) return '';
+  const label = remote >= Math.ceil(names.length / 2) ? 'New remote jobs' : 'New jobs';
+  let t = label + ': ' + names.slice(0, 3).join(', ');
+  if (names.length > 3) t += ' + ' + (names.length - 3) + ' more';
+  if (t.length > 90) { const cut = t.slice(0, 88).replace(/,?\s+\S*$/, ''); t = cut + '…'; }
+  return t;
+}
 function smartTitle(body, kind, chatName) {
+  const listed = jobListTitle(body); if (listed) return listed;
   const lines = String(body || '').split('\n').map(l => stripEmoji(l).trim()).filter(Boolean);
   const junk = l => !l || l.length < 6
     || EMAIL_RE.test(l) && l.replace(EMAIL_RE, '').trim().length < 3
