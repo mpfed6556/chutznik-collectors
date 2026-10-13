@@ -799,6 +799,8 @@ function saleTitle(t0, memo) {
   if (suffix.toLowerCase() === kind) suffix = '';
   return ('For sale: ' + (beds ? beds + ' bdrm ' : '') + kind + (area ? ' in ' + area : '') + (suffix ? ' — ' + suffix : '')).replace(/\s{2,}/g, ' ').slice(0, 60);
 }
+const PERSONAL_RE = /\b(?:hatzl[ao]ch[ao]h?(?: rab[ao]h?)?|mazel tov|mazal tov|refuah shl?eim[ao]h?|davening for|davening that|thinking of you|good luck|b'?sha'?a tova|besha'?a tova|wishing you|came up on my (?:feed|youtube)|my youtube feed|on my feed|so (?:cute|funny|true)|love this|made my day|lol|haha|must watch|worth watching|check this out)\b|❤️|😂|🙏/i;
+const VIDEO_LINK_RE = /youtu\.be\/|youtube\.com\/|tiktok\.com\/|instagram\.com\/(?:reel|p)\/|vimeo\.com\/|facebook\.com\/(?:watch|reel)|fb\.watch/i;
 const GROUP_NOTICE_RE = /please be courteous|no[- ]?shows?\b|leave (?:us|them|people|me) hanging|group rules|rules of (?:the|this) group|this group is (?:only |strictly )?for|(?:please|pls|kindly) (?:don.?t|do not|dont) post|admin(?:s)? (?:note|reminder|message|announcement)|not the (?:place|group) for|keep (?:this|the) group (?:clean|on topic|for)|off[- ]topic|kindly refrain|removed from (?:the|this) group|no ads (?:allowed|please|in this group)|posting rules|please read the (?:description|rules)|reminder to (?:all|everyone) (?:in|on) (?:the|this) group|will be (?:blocked|removed|kicked)|this is a (?:friendly |gentle )?reminder|(?:group|chat) (?:description|guidelines)|be (?:respectful|considerate) (?:to|of)|(?:if|when) you (?:say yes|commit|agree) to a job|if your plans change/i;
 // "in-house wig services" is not a house (a wig salon came in as a rental, 5 Oct 2026)
 const HOUSING_RE = /\b(?<!in[- ])(apartments?|apt|apts|flat|dira|dirot|studios?|penthouse|cottage|duplex|basement unit|units?|houses?|villa|rooms? (?:for rent|to rent|available)|roommates?|vacation rentals?|short[- ]term rentals?|holiday (?:apartment|rental)|sublet|sublease|airbnb)\b|דירה|להשכרה/i;
@@ -1079,7 +1081,11 @@ async function intake(sock, m, chatName) {
   // a group's own etiquette reminder ("please say if you can't make it", "no ads") is never a post (Miriam, 24 Sep 2026)
   if (GROUP_NOTICE_RE.test(body)) kind = 'chatter';
   const inviteOnly = /chat\.whatsapp\.com\//i.test(body) && body.replace(/https?:\/\/\S+/g, ' ').replace(/whatsapp group invite|group invite|join (?:the |our )?group|invite link/gi, ' ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean).length < 6;
-  if ((cards.length || link) && (kind === 'chatter' || kind === 'info') && !inviteOnly) kind = 'answer';
+  // a personal message with a video link ("this came up on my feed… hatzlocha raba tomorrow in court") is
+  // chatter, not an answer (Miriam, 13 Oct 2026: it became a public post)
+  const personalNote = PERSONAL_RE.test(body) && (!link || VIDEO_LINK_RE.test(link) || VIDEO_LINK_RE.test(body)) && !cards.length;
+  if ((cards.length || link) && (kind === 'chatter' || kind === 'info') && !inviteOnly && !personalNote) kind = 'answer';
+  if (personalNote && (kind === 'answer' || kind === 'info')) kind = 'chatter';
   // in a rental group, a housing message is a Rental even without "for rent"
   if (kind !== 'rental' && kind !== 'chatter' && kind !== 'question' && isRentalChat(chatName) && RENT_STRONG.test(body) && body.length > 25) kind = 'rental';
   // a home offered or looked for is a Rental in ANY group — "studios to rent in Rechavia?",
