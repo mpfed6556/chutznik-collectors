@@ -86,7 +86,11 @@ function askTopic(subject, text) {
   let topic = rest.replace(STOP, '').trim().split(/\s+/).slice(0, 3).join(' ').replace(/[^\w' -]/g, '').trim();
   const whole = topic + ' ' + s;
   for (const [re, name] of SYN) if (re.test(topic) || (topic.length < 3 && re.test(s))) return name;
-  if (!topic || topic.length < 3 || /^(?:someone|somebody|anyone|help|info|advice|something|anything|place|places|way|idea|ideas)$/i.test(topic)) { for (const [re, name] of SYN) if (re.test(whole)) return name; return ''; }
+  // question words and vague words are not a thing to look for ("looking for a how to…", "anyone know of something")
+  const VAGUE = /^(?:how|what|where|when|who|why|which|whom|whose|if|whether|someone|somebody|anyone|anybody|help|info|information|advice|something|anything|place|places|way|ways|idea|ideas|tips?|recommendations?|suggestions?|options?|some|any|more|one|ones|people|person|good|best|cheap|the|this|that|these|those|it|them|there|here)(?:\s+\w+)*$/i;
+  const firstWord = topic.split(/\s+/)[0] || '';
+  if (!topic || topic.length < 3 || VAGUE.test(topic) || /^(?:how|what|where|when|who|why|which|if|whether|to)$/i.test(firstWord)) { for (const [re, name] of SYN) if (re.test(whole)) return name; return ''; }
+  if (!/[a-z\u0590-\u05ff]{3,}/i.test(topic)) return '';
   return topic.toLowerCase();
 }
 // does the site have posts on it? (the public member posts and updates, read once per round)
@@ -318,7 +322,7 @@ const pendingCount = () => Object.values(PENDING).filter((p) => p && !p.sent).le
 // JG_RESUGGEST {stamp} in the site settings: the suggested-but-unsent notes are forgotten and the
 // last two days are read again under the current rules (once per stamp)
 const RESUG_FILE = path.join(__dirname, '..', 'jg-resuggest.txt');
-const RULES = 3;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
+const RULES = 4;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
 function resuggest(stamp, log) {
   let done = ''; try { done = fs.readFileSync(RESUG_FILE, 'utf8').trim(); } catch (e) {}
   if (!stamp || done === String(stamp)) return false;
@@ -358,6 +362,9 @@ if (require.main === module) {
     ['Groups -Remote job', 'Are there any groups where remote jobs are posted? Thanks'],
     ['looking for maternity gown', 'Looking for maternity gown to buy or rent! pls email z0553395935@gmail.com with pics and price thanks'],
     ['Secretary needed', 'Busy office in Geula is looking for a full time secretary, good English, send CV to office@x.com'],
+    ['Question', 'Looking for how to get a teudat zehut renewed quickly, any ideas?'],
+    ['Maccabident Agripas best dentist', 'Have you used a dentist in the maccabident dentist on agripas that you were happy with? specifically looking for an adult dentist. Please pm me. Thanks a mill'],
+    ['Advice', 'Anyone know of something good for a toddler who will not sleep?'],
   ];
   for (const [s, t0] of tests) { const t = cleanText(t0); const c = classify(s, t); console.log(JSON.stringify(c), '←', s, c ? '→ ' + noteFor(c).text.split('\n')[0] : ''); }
 }
