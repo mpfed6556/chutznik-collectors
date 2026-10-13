@@ -541,10 +541,9 @@ function shapeTitle(t) {
 function jobListTitle(body) {
   const text = stripEmoji(String(body || '')).replace(/\r/g, '');
   const parts = text.split(/\b(?:full|part)[\s-]?time\b/i);
-  if (parts.length < 4) return '';   // three jobs or more
   const names = [];
   let remote = 0;
-  for (const seg of parts.slice(0, -1)) {
+  for (const seg of (parts.length >= 4 ? parts.slice(0, -1) : [])) {   // three jobs or more
     let tail = seg.replace(/https?:\/\/\S+/g, '\n').replace(/\bjobsgemach\.com\S*/gi, '\n').split('\n').map((x) => x.trim()).filter(Boolean).pop() || '';
     if (/\b(?:fully )?remote\b|hybrid/i.test(tail)) remote++;
     tail = tail.replace(/\b(?:fully\s+)?(?:remote|hybrid|on-?site|in[- ]office|us[- ]based|israel[- ]based)\b/gi, '').replace(/[~\-–|·:,\s]+$/g, '').replace(/^[~\-–|·:,\s]+/g, '').replace(/\s{2,}/g, ' ').trim();
