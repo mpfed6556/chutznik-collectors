@@ -35,9 +35,12 @@ const HOURS = Number(process.env.JG_HOURS || 48);
 const DAILY = Number(process.env.JG_DAILY || 25);
 const SITE = (process.env.JG_SITE || 'https://chutznik.org').replace(/\/$/, '');
 const TOLD_FILE = path.join(__dirname, '..', 'jg-told.json');
+const PENDING_FILE = path.join(__dirname, '..', 'jg-pending.json');   // suggested notes waiting for Miriam's one-tap "Send it from Chutznik"
 const SEEN_FILE = path.join(__dirname, '..', 'jg-seen.json');
 
 let TOLD = {}; try { TOLD = JSON.parse(fs.readFileSync(TOLD_FILE, 'utf8')) || {}; } catch (e) {}
+let PENDING = {}; try { PENDING = JSON.parse(fs.readFileSync(PENDING_FILE, 'utf8')) || {}; } catch (e) {}
+const savePending = () => { try { const cut = Date.now() - 14 * 86400000; for (const k of Object.keys(PENDING)) if ((PENDING[k].at || 0) < cut) delete PENDING[k]; fs.writeFileSync(PENDING_FILE, JSON.stringify(PENDING, null, 1)); } catch (e) {} };
 let SEEN = new Set(); try { SEEN = new Set(JSON.parse(fs.readFileSync(SEEN_FILE, 'utf8'))); } catch (e) {}
 const saveTold = () => { try { fs.writeFileSync(TOLD_FILE, JSON.stringify(TOLD, null, 1)); } catch (e) {} };
 const saveSeen = () => { try { fs.writeFileSync(SEEN_FILE, JSON.stringify([...SEEN].slice(-5000))); } catch (e) {} };
@@ -79,7 +82,14 @@ function noteFor(c, matchText) {
 }
 
 // ── sending: Resend (the site's own way) or Gmail SMTP as a fallback ────────
-async function sendMail(to, note, log) {
+async function sendMail(to, note, log, opts) {
+  // the site's own mail function first: every note leaves as Chutznik <info@chutznik.org>, logged like every other email (Miriam, 13 Oct 2026)
+  if (opts && opts.ingestKey) {
+    const r = await fetch(((opts && opts.site) || SITE) + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': opts.ingestKey, 'User-Agent': 'chutznik-bridge' },
+      body: JSON.stringify({ type: 'custom', to: [to], subject: note.subject, body: note.text, html: note.html, plain: true }) });
+    if (!r.ok) throw new Error('site mail ' + r.status + ' ' + (await r.text().catch(() => '')).slice(0, 120));
+    return 'site';
+  }
   const key = process.env.RESEND_API_KEY;
   if (key) {
     const r = await fetch('https://api.resend.com/emails', {
@@ -131,20 +141,19 @@ async function sendSuggestions(list, opts, log) {
   const to = (opts && opts.to && opts.to.length) ? opts.to : SUGGEST_DEFAULT_TO;
   const site = (opts && opts.site) || SITE, key = opts && opts.ingestKey;
   if (!key) { log('📬 jerusaguide: no site key for the suggestions email'); return false; }
-  const compose = (x) => 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(x.who) + '&su=' + encodeURIComponent(x.note.subject) + '&body=' + encodeURIComponent(x.note.text);
+  const approve = (x) => site + '/israel/#approve/' + x.token + '?who=' + encodeURIComponent(x.who) + '&what=' + encodeURIComponent((x.seek ? 'the ' : 'your ') + x.kind + ' on jerusaguide') + '&via=email';
   const block = (x) => '<div style="border:1px solid #eadfd3;border-radius:12px;padding:12px 14px;margin:0 0 14px">'
     + '<div style="font-size:12px;color:#9a8c80">' + esc(x.who) + ' · ' + (x.seek ? 'is looking for' : 'posted') + ' a ' + esc(x.kind) + '</div>'
     + '<div style="font-weight:700;color:#3a2920;margin:2px 0 6px">' + esc(x.subject || '(no subject)') + '</div>'
     + (x.snippet ? '<div style="font-size:13px;color:#6b5d50;white-space:pre-wrap;margin-bottom:8px">' + esc(x.snippet) + '</div>' : '')
     + '<div style="background:#fbf6f0;border-radius:8px;padding:8px 10px;font-family:Georgia,serif;font-size:14px;white-space:pre-wrap;color:#3a2f27">' + esc(x.note.text) + '</div>'
-    + '<div style="margin-top:8px"><a href="' + compose(x) + '" style="display:inline-block;background:#c4845f;color:#fff;border-radius:99px;padding:7px 16px;text-decoration:none;font-weight:700;font-size:13px">Send this in Gmail →</a>'
-    + ' <a href="mailto:' + esc(x.who) + '?subject=' + encodeURIComponent(x.note.subject) + '&body=' + encodeURIComponent(x.note.text) + '" style="color:#a8483f;font-size:12px;margin-left:8px">or in your mail app</a></div></div>';
+    + '<div style="margin-top:10px"><a href="' + approve(x) + '" style="display:inline-block;background:#7a2c0c;color:#fff;border-radius:99px;padding:10px 22px;text-decoration:none;font-weight:700;font-size:14px">✓ Send it from Chutznik</a></div></div>';
   const html = '<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px;line-height:1.5;color:#3a2920;max-width:640px">'
     + '<div style="font-family:Georgia,serif;font-size:20px;font-weight:700;color:#6b2a0c;margin-bottom:4px">' + list.length + ' jerusaguide poster' + (list.length === 1 ? '' : 's') + ' to write to</div>'
-    + '<div style="color:#9a8c80;font-size:13px;margin-bottom:14px">Each one posted or asked about a rental or a job. Nothing was sent; every note below is a suggestion. Press the button and Gmail opens with it filled in. Nobody is suggested twice.</div>'
+    + '<div style="color:#9a8c80;font-size:13px;margin-bottom:14px">Each one posted or asked about a rental or a job. Nothing was sent yet. Press a button and that note goes out from info@chutznik.org within a minute. Nobody is suggested twice.</div>'
     + list.map(block).join('')
     + '<div style="color:#b8aa9c;font-size:11px;margin-top:10px">Suggestions by the bridge, from the jerusaguide posts in ' + esc(process.env.GMAIL_USER || 'the inbox') + '. Set JG_MODE to live on the site settings and the bridge sends them itself.</div></div>';
-  const text = list.map((x) => x.who + ' (' + (x.seek ? 'looking for' : 'posted') + ' a ' + x.kind + '): ' + (x.subject || '') + '\n--- suggested note (subject: ' + x.note.subject + ') ---\n' + x.note.text + '\n').join('\n');
+  const text = list.map((x) => x.who + ' (' + (x.seek ? 'looking for' : 'posted') + ' a ' + x.kind + '): ' + (x.subject || '') + '\n--- suggested note (subject: ' + x.note.subject + ') ---\n' + x.note.text + '\nSend it from Chutznik: ' + approve(x) + '\n').join('\n');
   const r = await fetch(site + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': key, 'User-Agent': 'chutznik-bridge' },
     body: JSON.stringify({ type: 'custom', to, subject: 'jerusaguide: ' + list.length + ' suggested note' + (list.length === 1 ? '' : 's') + ' to send', body: text, html }) });
   const rt = (await r.text().catch(() => '')).slice(0, 160);
@@ -198,10 +207,10 @@ async function run(log, opts) {
         try { const RM = require('./rental-match.js'); const it = RM.itemFromText(subject, text); if (!recent) recent = await RM.fetchRecent(SITE); const m = RM.findMatches(it, recent); if (m.length) matchText = RM.message(it, m, SITE); } catch (e) { log('🤝 matches: ' + (e && e.message)); }
       }
       const note = noteFor(c, matchText);
-      if (MODE === 'suggest') { suggestions.push({ mid, who, kind: c.kind, seek: c.seek, subject: subject.slice(0, 120), snippet: text.replace(/\s+/g, ' ').trim().slice(0, 280), note }); sent++; sentToday++; continue; }
+      if (MODE === 'suggest') { suggestions.push({ mid, token: require('crypto').randomBytes(16).toString('hex'), who, kind: c.kind, seek: c.seek, subject: subject.slice(0, 120), snippet: text.replace(/\s+/g, ' ').trim().slice(0, 280), note }); sent++; sentToday++; continue; }
       if (MODE === 'dry') { log('📬 jerusaguide (dry): would email ' + who + ' — ' + note.subject + ' — ' + (c.seek ? 'asking' : 'posting') + ' · "' + subject.slice(0, 60) + '"'); TOLD[who] = { ts: Date.now(), kind: c.kind, seek: c.seek, dry: true, subject: subject.slice(0, 80) }; sent++; sentToday++; continue; }
       try {
-        const via = await sendMail(who, note, log);
+        const via = await sendMail(who, note, log, opts);
         TOLD[who] = { ts: Date.now(), kind: c.kind, seek: c.seek, via, subject: subject.slice(0, 80) };
         sent++; sentToday++;
         log('📬 jerusaguide: emailed ' + who + ' — ' + note.subject + ' (' + (c.seek ? 'asking' : 'posting') + ')');
@@ -210,7 +219,8 @@ async function run(log, opts) {
     }
     if (suggestions.length) {
       const ok = await sendSuggestions(suggestions, opts, log);
-      if (ok) for (const x of suggestions) TOLD[x.who] = { ts: Date.now(), kind: x.kind, seek: x.seek, suggested: true, subject: x.subject.slice(0, 80) };
+      if (ok) for (const x of suggestions) { TOLD[x.who] = { ts: Date.now(), kind: x.kind, seek: x.seek, suggested: true, subject: x.subject.slice(0, 80) }; PENDING[x.token] = { who: x.who, kind: x.kind, seek: x.seek, subject: x.subject, note: x.note, at: Date.now() }; }
+      if (ok) savePending();
       else { sent -= suggestions.length; sentToday -= suggestions.length; for (const x of suggestions) SEEN.delete(x.mid); }
     }
     saveSeen(); saveTold();
@@ -219,7 +229,21 @@ async function run(log, opts) {
   if (sent || skipped) log('📬 jerusaguide: ' + sent + ' note(s) ' + (MODE === 'dry' ? 'rehearsed' : MODE === 'suggest' ? 'suggested' : 'sent') + ', ' + skipped + ' left alone');
 }
 
-module.exports = { run, classify, noteFor, posterAddress, modeNow, get MODE() { return modeNow(); } };
+// Miriam pressed "Send it from Chutznik" on a suggested note (the approve token came back from the site)
+async function approve(token, opts, log) {
+  const p = PENDING[token]; if (!p) return false;
+  if (p.sent) return true;
+  try {
+    const via = await sendMail(p.who, p.note, log, opts);
+    p.sent = Date.now(); p.via = via; TOLD[p.who] = { ts: Date.now(), kind: p.kind, seek: p.seek, via, approved: true, subject: String(p.subject || '').slice(0, 80) };
+    log('📬 jerusaguide: emailed ' + p.who + ' — ' + p.note.subject + ' (approved by Miriam)');
+  } catch (e) { p.tries = (p.tries || 0) + 1; log('📬 jerusaguide: note to ' + p.who + ' failed: ' + (e && e.message)); if (p.tries < 3) { savePending(); return false; } p.sent = Date.now(); p.failed = true; }
+  savePending(); saveTold();
+  return true;
+}
+const pendingCount = () => Object.values(PENDING).filter((p) => p && !p.sent).length;
+
+module.exports = { run, approve, pendingCount, classify, noteFor, posterAddress, modeNow, get MODE() { return modeNow(); } };
 
 if (require.main === module) {
   // a quick look at the classifier: node scripts/jerusaguide-mail.js

@@ -268,13 +268,16 @@ let _approvalsBusy = false;
 async function approvalsRun() {
   if (_approvalsBusy || !INGEST_KEY) return; _approvalsBusy = true;
   try {
-    const waiting = Object.keys(ASKED).filter((t) => !ASKED[t].sent); if (!waiting.length) return;
+    const JG = global._JG;   // the jerusaguide notes wait for the same one-tap button
+    const waiting = Object.keys(ASKED).filter((t) => !ASKED[t].sent); if (!waiting.length && !(JG && JG.pendingCount())) return;
     const r = await fetch(SITE + '/api/live-data?type=approvals&t=' + Date.now(), { headers: { 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, signal: AbortSignal.timeout(30000) });
     if (!r.ok) return;
     const list = await r.json(); const tokens = (Array.isArray(list) ? list : []).map((x) => String((x && x.token) || x || ''));
     const done = [];
     for (const t of tokens) {
-      const a = ASKED[t]; if (!a || a.sent) { if (!a) done.push(t); continue; }
+      const a = ASKED[t];
+      if (!a && JG && JG.pendingCount()) { try { if (await JG.approve(t, { site: SITE, ingestKey: INGEST_KEY }, log)) { done.push(t); continue; } } catch (e) { log('📬 jerusaguide approve: ' + (e && e.message)); } }
+      if (!a || a.sent) { if (!a) done.push(t); continue; }
       const sock = global._sock; if (!sock) { log('📨 approved note waiting: WhatsApp not connected yet'); break; }
       const who = optKey({ jid: a.jid }); if (who && OPTOUT.has(who)) { a.sent = Date.now(); a.skipped = 'opted out'; done.push(t); continue; }
       try { await sock.sendMessage(a.jid, { text: a.note }); a.sent = Date.now(); done.push(t); log('📨 sent to ' + a.who + ' (' + a.jid.split('@')[0] + '): ' + a.biz + ' is on Chutznik'); }
@@ -291,7 +294,7 @@ setTimeout(approvalsRun, 45 * 1000);
 async function sendToQueue(item) {
   // Same text already came through another group in the last few hours? Skip.
   if (item._contentKey && isRecentDuplicate(item._contentKey, item.created || Date.now())) {
-    log('   ⊘ duplicate of a post from another group — skipped');
+    log('   ⊘ duplicate of a post from another group — skipped · "' + String(item.title || '').slice(0, 60) + '"');
     return true;
   }
   const itemKind = item._kind || ''; const senderD9 = String(item._senderPhone || '').replace(/\D/g, '').slice(-9);
@@ -1636,6 +1639,12 @@ const GMAIL_USER = process.env.GMAIL_USER || '';
 const GMAIL_APP_PASSWORD = String(process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
 const JOB_MAIL_FROM = (process.env.JOB_MAIL_FROM || 'nsheijobs@gmail.com').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const MAIL_MINUTES = Number(process.env.MAIL_MINUTES || 5);
+// Nshei sends the same job again after a while: it goes up again once the earlier one is a week old
+// (Miriam, 13 Oct 2026: seven came, five went up). Every email left out is logged with the reason.
+const JOBSEEN_FILE = path.join(__dirname, 'jobs-seen.json');
+let JOBSEEN = {}; try { JOBSEEN = JSON.parse(fs.readFileSync(JOBSEEN_FILE, 'utf8')) || {}; } catch (e) {}
+const saveJobSeen = () => { try { const cut = Date.now() - 60 * 86400000; for (const k of Object.keys(JOBSEEN)) if (JOBSEEN[k] < cut) delete JOBSEEN[k]; fs.writeFileSync(JOBSEEN_FILE, JSON.stringify(JOBSEEN)); } catch (e) {} };
+const JOB_REPEAT_DAYS = Number(process.env.JOB_REPEAT_DAYS || 7);
 function cleanMailText(t) {
   let x = String(t || '').replace(/\r/g, '');
   // list footers and quoted replies
@@ -1675,10 +1684,10 @@ async function pollJobMail() {
       const mid = 'em_' + String(parsed.messageId || uid).replace(/[<>\s]/g, '').slice(0, 80);
       if (SEEN.has(mid)) continue;
       const fromAddr = String((parsed.from && parsed.from.value && parsed.from.value[0] && parsed.from.value[0].address) || '').toLowerCase();
-      if (!JOB_MAIL_FROM.includes(fromAddr)) { SEEN.add(mid); continue; }
+      if (!JOB_MAIL_FROM.includes(fromAddr)) { SEEN.add(mid); log('✉️  jobs mail: left out, not from ' + JOB_MAIL_FROM[0] + ' but ' + fromAddr + ' · "' + cleanMailSubject(parsed.subject).slice(0, 60) + '"'); continue; }
       const subject = cleanMailSubject(parsed.subject);
       const text = cleanMailText(parsed.text || (parsed.html ? String(parsed.html).replace(/<[^>]+>/g, ' ') : ''));
-      if (!subject && text.length < 20) { SEEN.add(mid); continue; }
+      if (!subject && text.length < 20) { SEEN.add(mid); log('✉️  jobs mail: left out, empty email'); continue; }
       const body = text.length > 1400 ? text.slice(0, 1400).replace(/\s+\S*$/, '') + '…' : text;
       const phones = phonesInText(text);
       const urls = urlsInText(text).filter(u => !/googlegroups\.com|google\.com\/url|unsubscribe/i.test(u));
@@ -1707,9 +1716,13 @@ async function pollJobMail() {
         _contentKey: contentKey(subject + ' ' + text),
         status: 'public',
       };
-      if (SEEN.has(item.dedupeKey)) { SEEN.add(mid); continue; }
+      const baseKey = item.dedupeKey, prevAt = JOBSEEN[baseKey] || 0;
+      if (prevAt && Date.now() - prevAt < JOB_REPEAT_DAYS * 86400000) { SEEN.add(mid); log('✉️  jobs mail: left out, the same job went up ' + Math.round((Date.now() - prevAt) / 3600000) + 'h ago · "' + item.title.slice(0, 60) + '"'); continue; }
+      // a repeat gets a fresh key: the site keeps every key it ever had and would turn the old one away
+      if (prevAt || SEEN.has(baseKey)) item.dedupeKey = baseKey + '_' + new Date().toISOString().slice(0, 10);
       const ok = await sendToQueue(item);
-      if (ok) { SEEN.add(mid); SEEN.add(item.dedupeKey); sent++; }
+      if (ok) { SEEN.add(mid); SEEN.add(baseKey); JOBSEEN[baseKey] = Date.now(); saveJobSeen(); sent++; log('✉️  jobs mail: up · "' + item.title.slice(0, 70) + '"'); }
+      else log('✉️  jobs mail: the site did not take it · "' + item.title.slice(0, 60) + '"');
     }
     saveSeen();
   } catch (e) {
@@ -1735,7 +1748,7 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
 (function () {
   const modPath = path.join(__dirname, 'scripts', 'jerusaguide-mail.js');
   if (!fs.existsSync(modPath)) { log('📬 jerusaguide notes: off (scripts/jerusaguide-mail.js missing)'); return; }
-  const JG = require(modPath);
+  const JG = require(modPath); global._JG = JG;
   const every = Number(process.env.JG_MINUTES || 10);
   const opts = () => ({ site: SITE, ingestKey: INGEST_KEY, to: global._jgTo || [] });
   setTimeout(() => JG.run(log, opts()), 75 * 1000);
