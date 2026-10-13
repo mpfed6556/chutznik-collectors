@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-13T07:09:21.759Z",
+  "lastRun": "2026-10-13T15:06:07.528Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -46,9 +46,9 @@
     "Kol Zchut (All Rights)": "page HTTP 403",
     "Beit Shemesh Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
-    "Magen David Adom": "page HTTP 504",
+    "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "ok via RSS (1 items)",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-13T07:09:21.758Z",
+      "lastRun": "2026-10-13T15:06:07.527Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -72,8 +72,8 @@
         "iTravelJerusalem hints": "14 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
         "iTravelJerusalem": "14 cards, nothing new (14 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/feed/ (10 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (17 upcoming)",
-        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (16 upcoming)",
+        "Pardes": "no events · HTTP 403",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (3 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
@@ -122,6 +122,12 @@
         ],
         "The Kotel": [
           {
+            "title": "The Main Thing Is the Intention – Parashat Noah",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157856/"
+          },
+          {
             "title": "Paraguay’s Vice President Visits the Western Wall",
             "date": null,
             "time": "",
@@ -144,12 +150,6 @@
             "date": null,
             "time": "",
             "link": "https://thekotel.org/en/157771/"
-          },
-          {
-            "title": "“Go, Eat with Joy” – Yom Kippur",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157737/"
           }
         ],
         "Jerusalem Municipality": [],
@@ -188,12 +188,6 @@
         ],
         "OU Israel Center": [
           {
-            "title": "Rosh Chodesh Cheshvan Beit Shemesh",
-            "date": "2026-10-12",
-            "time": "09:15",
-            "link": "https://www.ouisrael.org/events/cheshvan2026bs/"
-          },
-          {
             "title": "North Central Bat Mitzvah and Beyond",
             "date": "2026-10-13",
             "time": "",
@@ -216,15 +210,15 @@
             "date": "2026-10-14",
             "time": "19:00",
             "link": "https://www.ouisrael.org/events/beitshemesh-bm/"
+          },
+          {
+            "title": "ATID Opening Event 5787",
+            "date": "2026-10-14",
+            "time": "19:45",
+            "link": "https://www.ouisrael.org/events/atid-opening-event-5787/"
           }
         ],
         "Nefesh B'Nefesh": [
-          {
-            "title": "Discover the beauty of the Ramon Crater",
-            "date": null,
-            "time": "",
-            "link": "https://natureisrael.org/ramon-crater-earth-space-and-time-2026/"
-          },
           {
             "title": "KKL & SAR-EL Volunteer Experience",
             "date": null,
@@ -232,22 +226,28 @@
             "link": "https://www.nbn.org.il/events/kkl-sar-el-volunteer-experience/"
           },
           {
-            "title": "Caesarea: Where Empires Meet the Sea",
+            "title": "Memoir Workshop with Carol Ungar",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/caesarea-where-empires-meet-the-sea/"
+            "link": "https://www.nbn.org.il/events/memoir-workshop-with-carol-ungar/"
           },
           {
-            "title": "Hebrew Calligraphy Workshop for Kids",
+            "title": "Nishmat Online Beit Midrash",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/hebrew-calligraphy-workshop-for-kids/"
+            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
           },
           {
             "title": "JUST WRITE!",
             "date": null,
             "time": "",
             "link": "https://israelwriterstudio.com/classes/"
+          },
+          {
+            "title": "Boxes of Light – Packing Night",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/boxes-of-light-packing-night/"
           }
         ],
         "Pardes": [],
