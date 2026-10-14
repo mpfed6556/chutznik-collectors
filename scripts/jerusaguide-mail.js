@@ -250,16 +250,22 @@ async function run(log, opts) {
   if (!user || !pass) { busy = false; return early('no GMAIL_USER / GMAIL_APP_PASSWORD on the droplet — the inbox cannot be read'); }
   let ImapFlow, simpleParser;
   try { ({ ImapFlow } = require('imapflow')); ({ simpleParser } = require('mailparser')); } catch (e) { busy = false; return early('run  npm i imapflow mailparser'); }
-  const client = new ImapFlow({ host: 'imap.gmail.com', port: 993, secure: true, auth: { user, pass }, logger: false });
-  const ours = new Set([user.toLowerCase(), REPLY_TO.toLowerCase(), (FROM.match(/<([^>]+)>/) || [])[1] || ''].filter(Boolean));
-  let sent = 0, skipped = 0, recent = null;   // recent: the site's rentals of the last three days, for the matches
-  const suggestions = [], siteCache = {};
   // the round's report for bridge-status.json (14 Oct 2026, Miriam: "i havent gotten one since 11:54" — a quiet
   // round leaves nothing in the log, so the status says when it ran, what it found and why each message was left alone)
   const rep = { mode: MODE, startedAt: new Date().toISOString(), found: 0, fresh: 0, why: {}, told: Object.keys(TOLD).length, pending: pendingCount() };
   const why = (k) => { rep.why[k] = (rep.why[k] || 0) + 1; };
+  // hard limits on the connection: a round that silently hung on Gmail blocked every round after it for hours
+  // (14 Oct 2026: nothing suggested since the morning, nothing in the log, no report at all)
+  const client = new ImapFlow({ host: 'imap.gmail.com', port: 993, secure: true, auth: { user, pass }, logger: false, connectionTimeout: 30000, greetingTimeout: 15000, socketTimeout: 120000 });
+  const step = (what) => { global._jgReport = Object.assign({}, global._jgReport || {}, { running: { startedAt: rep.startedAt, step: what, at: new Date().toISOString() } }); };
+  const killer = setTimeout(() => { step('timed out after 4 minutes — the connection was closed'); log('📬 jerusaguide: the round took over 4 minutes, closing the connection'); try { client.close(); } catch (e) {} }, 4 * 60 * 1000);
+  const ours = new Set([user.toLowerCase(), REPLY_TO.toLowerCase(), (FROM.match(/<([^>]+)>/) || [])[1] || ''].filter(Boolean));
+  let sent = 0, skipped = 0, recent = null;   // recent: the site's rentals of the last three days, for the matches
+  const suggestions = [], siteCache = {};
   try {
+    step('connecting to Gmail');
     await client.connect();
+    step('opening the mailbox');
     let box = '[Gmail]/All Mail';
     try { await client.mailboxOpen(box); } catch (e) { box = 'INBOX'; await client.mailboxOpen(box); }
     const since = new Date(Date.now() - (firstRound ? HOURS : 3) * 3600 * 1000); firstRound = false;
@@ -268,8 +274,10 @@ async function run(log, opts) {
       let found = []; try { found = await client.search(q, { uid: true }) || []; } catch (e) {}
       for (const u of found) if (!uids.includes(u)) uids.push(u);
     }
-    rep.found = uids.length;
+    rep.found = uids.length; step('searching: ' + uids.length + ' group message(s) in the window');
+    let n = 0;
     for (const uid of uids) {
+      if (++n % 10 === 0) step('reading message ' + n + ' of ' + uids.length);
       // the daily cap guards against spamming posters: it counts notes actually SENT. Suggestions to Miriam are
       // not capped (14 Oct 2026: "daily cap of 25 reached" and nothing was suggested for the rest of the day)
       if (MODE !== 'suggest' && sentToday >= DAILY) { log('📬 jerusaguide: daily cap of ' + DAILY + ' reached'); break; }
@@ -308,6 +316,7 @@ async function run(log, opts) {
       } catch (e) { log('📬 jerusaguide: ' + who + ' failed: ' + (e && e.message)); }
     }
     if (suggestions.length) {
+      step('emailing ' + suggestions.length + ' suggestion(s)');
       const ok = await sendSuggestions(suggestions, opts, log);
       if (ok) for (const x of suggestions) { TOLD[x.who] = { ts: Date.now(), kind: x.kind, seek: x.seek, suggested: true, subject: x.subject.slice(0, 80) }; PENDING[x.token] = { who: x.who, kind: x.kind, seek: x.seek, subject: x.subject, note: x.note, at: Date.now() }; }
       if (ok) savePending();
@@ -315,11 +324,11 @@ async function run(log, opts) {
     }
     saveSeen(); saveTold();
   } catch (e) { const inner = e && e.errors && e.errors[0] && e.errors[0].message; rep.error = (e && e.message ? e.message.slice(0, 160) : String(e)) + (inner ? ' (' + String(inner).slice(0, 120) + ')' : ''); log('📬 jerusaguide: ' + rep.error); }
-  finally { try { await client.logout(); } catch (e) {} busy = false; }
+  finally { clearTimeout(killer); try { await client.logout(); } catch (e) {} busy = false; }
   rep.suggested = suggestions.length; rep.sent = sent; rep.finishedAt = new Date().toISOString();
   if (suggestions.length) rep.lastSuggestedAt = rep.finishedAt;
   const prev = global._jgReport || {};
-  global._jgReport = Object.assign({}, rep, { lastSuggestedAt: rep.lastSuggestedAt || prev.lastSuggestedAt || null, rounds: (prev.rounds || 0) + 1, lastError: rep.error || prev.lastError || null, lastErrorAt: rep.error ? rep.finishedAt : (prev.lastErrorAt || null) });
+  global._jgReport = Object.assign({}, rep, { running: null, lastSuggestedAt: rep.lastSuggestedAt || prev.lastSuggestedAt || null, rounds: (prev.rounds || 0) + 1, lastError: rep.error || prev.lastError || null, lastErrorAt: rep.error ? rep.finishedAt : (prev.lastErrorAt || null) });
   if (sent || skipped) log('📬 jerusaguide: ' + sent + ' note(s) ' + (MODE === 'dry' ? 'rehearsed' : MODE === 'suggest' ? 'suggested' : 'sent') + ', ' + skipped + ' left alone');
 }
 
