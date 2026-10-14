@@ -170,6 +170,8 @@ async function curateItems(items, review) {
     return j.posts || {};
   } catch (e) { log('   ✍️ curate: ' + (e && e.message)); return {}; }
 }
+const SELLER_FILE = path.join(__dirname, 'seller-seen.json');   // poster phone + group → when the curator last published them
+const sellerSeen = () => { if (!global._sellerSeen) { try { global._sellerSeen = JSON.parse(fs.readFileSync(SELLER_FILE, 'utf8')) || {}; } catch (e) { global._sellerSeen = {}; } } return global._sellerSeen; };
 const curatable = (it) => it && it.source === 'whatsapp' && !/^wa_(apt|BABYSIT|CLEANERS)/.test(String(it.id)) && !(it.types || []).some((t) => /^(Rental|Jobs|For Sale)$/.test(t));
 // ── News or advert? For groups that carry both (Miriam, 6 Oct 2026: "a lot of good ads and info, not news")
 const NEWS_RE = /\b(breaking|police|accident|crash|killed|injured|wounded|arrested|suspect|terror|attack|rocket|siren|sirens|protest|demonstration|minister|knesset|government|election|court|verdict|weather|storm|flood|fire ?fighters|wildfire|earthquake|road (?:closed|closure)|traffic jam|light rail (?:fault|stopped)|evacuat|hostage|idf|hamas|hezbollah|iran|gaza|ceasefire|update:|report:|malfunction|missing (?:person|man|woman|boy|girl|child|\w+(?: \w+)? (?:was|has|is|were))|found dead|searches (?:for|have|continue)|rescue(?:d|rs)?|stabbing|shooting|fatal|passed away|funeral|levaya|urgent:|drivers (?:drove|were|are|who)|light rail (?:line|is|was|will)|train line|bus line \d|road ?works|demonstrat|mayor|municipality|lawsuit|soldiers?|army|reservists|was (?:attacked|arrested|injured|killed|found))\b|תאונה|נפצע|פצוע|הרוג|נהרג|משטרה|נעצר|חשוד|פיגוע|אזעק|טיל|רקטה|הפגנ|מחאה|השר |שר ה|ראש הממשלה|הממשלה|כנסת|בג"ץ|בית המשפט|מזג האוויר|סופה|שיטפון|שריפה|כבאי|רעידת|כביש חסום|חסימ|פקק|תקלה ברכבת|חטופ|צה"ל|חמאס|חיזבאללה|איראן|עזה|הפסקת אש|מבזק|עדכון:|דיווח|חדשות|ערוץ|כתבת|כתב |תקלה|נעדר|החיפושים|נפטר|הלוויה|נהגים|הרכבת הקלה|ראש העיר|עיריית|עתירה|חיילים|מילואים|הותקף|נדקר|פיגוע/i;
@@ -356,8 +358,15 @@ async function sendToQueue(item) {
     const c = (await curateItems([item]))[String(item.id)];
     if (c) {
       if (c.title) item.title = c.title.substring(0, 150);
-      if (c.publish) { item.status = 'public'; item.curated = 'published'; } else { item.curated = 'waiting'; }
-      log('   ✍️ ' + (c.publish ? 'published' : 'waits for Miriam') + ' · "' + item.title.slice(0, 60) + '"' + (c.why ? ' · ' + c.why : ''));
+      // the same seller again within the week ("taking orders for tonight" after last week's was published):
+      // Miriam dismisses the repeat (14 Oct 2026), so it waits for her instead of going up on its own
+      const sellerKey = senderD9 ? senderD9 + '@' + String(item.group || '').toLowerCase() : '';
+      const lastUp = sellerKey ? sellerSeen()[sellerKey] : 0;
+      if (c.publish && lastUp && Date.now() - lastUp < 7 * 86400000) { item.curated = 'waiting'; log('   ✍️ waits for Miriam · "' + item.title.slice(0, 60) + '" · same poster published ' + Math.round((Date.now() - lastUp) / 86400000) + ' day(s) ago'); }
+      else {
+        if (c.publish) { item.status = 'public'; item.curated = 'published'; if (sellerKey) { const m = sellerSeen(); m[sellerKey] = Date.now(); for (const k of Object.keys(m)) if (Date.now() - m[k] > 30 * 86400000) delete m[k]; try { fs.writeFileSync(SELLER_FILE, JSON.stringify(m)); } catch (e) {} } } else { item.curated = 'waiting'; }
+        log('   ✍️ ' + (c.publish ? 'published' : 'waits for Miriam') + ' · "' + item.title.slice(0, 60) + '"' + (c.why ? ' · ' + c.why : ''));
+      }
     }
   }
   try {
