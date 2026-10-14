@@ -242,7 +242,8 @@ async function run(log, opts) {
   log = log || ((s) => console.log(s));
   MODE = modeNow();
   if (MODE === 'off') return;
-  if (busy) return; busy = true;
+  // a round that hangs (Gmail not answering) must not block every round after it: ten minutes and the lock is dropped
+  if (busy && Date.now() - (global._jgBusySince || 0) < 10 * 60 * 1000) return; busy = true; global._jgBusySince = Date.now();
   const today = new Date().toISOString().slice(0, 10); if (today !== dayKey) { dayKey = today; sentToday = 0; }
   const user = process.env.GMAIL_USER, pass = String(process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
   if (!user || !pass) { busy = false; return; }
@@ -252,6 +253,10 @@ async function run(log, opts) {
   const ours = new Set([user.toLowerCase(), REPLY_TO.toLowerCase(), (FROM.match(/<([^>]+)>/) || [])[1] || ''].filter(Boolean));
   let sent = 0, skipped = 0, recent = null;   // recent: the site's rentals of the last three days, for the matches
   const suggestions = [], siteCache = {};
+  // the round's report for bridge-status.json (14 Oct 2026, Miriam: "i havent gotten one since 11:54" — a quiet
+  // round leaves nothing in the log, so the status says when it ran, what it found and why each message was left alone)
+  const rep = { mode: MODE, startedAt: new Date().toISOString(), found: 0, fresh: 0, why: {}, told: Object.keys(TOLD).length, pending: pendingCount() };
+  const why = (k) => { rep.why[k] = (rep.why[k] || 0) + 1; };
   try {
     await client.connect();
     let box = '[Gmail]/All Mail';
@@ -262,6 +267,7 @@ async function run(log, opts) {
       let found = []; try { found = await client.search(q, { uid: true }) || []; } catch (e) {}
       for (const u of found) if (!uids.includes(u)) uids.push(u);
     }
+    rep.found = uids.length;
     for (const uid of uids) {
       // the daily cap guards against spamming posters: it counts notes actually SENT. Suggestions to Miriam are
       // not capped (14 Oct 2026: "daily cap of 25 reached" and nothing was suggested for the rest of the day)
@@ -270,19 +276,19 @@ async function run(log, opts) {
       try { const msg = await client.fetchOne(uid, { source: true }, { uid: true }); if (!msg || !msg.source) continue; parsed = await simpleParser(msg.source); } catch (e) { continue; }
       const mid = 'jg_' + String(parsed.messageId || uid).replace(/[<>\s]/g, '').slice(0, 80);
       if (SEEN.has(mid)) continue;
-      SEEN.add(mid);
-      if (!fromTheGroup(parsed)) continue;
+      SEEN.add(mid); rep.fresh++;
+      if (!fromTheGroup(parsed)) { why('not from the group'); continue; }
       const who = posterAddress(parsed);
-      if (!who || ours.has(who)) { skipped++; continue; }
-      if (TOLD[who]) { skipped++; continue; }                         // never twice — whatever they post
+      if (!who || ours.has(who)) { skipped++; why('our own address'); continue; }
+      if (TOLD[who]) { skipped++; why('already written to'); continue; }                         // never twice — whatever they post
       const subject = String(parsed.subject || '').replace(/^\s*(?:(?:re|fw|fwd)\s*:\s*)+/i, '').replace(/\[[^\]]*\]\s*/g, '').trim();
-      if (/^\s*re\s*:/i.test(parsed.subject || '')) { skipped++; continue; }   // a reply in a thread is not a posting
+      if (/^\s*re\s*:/i.test(parsed.subject || '')) { skipped++; why('a reply in a thread'); continue; }   // a reply in a thread is not a posting
       const text = cleanText(parsed.text || (parsed.html ? String(parsed.html).replace(/<[^>]+>/g, ' ') : ''));
       const c = classify(subject, text);
-      if (!c) { skipped++; continue; }
+      if (!c) { skipped++; why('not a rental, job or request'); continue; }
       if (c.kind === 'ask') {
         let n = 0; try { n = await siteHas(c.topic, (opts && opts.site) || SITE, opts && opts.ingestKey, siteCache); } catch (e) {}
-        if (n < 2) { skipped++; log('📬 jerusaguide: ' + who + ' asked for a ' + c.topic + ' — the site has ' + n + ' post(s) on it, left alone'); continue; }
+        if (n < 2) { skipped++; why('asked for something the site has under 2 of'); log('📬 jerusaguide: ' + who + ' asked for a ' + c.topic + ' — the site has ' + n + ' post(s) on it, left alone'); continue; }
       }
       // a rental poster hears about her matches on the site instead of the plain note (Miriam, 22 Sep 2026)
       let matchText = '';
@@ -307,8 +313,12 @@ async function run(log, opts) {
       else { sent -= suggestions.length; for (const x of suggestions) SEEN.delete(x.mid); }
     }
     saveSeen(); saveTold();
-  } catch (e) { const inner = e && e.errors && e.errors[0] && e.errors[0].message; log('📬 jerusaguide: ' + (e && e.message ? e.message.slice(0, 160) : e) + (inner ? ' (' + String(inner).slice(0, 120) + ')' : '')); }
+  } catch (e) { const inner = e && e.errors && e.errors[0] && e.errors[0].message; rep.error = (e && e.message ? e.message.slice(0, 160) : String(e)) + (inner ? ' (' + String(inner).slice(0, 120) + ')' : ''); log('📬 jerusaguide: ' + rep.error); }
   finally { try { await client.logout(); } catch (e) {} busy = false; }
+  rep.suggested = suggestions.length; rep.sent = sent; rep.finishedAt = new Date().toISOString();
+  if (suggestions.length) rep.lastSuggestedAt = rep.finishedAt;
+  const prev = global._jgReport || {};
+  global._jgReport = Object.assign({}, rep, { lastSuggestedAt: rep.lastSuggestedAt || prev.lastSuggestedAt || null, rounds: (prev.rounds || 0) + 1, lastError: rep.error || prev.lastError || null, lastErrorAt: rep.error ? rep.finishedAt : (prev.lastErrorAt || null) });
   if (sent || skipped) log('📬 jerusaguide: ' + sent + ' note(s) ' + (MODE === 'dry' ? 'rehearsed' : MODE === 'suggest' ? 'suggested' : 'sent') + ', ' + skipped + ' left alone');
 }
 

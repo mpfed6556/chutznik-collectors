@@ -2315,6 +2315,7 @@ async function sendStatus() {
       lids: Object.keys(LIDS).length, seen: SEEN.size, posted: Object.keys(POSTED).length, notifyMode: NOTIFY_MODE,
       log: LOG_RING.slice(-80),
       events: global._eventsReport || null,
+      jerusaguide: global._jgReport || null,
     };
     await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
       body: JSON.stringify({ file: 'updates', action: 'status', status }) });
