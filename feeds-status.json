@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-14T04:45:40.392Z",
+  "lastRun": "2026-10-14T09:52:21.324Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-14T04:45:40.390Z",
+      "lastRun": "2026-10-14T09:52:21.322Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -72,7 +72,7 @@
         "iTravelJerusalem hints": "14 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
         "iTravelJerusalem": "14 cards, nothing new (14 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/feed/ (10 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (14 upcoming)",
         "Pardes": "no events · HTTP 403",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (3 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · fetch failed"
+        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -188,12 +188,6 @@
         ],
         "OU Israel Center": [
           {
-            "title": "Tuesday Learning for Women",
-            "date": "2026-10-13",
-            "time": "09:15",
-            "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-10-13/"
-          },
-          {
             "title": "Yerushalayim Bat Mitzvah and Beyond 2026-2027",
             "date": "2026-10-13",
             "time": "19:00",
@@ -216,6 +210,12 @@
             "date": "2026-10-20",
             "time": "09:15",
             "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-10-20/"
+          },
+          {
+            "title": "NextGen Yerushalayim- Chodesh HaAliyah",
+            "date": "2026-10-26",
+            "time": "20:00",
+            "link": "https://www.ouisrael.org/events/nextgen-aliyah2026/"
           }
         ],
         "Nefesh B'Nefesh": [
@@ -226,10 +226,16 @@
             "link": "https://www.nbn.org.il/events/kkl-sar-el-volunteer-experience/"
           },
           {
-            "title": "Memoir Workshop with Carol Ungar",
+            "title": "High Tea & Torah in the Garden",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/memoir-workshop-with-carol-ungar/"
+            "link": "https://www.nbn.org.il/events/high-tea-torah-in-the-garden/"
+          },
+          {
+            "title": "Translation Station TLV",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/translation-station-2/"
           },
           {
             "title": "Nishmat Online Beit Midrash",
@@ -238,16 +244,10 @@
             "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
           },
           {
-            "title": "JUST WRITE!",
+            "title": "PHONE PHOTOGRAPHY WORKSHOP FOR KIDS AT THE BIALIK MUSEUM ㅤ",
             "date": null,
             "time": "",
-            "link": "https://israelwriterstudio.com/classes/"
-          },
-          {
-            "title": "Boxes of Light – Packing Night",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/boxes-of-light-packing-night/"
+            "link": "https://www.nbn.org.il/events/phone-photography-workshop-for-kids-at-the-bialik-museum-%e3%85%a4/"
           }
         ],
         "Pardes": [],
