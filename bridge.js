@@ -1358,9 +1358,30 @@ function clusterThreads(msgs) {
       continue;
     }
     if (m.kind === 'chatter') continue;
+    // a reply whose question is not in this chat's last hours: the same question may be on the site already
+    // (asked in another group, or earlier) — then the reply is a comment there, never a post of its own
+    // (14 Oct 2026: "The store next to Bandana has mainly cotton clothing" went up as a Company page)
+    if (isAnswerish(m) && !m.media) { const q = siteQuestionFor(m); if (q) { out.push({ kind: 'comment', target: { post: q.id }, msg: m }); batchIndex.set(m.id, { kind: 'sent', target: { post: q.id } }); noteActivity(m.chat, m, { sent: { post: q.id } }); log('   ↳ answers "' + String(q.title || '').slice(0, 50) + '" on the site'); continue; } }
     const c = { kind: 'single', msgs: [m] }; out.push(c); batchIndex.set(m.id, c);
   }
   return out;
+}
+const isAnswerish = (m) => m.kind === 'answer' || (m.kind === 'info' && stripEmoji(m.body || '').length < 240 && !/\?/.test(m.body || ''));
+const STOP_Q = new Set(['about','after','again','also','anyone','anybody','around','because','before','best','could','does','every','found','from','good','great','have','here','jerusalem','just','know','knows','looking','maybe','more','much','near','need','nice','only','other','place','please','really','recommend','recommendation','recommendations','seeking','should','some','someone','something','store','stores','thank','thanks','that','their','there','these','they','thing','things','this','very','want','what','when','where','which','while','with','would','your']);
+const qWords = (t) => new Set(String(t || '').toLowerCase().replace(/[^a-z\u05d0-\u05ea\s]/g, ' ').split(/\s+/).filter((w) => w.length >= 5 && !STOP_Q.has(w)));
+// the site's open questions of the last two days (any group) that share a telling word with this reply
+function siteQuestionFor(m) {
+  const words = qWords(m.body); if (!words.size) return null;
+  const since = Date.now() - 48 * 3600 * 1000;
+  let best = null, bestN = 0;
+  for (const u of Object.values(global._updItems || {})) {
+    if (!u || u.source !== 'whatsapp' || (u.created || 0) < since || !(u.types || []).some((t) => /items\s*\/\s*questions/i.test(String(t)))) continue;
+    if (!/\?/.test(String(u.memo || '')) && !/^seeking\b/i.test(String(u.title || ''))) continue;
+    const qw = qWords(String(u.title || '') + ' ' + String(u.memo || '').slice(0, 400));
+    let n = 0; for (const w of words) if (qw.has(w)) n++;
+    if (n > bestN) { bestN = n; best = u; }
+  }
+  return bestN >= 1 ? best : null;
 }
 
 // A comment on a post the site already has.
@@ -1639,7 +1660,11 @@ async function buildPost(cluster, chatName) {
     // No contact of any kind in the text (no number, no link, no card): the
     // poster's own WhatsApp number is the only way to reach her, so it goes
     // on the post (Miriam, 4 Sep 2026). Cards and links still win when present.
-    if (!contacts.phones.length && !contacts.urls.length && first.phone) contacts.phones.push(first.phone);
+    // ...but not for a reply or a passing tip ("H&M have very nice cotton", "the store next to Bandana"):
+    // the writer is answering, not offering, and her private number must not go on a public page
+    // (Miriam, 14 Oct 2026: "remove and fix")
+    const replyShaped = (first.kind === 'answer' || first.kind === 'info') && stripEmoji(allText).length < 240 && !/\b(?:order|sale|book|appointment|available|avail|delivery|deliver|pm me|dm me|message me|call me|whatsapp me)\b|₪|\bnis\b|\bshekel/i.test(allText);
+    if (!contacts.phones.length && !contacts.urls.length && first.phone && !replyShaped) contacts.phones.push(first.phone);
   }
   const kinds = msgs.map(m => m.kind);
   let kind = kinds.includes('rental') ? 'rental' : kinds.includes('ad') ? 'ad' : cluster.kind === 'combined' ? 'question' : 'info';
