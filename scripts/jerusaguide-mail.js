@@ -241,14 +241,15 @@ async function sendSuggestions(list, opts, log) {
 async function run(log, opts) {
   log = log || ((s) => console.log(s));
   MODE = modeNow();
-  if (MODE === 'off') return;
+  const early = (why) => { global._jgReport = Object.assign({}, global._jgReport || {}, { mode: MODE, skippedAt: new Date().toISOString(), skippedWhy: why }); if (global._jgLastWhy !== why) { global._jgLastWhy = why; log('📬 jerusaguide: ' + why); } };
+  if (MODE === 'off') return early('mode is off');
   // a round that hangs (Gmail not answering) must not block every round after it: ten minutes and the lock is dropped
   if (busy && Date.now() - (global._jgBusySince || 0) < 10 * 60 * 1000) return; busy = true; global._jgBusySince = Date.now();
   const today = new Date().toISOString().slice(0, 10); if (today !== dayKey) { dayKey = today; sentToday = 0; }
   const user = process.env.GMAIL_USER, pass = String(process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
-  if (!user || !pass) { busy = false; return; }
+  if (!user || !pass) { busy = false; return early('no GMAIL_USER / GMAIL_APP_PASSWORD on the droplet — the inbox cannot be read'); }
   let ImapFlow, simpleParser;
-  try { ({ ImapFlow } = require('imapflow')); ({ simpleParser } = require('mailparser')); } catch (e) { log('📬 jerusaguide: run  npm i imapflow mailparser'); busy = false; return; }
+  try { ({ ImapFlow } = require('imapflow')); ({ simpleParser } = require('mailparser')); } catch (e) { busy = false; return early('run  npm i imapflow mailparser'); }
   const client = new ImapFlow({ host: 'imap.gmail.com', port: 993, secure: true, auth: { user, pass }, logger: false });
   const ours = new Set([user.toLowerCase(), REPLY_TO.toLowerCase(), (FROM.match(/<([^>]+)>/) || [])[1] || ''].filter(Boolean));
   let sent = 0, skipped = 0, recent = null;   // recent: the site's rentals of the last three days, for the matches
