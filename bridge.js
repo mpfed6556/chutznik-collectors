@@ -174,7 +174,7 @@ async function curateItems(items, review) {
   try {
     const picUrl = (it) => { const a = it.attachments && it.attachments[0]; const u = a && typeof a.url === 'string' ? a.url : ''; return /^\/api\/live-data\?type=file&path=attachments%2F/.test(u) ? SITE + u : ''; };
     const r = await fetch(SITE + '/api/live-data?type=curate', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' },
-      body: JSON.stringify({ review: !!review, items: items.map((it) => ({ id: String(it.id), title: it.title || '', text: String(it.memo || '').slice(0, review ? 2500 : 1500), group: it.group || '', pic: !!(it.attachments && it.attachments.length), phone: !!it.contactPhone, replies: (it.comments || []).length, picUrl: review ? picUrl(it) : '' })) }),
+      body: JSON.stringify({ review: !!review, items: items.map((it) => ({ id: String(it.id), title: it.title || '', text: String(it.memo || '').slice(0, review ? 2500 : 1500), group: it.group || '', pic: !!(it.attachments && it.attachments.length), phone: !!it.contactPhone, replies: (it.comments || []).length, replyText: (it.comments || []).slice(0, 5).map((c) => '- ' + String(c.content || '').replace(/\s+/g, ' ').slice(0, 160)).join('\n'), picUrl: review ? picUrl(it) : '' })) }),
       signal: AbortSignal.timeout(180000) });
     const j = await r.json().catch(() => null);
     if (!r.ok || !j || !j.ok) { log('   ✍️ curate: ' + (j && j.error || ('HTTP ' + r.status))); return {}; }
