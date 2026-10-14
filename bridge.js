@@ -1926,6 +1926,42 @@ async function cvcRun(force) {
   finally { _cvcBusy = false; }
 }
 setInterval(cvcRun, 6 * 3600 * 1000);
+// ── the curator's catch-up: a post whose publish-or-wait call failed (the reader was rate-limited, the site
+//    did not answer) went to the queue with no decision at all. Every ten minutes the queue is asked again for
+//    such posts of the last two days and the reader decides now (Miriam, 14 Oct 2026: "advertisements for
+//    businesses and events … all going to the unverified section instead of being auto-published" — every
+//    curate call that afternoon had answered 429).
+let _catchupBusy = false;
+async function curateCatchup() {
+  if (!CURATE || !INGEST_KEY || _catchupBusy) return;
+  _catchupBusy = true;
+  try {
+    const r = await fetch(SITE + '/api/live-data?type=updates&queue=1&t=' + Date.now(), { headers: { 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' } }); const all = r.ok ? await r.json() : [];
+    const since = Date.now() - 2 * 86400000;
+    const list = (Array.isArray(all) ? all : []).filter((it) => it && it.status === 'pending' && !it.curated && curatable(it) && (it.created || 0) >= since).sort((a, b) => (a.created || 0) - (b.created || 0)).slice(0, 24);
+    if (!list.length) return;
+    let published = 0, waiting = 0, failed = 0;
+    for (let i = 0; i < list.length; i += 8) {
+      const batch = list.slice(i, i + 8);
+      let out = {}; try { out = await curateItems(batch); } catch (e) {}
+      if (!Object.keys(out).length) { failed += batch.length; await new Promise((res) => setTimeout(res, 5000)); continue; }   // still no reader: the posts stay for next time
+      for (const it of batch) {
+        const c = out[String(it.id)]; if (!c) { failed++; continue; }
+        const patch = { curated: c.publish ? 'published' : 'waiting' };
+        if (c.title && String(c.title).trim().length >= 8 && !/https?:\/\//i.test(c.title)) patch.title = String(c.title).trim().substring(0, 150);
+        if (c.publish) patch.status = 'public';
+        try { const pr = await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', id: String(it.id), patch }) }); if (!pr.ok) { failed++; continue; } } catch (e) { failed++; continue; }
+        if (c.publish) { published++; log('   ✍️ published late · "' + String(patch.title || it.title || '').slice(0, 60) + '"' + (c.why ? ' · ' + c.why : '')); } else waiting++;
+        await new Promise((res) => setTimeout(res, 350));
+      }
+      await new Promise((res) => setTimeout(res, 3000));
+    }
+    log('✍️ catch-up: ' + list.length + ' undecided post(s) → ' + published + ' published, ' + waiting + ' wait for Miriam' + (failed ? ', ' + failed + ' still undecided' : ''));
+  } catch (e) { log('✍️ catch-up: ' + (e && e.message)); }
+  finally { _catchupBusy = false; }
+}
+setInterval(curateCatchup, 10 * 60 * 1000);
+setTimeout(curateCatchup, 90 * 1000);
 async function retitleBacklog() {
   const want = global._retitle; if (!want || !INGEST_KEY || _retitleBusy) return;
   let done = {}; try { done = JSON.parse(fs.readFileSync(RETITLE_FILE, 'utf8')) || {}; } catch (e) {}
