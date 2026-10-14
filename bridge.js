@@ -2580,13 +2580,13 @@ setInterval(nudgeDraftEmails, 3 * 60 * 1000);
 //    the older ones are worked through, newest first.
 async function nudgePictureReading() {
   try {
-    const r = await fetch(SITE + '/api/live-data?type=readpics', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ max: 3 }), signal: AbortSignal.timeout(60000) });
+    const r = await fetch(SITE + '/api/live-data?type=readpics', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ max: 6 }), signal: AbortSignal.timeout(60000) });
     const j = await r.json().catch(() => ({}));
     if (j && j.done) log('🖼️  words read off ' + j.done + ' picture post' + (j.done === 1 ? '' : 's') + ((j.read || []).length < j.done ? ' (' + (j.read || []).length + ' had words)' : ''));
     if (j && j.errors && j.errors.length) log('🖼️  picture reader: ' + j.errors[0]);
   } catch (e) { /* the next nudge will get it */ }
 }
-setInterval(nudgePictureReading, 4 * 60 * 1000);
+setInterval(nudgePictureReading, 3 * 60 * 1000);
 setTimeout(nudgePictureReading, 45 * 1000);
 setTimeout(nudgeDraftEmails, 20 * 1000);
 
