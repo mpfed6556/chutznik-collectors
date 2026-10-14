@@ -1395,6 +1395,9 @@ function looksLikeJob(text) {
 // as a comment on the same thread, in the sender's name, with her number.
 const BABYSIT_ID = 'wa_BABYSIT';
 const BABYSIT_RE = /babysit|baby-?sitt?|mother'?s?\s*helper|\bnanny\b|au\s*pair|\bmetapelet\b|מטפלת|בייביסיטר|(?:watch|take|mind|sit with|hang(?: out)? with|play with|walk|entertain)\s+(?:my|the|our|a)\s+(?:kids?|baby|children|girls?|boys?|toddler|little|\d+\s*(?:kids|children|year))|gan\s*pick\s*-?up|pick(?:ing)?\s*up\s+(?:my|the|our)\s+(?:kids?|children|daughter|son|baby)|(?:sleeping|napping)\s+(?:baby|kids|children)|\bhelp(?:ing)? with (?:our|my|the) (?:daughter|son|baby|kids?|children|toddler|little ones?|girls?|boys?)\b|\b(?:play|playing|spend(?:ing)? time) with (?:her|him|them|our|my|the) (?:\d+[- ]?(?:month|year)[- ]old|daughter|son|baby|kids?|children|toddler|little ones?)?|\b\d+[- ]?month[- ]old\b|\b(?:look(?:ing)? after|mind(?:ing)?|watch(?:ing)?) (?:our|my|the) (?:daughter|son|baby|kids?|children|toddler|little ones?|girls?|boys?)\b|\bsomeone to come to our home\b.{0,80}\b(?:daughter|son|baby|kids?|children|toddler)\b/i;
+// the phrasings the first pattern missed (14 Oct 2026: "watch my eleven month old", "watch a few kids", "pick up a 2 yo from gan")
+const BS_NUMW = '(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|a few|some|several|couple of)';
+const BABYSIT_RE2 = new RegExp('\\b(?:watch|take care of|look(?:ing)? after|mind|sit with|care for|be with|stay with|entertain|supervise)\\s+(?:my|the|our|a|an|' + BS_NUMW + ')\\s+(?:\\w+\\s+){0,2}(?:kids?|baby|babies|children|girls?|boys?|toddlers?|infant|newborn|little ones?|twins|yo\\b|y\\.o\\.|month[- ]olds?|year[- ]olds?)|\\b' + BS_NUMW + '[- ]?(?:month|year)[- ]old\\b|\\b(?:pick(?:ing)?\\s*up|collect(?:ing)?|take|bring)\\s+(?:my|the|our|a|an|' + BS_NUMW + ')\\s+(?:\\w+\\s+){0,2}(?:kids?|child|children|daughter|son|baby|toddler|yo\\b|year[- ]old)\\b|\\bfrom (?:gan|school|playgroup|daycare|the babysitter)\\b.*\\b(?:kids?|child|children|daughter|son|baby|toddler|yo\\b|year[- ]old)|\\b(?:kids?|child|children|daughter|son|baby|toddler|yo\\b|year[- ]old)\\b.*\\bfrom (?:gan|school|playgroup|daycare)\\b|\\bchildcare\\b|\\bchild ?minder\\b|\\bbedtime (?:help|routine)\\b', 'i');
 const SELFAD_RE = /\b(?:i'?m|i am|we are|we'?re)\s+(?:currently\s+|also\s+)?available\b|\bavailable\s+(?:today|tonight|tomorrow|this|to|for)\b|\blooking for (?:babysitting|cleaning|work|a job|jobs|hours)\b|\bseminary girls?\b.*\b(?:available|looking)\b/i;
 // ── Cleaners: the same idea, a second shared thread (Miriam, 8 Sep 2026) ────
 const CLEAN_ID = 'wa_CLEANERS';
@@ -1409,6 +1412,8 @@ const THREAD_DEFS = {
 function isBabysit(text, chatName) {
   const t = String(text || '');
   if (BABYSIT_RE.test(t)) return true;
+  // a gan or school hiring staff is a job, not a babysitting request
+  if (BABYSIT_RE2.test(t) && !/\b(?:gan|school|daycare|playgroup|kindergarten|nursery)\b.{0,40}\b(?:is looking for|looking for|seeks?|seeking|hiring|needs?)\s+(?:a |an )?(?:\w+\s+){0,2}(?:staff|assistant|teacher|ganenet|aide|worker|morah)\b/i.test(t)) return true;
   if (isJobChat(chatName) || /babysit|sitter/i.test(String(chatName || ''))) return SELFAD_RE.test(t) && !CLEAN_RE.test(t);
   return false;
 }
@@ -1768,6 +1773,13 @@ async function pollJobMail() {
         _contentKey: contentKey(subject + ' ' + text),
         status: 'public',
       };
+      // a babysitting request joins the shared thread instead of standing alone (14 Oct 2026)
+      if (isBabysit(subject + '\n' + text, 'Nshei Jobs')) {
+        try {
+          const ok = await sendBabysit({ kind: 'single', msgs: [{ id: mid, body: (subject ? subject + '\n' : '') + body, ts: created, senderName: 'Nshei Jobs', phone: phones[0] || '' }] }, 'Nshei Jobs');
+          if (ok) { SEEN.add(mid); SEEN.add(item.dedupeKey); saveSeen(); log('✉️  jobs mail: babysitting request joined the shared thread · "' + item.title.slice(0, 60) + '"'); continue; }
+        } catch (e) {}
+      }
       const baseKey = item.dedupeKey, prevAt = JOBSEEN[baseKey] || 0;
       if (prevAt && Date.now() - prevAt < JOB_REPEAT_DAYS * 86400000) { SEEN.add(mid); log('✉️  jobs mail: left out, the same job went up ' + Math.round((Date.now() - prevAt) / 3600000) + 'h ago · "' + item.title.slice(0, 60) + '"'); continue; }
       // a repeat gets a fresh key: the site keeps every key it ever had and would turn the old one away
