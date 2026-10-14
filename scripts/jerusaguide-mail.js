@@ -220,7 +220,7 @@ async function sendSuggestionsWA(list, opts, log) {
   const site = (opts && opts.site) || SITE;
   const what = (x) => x.kind === 'ask' ? 'a ' + x.topic : (x.seek ? 'the ' : 'your ') + x.kind;
   const label = (x) => x.kind === 'ask' ? 'is looking for a ' + x.topic : (x.seek ? 'is looking for a ' : 'posted a ') + x.kind;
-  const approve = (x) => site + '/israel/#approve/' + x.token + '?who=' + encodeURIComponent(x.who) + '&what=' + encodeURIComponent(what(x)) + '&via=wa';
+  const approve = (x) => site + '/israel/#approve/' + x.token + '?who=' + encodeURIComponent(x.who) + '&what=' + encodeURIComponent(what(x)) + '&via=email';
   let sent = 0;
   for (const x of list) {
     const text = '✉️ *' + x.who + '* ' + label(x) + '\n_' + (x.subject || '(no subject)') + '_'
