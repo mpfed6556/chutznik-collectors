@@ -9,7 +9,7 @@ const crypto = require('crypto');
 const cheerio = require('cheerio');
 
 const ORG = "Chaim V'Chesed";
-const HOME = 'https://chaimvchesed.org';
+const HOME = 'https://chaimvchessed.com';   // two s, .com (14 Oct 2026: the .org spelling never answered, so nothing ever came through)
 const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; ChutznikReader/1.0; +https://www.chutznik.org) summaries with a link back; low-rate', 'Accept-Language': 'en' };
 const fp = (s) => crypto.createHash('sha256').update(String(s)).digest('hex').slice(0, 12);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -19,7 +19,8 @@ async function get(url) {
   const r = await fetch(url, { headers: UA, redirect: 'follow', signal: AbortSignal.timeout(30000) });
   return { ok: r.ok, status: r.status, text: r.ok ? await r.text() : '', ct: r.headers.get('content-type') || '', url: r.url || url };
 }
-const sameSite = (u) => { try { const h = new URL(u).hostname.replace(/^www\./, ''); return h === 'chaimvchesed.org'; } catch (e) { return false; } };
+const sameSite = (u) => { try { const h = new URL(u).hostname.replace(/^www\./, ''); return /^chaimvches+ed\.(com|org)$/.test(h); } catch (e) { return false; } };
+const isPdf = (u) => /\.pdf(?:$|[?#])/i.test(String(u || ''));
 const clean = (u) => { try { const x = new URL(u); x.hash = ''; x.search = ''; let s = x.toString(); if (!/\.\w{2,5}$/.test(s) && !s.endsWith('/')) s += '/'; return s.replace(/^http:/, 'https:').replace('://www.', '://'); } catch (e) { return ''; } };
 
 // every page the site lists: its sitemaps first, then its own links
@@ -29,12 +30,26 @@ async function discover(log) {
     try { const r = await get(u); if (!r.ok || !/xml|text/.test(r.ct)) return;
       const locs = [...r.text.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)].map((m) => m[1].trim());
       if (/sitemapindex/i.test(r.text) && depth < 2) { for (const l of locs) { if (!/image|video|attachment|tag|category|author/i.test(l)) await fromSitemap(l, depth + 1); } }
-      else for (const l of locs) if (sameSite(l)) urls.add(clean(l));
+      else for (const l of locs) if (sameSite(l)) urls.add(isPdf(l) ? l.split('#')[0] : clean(l));
     } catch (e) {}
   };
   for (const sm of ['/sitemap.xml', '/sitemap_index.xml', '/wp-sitemap.xml', '/post-sitemap.xml', '/page-sitemap.xml']) await fromSitemap(HOME + sm, 0);
   if (log) log('📚 ' + ORG + ': ' + urls.size + ' page(s) in the sitemaps');
   if (!urls.size && log) { try { const r = await get(HOME + '/'); log('📚 ' + ORG + ' home page: HTTP ' + r.status + ' ' + r.ct + ' (' + r.text.length + ' chars)'); } catch (e) { log('📚 ' + ORG + ' home page: ' + (e && e.message)); } }
+  // the information centre and every page it links to are always walked: that is where the PDFs are (Miriam, 14 Oct 2026)
+  {
+    const seen = new Set(), queue = [[HOME + '/information/', 0]];
+    while (queue.length && seen.size < 200) {
+      const [u, d] = queue.shift(); const cu = isPdf(u) ? u : clean(u); if (!cu || seen.has(cu)) continue; seen.add(cu);
+      if (isPdf(cu)) { urls.add(cu); continue; }
+      try { const r = await get(cu); if (!r.ok || !/html/.test(r.ct)) continue; urls.add(clean(r.url || cu));
+        const $ = cheerio.load(r.text);
+        $('a[href]').each((i, a) => { const h = $(a).attr('href') || ''; let abs = ''; try { abs = new URL(h, cu).toString(); } catch (e) { return; } if (!sameSite(abs)) return; if (isPdf(abs)) { urls.add(abs.split('#')[0]); return; } const c = clean(abs); if (c && !seen.has(c) && d < 2 && !SKIP_PATH.test(c)) queue.push([c, d + 1]); });
+      } catch (e) {}
+      await sleep(700);
+    }
+    if (log) log('📚 ' + ORG + ': ' + urls.size + ' page(s) and file(s) after the information centre (' + [...urls].filter(isPdf).length + ' PDF)');
+  }
   if (urls.size < 15) {
     // no usable sitemap: walk the site from the home page, two levels deep
     const seen = new Set(), queue = [[HOME + '/', 0]];
@@ -48,7 +63,22 @@ async function discover(log) {
     }
     if (log) log('📚 ' + ORG + ': ' + urls.size + ' page(s) after walking the site');
   }
-  return [...urls].filter((u) => u && !SKIP_PATH.test(u) && !/\.(jpg|jpeg|png|gif|webp|pdf|mp4|mp3|zip)$/i.test(u) && u !== HOME + '/');
+  return [...urls].filter((u) => u && !SKIP_PATH.test(u) && !/\.(jpg|jpeg|png|gif|webp|mp4|mp3|zip)$/i.test(u) && u !== HOME + '/');
+}
+
+// a PDF: its words (the bridge's pdf-parse), its title from the file name or its first line
+async function readPdf(url) {
+  const r = await fetch(url, { headers: UA, redirect: 'follow', signal: AbortSignal.timeout(60000) });
+  if (!r.ok) return null;
+  const buf = Buffer.from(await r.arrayBuffer()); if (!buf.length || buf.length > 12 * 1024 * 1024) return null;
+  let text = '';
+  try { const { PDFParse } = require('pdf-parse'); const parser = new PDFParse({ data: buf }); const res = await parser.getText(); text = String((res && res.text) || ''); try { await parser.destroy(); } catch (e) {} }
+  catch (e) { try { const pdf = require('pdf-parse'); const res = await (pdf.default || pdf)(buf); text = String((res && res.text) || ''); } catch (e2) { return null; } }
+  text = text.replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  let title = decodeURIComponent(String(url).split('/').pop() || '').replace(/\.pdf.*$/i, '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const first = (text.split('\n').map((l) => l.trim()).find((l) => l.length >= 8 && l.length <= 90 && /[A-Za-z]{3}/.test(l)) || '');
+  if (!title || /^\d+$/.test(title) || title.length < 6) title = first || title;
+  return { url: String(url), title: title.charAt(0).toUpperCase() + title.slice(1), text, published: Date.parse(r.headers.get('last-modified') || '') || 0, pdf: true };
 }
 
 // one page: its title, its text, its date
@@ -76,13 +106,14 @@ async function run({ SITE, KEY, log, limit }) {
   for (const url of todo) {
     if (limit && n >= limit) break; n++;
     try {
-      const page = await readPage(url);
+      const page = isPdf(url) ? await readPdf(url) : await readPage(url);
       if (!page || page.text.length < 350) { skipped++; continue; }
       const r = await fetch(SITE + '/api/live-data?type=summarize', { method: 'POST', headers: H, body: JSON.stringify({ org: ORG, title: page.title, url: page.url, text: page.text.slice(0, 9000) }), signal: AbortSignal.timeout(120000) });
       const j = await r.json().catch(() => ({}));
       if (!j || !j.ok) { failed++; say('   ✍️ ' + (j && j.error || 'HTTP ' + r.status) + ' — ' + url); if (/No reader key|429/.test(String(j && j.error))) break; await sleep(8000); continue; }
       if (j.skip) { skipped++; await sleep(2000); continue; }
-      const item = { id: 'cvc_' + fp(url), source: 'cvc', group: ORG, title: j.title, memo: j.summary + '\n\n📖 Read the full article on ' + ORG + '’s site:\n' + page.url,
+      const item = { id: 'cvc_' + fp(url), source: 'cvc', group: ORG, title: j.title, memo: j.summary + '\n\n📖 ' + (page.pdf ? 'Read the full document (PDF) on ' : 'Read the full article on ') + ORG + '’s site:\n' + page.url,
+        picText: page.pdf ? page.text.replace(/\s+/g, ' ').slice(0, 1500) : '',   // the PDF's own words, so the search finds them
         types: j.types, area: 'Jerusalem & Surrounding', communities: [], author: ORG, contactPhone: '', contactWebsite: page.url, created: page.published || Date.now(), status: 'public', attachments: [], dedupeKey: 'cvc|' + fp(url), verified: true };
       const w = await fetch(SITE + '/api/ingest-whatsapp?file=updates', { method: 'POST', headers: H, body: JSON.stringify({ file: 'updates', items: [item] }), signal: AbortSignal.timeout(120000) });
       const wj = await w.json().catch(() => ({}));
@@ -92,7 +123,7 @@ async function run({ SITE, KEY, log, limit }) {
   }
   return ORG + ': ' + added + ' new post(s), ' + skipped + ' skipped, ' + failed + ' failed, ' + (urls.length - have.size - n) + ' left for next time';
 }
-module.exports = { run, discover, readPage, ORG };
+module.exports = { run, discover, readPage, readPdf, ORG };
 
 if (require.main === module) {
   run({ SITE: process.env.SITE || 'https://chutznik.org', KEY: process.env.INGEST_KEY || '', log: console.log, limit: Number(process.argv[2]) || 0 }).then(console.log).catch((e) => { console.error(e); process.exit(1); });
