@@ -147,8 +147,6 @@ function noteFor(c, matchText) {
   else if (rental && c.seek) text = 'hi! I saw you\'re looking for a rental. there are tons listed here 👉 ' + SITE + '/israel/rental\nhatzlachah!';
   else if (!rental && !c.seek) text = 'hi! I saw you just posted a job. there are people looking for work here 👉 ' + SITE + '/israel/jobs\nhatzlachah!';
   else text = 'hi! I saw you\'re looking for work. there are tons of jobs listed here 👉 ' + SITE + '/israel/jobs\nhatzlachah!';
-  // a signature: who is writing, and an easy way out (the two things a spam filter looks for in a cold note)
-  text += '\n\nMiriam\nChutznik · the community board for English speakers in Jerusalem\n(if you\'d rather not hear from me, reply "stop")';
   const html = '<div style="font-family:Georgia,serif;font-size:16px;line-height:1.55;color:#3a2f27">'
     + text.split('\n').map(l => l.replace(/(https?:\/\/\S+)/g, '<a href="$1" style="color:#a8483f">$1</a>')).join('<br>')
     + '</div>';
@@ -322,7 +320,6 @@ async function approve(token, opts, log, text) {
   let note = p.note;
   if (typeof text === 'string' && text.trim().length >= 10) {
     let t = text.trim().slice(0, 2000);
-    if (!/chutznik/i.test(t.split('\n').slice(-3).join(' '))) t += '\n\nMiriam\nChutznik · the community board for English speakers in Jerusalem';
     note = { subject: p.note.subject, text: t, html: '<div style="font-family:Georgia,serif;font-size:16px;line-height:1.55;color:#3a2f27">' + t.split('\n').map((l) => esc(l).replace(/(https?:\/\/\S+)/g, '<a href="$1" style="color:#a8483f">$1</a>')).join('<br>') + '</div>' };
   }
   try {
