@@ -100,9 +100,20 @@ function langOf(text) {
 }
 const LANG_NAMES = { he: 'Hebrew', yi: 'Yiddish', ru: 'Russian', ar: 'Arabic', fr: 'French', es: 'Spanish' };
 async function toEnglish(text, lang) {
+  lang = lang || langOf(String(text || '').slice(0, 480));
+  if (!String(text || '').trim() || !lang) return '';
+  // the site's reader first: the whole text, any length, no daily cap (14 Oct 2026: a Hebrew post stayed Hebrew
+  // once the free translator's daily allowance was used up)
+  if (INGEST_KEY) {
+    try {
+      const r = await fetch(SITE + '/api/live-data?type=translate', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' },
+        body: JSON.stringify({ text: String(text).slice(0, 4000), lang: LANG_NAMES[lang] || lang }), signal: AbortSignal.timeout(60000) });
+      const j = await r.json().catch(() => null);
+      if (j && j.ok && j.text && !hasHebrew(j.text)) return String(j.text).trim();
+      if (j && !j.ok) log('   🌐 translate: ' + String(j.error || '').slice(0, 120));
+    } catch (e) { log('   🌐 translate: ' + (e && e.message)); }
+  }
   const q = String(text || '').slice(0, 480);
-  lang = lang || langOf(q);
-  if (!q || !lang) return '';
   try {
     const r = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(q) + '&langpair=' + lang + '|en', { headers: { 'User-Agent': 'chutznik-bridge' } });
     if (!r.ok) return '';
@@ -116,7 +127,7 @@ async function toEnglish(text, lang) {
 async function englishMemo(memo) {
   const lang = langOf(memo); if (!lang) return memo;
   const en = await toEnglish(memo, lang); if (!en) return memo;
-  return en + '\n\n🌐 Translated from ' + (LANG_NAMES[lang] || lang) + '. The original:\n' + String(memo).slice(0, 400);
+  return en + '\n\n🌐 Translated from ' + (LANG_NAMES[lang] || lang) + '. The original:\n' + String(memo).slice(0, 1200);
 }
 async function ocrImage(base64) {
   if (!OCR) return '';
