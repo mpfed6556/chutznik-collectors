@@ -174,7 +174,7 @@ async function curateItems(items, review) {
   try {
     const picUrl = (it) => { const a = it.attachments && it.attachments[0]; const u = a && typeof a.url === 'string' ? a.url : ''; return /^\/api\/live-data\?type=file&path=attachments%2F/.test(u) ? SITE + u : ''; };
     const r = await fetch(SITE + '/api/live-data?type=curate', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' },
-      body: JSON.stringify({ review: !!review, items: items.map((it) => ({ id: String(it.id), title: it.title || '', text: String(it.memo || '').slice(0, review ? 2500 : 1500), group: it.group || '', pic: !!(it.attachments && it.attachments.length), phone: !!it.contactPhone, picUrl: review ? picUrl(it) : '' })) }),
+      body: JSON.stringify({ review: !!review, items: items.map((it) => ({ id: String(it.id), title: it.title || '', text: String(it.memo || '').slice(0, review ? 2500 : 1500), group: it.group || '', pic: !!(it.attachments && it.attachments.length), phone: !!it.contactPhone, replies: (it.comments || []).length, picUrl: review ? picUrl(it) : '' })) }),
       signal: AbortSignal.timeout(180000) });
     const j = await r.json().catch(() => null);
     if (!r.ok || !j || !j.ok) { log('   ✍️ curate: ' + (j && j.error || ('HTTP ' + r.status))); return {}; }
@@ -375,7 +375,7 @@ async function sendToQueue(item) {
       const lastUp = sellerKey ? sellerSeen()[sellerKey] : 0;
       if (c.publish && lastUp && Date.now() - lastUp < 7 * 86400000) { item.curated = 'waiting'; log('   ✍️ waits for Miriam · "' + item.title.slice(0, 60) + '" · same poster published ' + Math.round((Date.now() - lastUp) / 86400000) + ' day(s) ago'); }
       else {
-        if (c.publish) { item.status = 'public'; item.curated = 'published'; if (sellerKey) { const m = sellerSeen(); m[sellerKey] = Date.now(); for (const k of Object.keys(m)) if (Date.now() - m[k] > 30 * 86400000) delete m[k]; try { fs.writeFileSync(SELLER_FILE, JSON.stringify(m)); } catch (e) {} } } else { item.curated = 'waiting'; }
+        if (c.publish) { item.status = 'public'; item.curated = 'published'; if (sellerKey) { const m = sellerSeen(); m[sellerKey] = Date.now(); for (const k of Object.keys(m)) if (Date.now() - m[k] > 30 * 86400000) delete m[k]; try { fs.writeFileSync(SELLER_FILE, JSON.stringify(m)); } catch (e) {} } } else { item.curated = 'waiting' + ((item.comments || []).length ? ':' + item.comments.length : ''); }
         log('   ✍️ ' + (c.publish ? 'published' : 'waits for Miriam') + ' · "' + item.title.slice(0, 60) + '"' + (c.why ? ' · ' + c.why : ''));
       }
     }
@@ -1984,7 +1984,10 @@ async function curateCatchup() {
   try {
     const r = await fetch(SITE + '/api/live-data?type=updates&queue=1&t=' + Date.now(), { headers: { 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' } }); const all = r.ok ? await r.json() : [];
     const since = Date.now() - 2 * 86400000;
-    const list = (Array.isArray(all) ? all : []).filter((it) => it && it.status === 'pending' && !it.curated && curatable(it) && (it.created || 0) >= since).sort((a, b) => (a.created || 0) - (b.created || 0)).slice(0, 24);
+    // a "waiting" question is asked about again once replies have come in (Miriam, 14 Oct 2026: "only answers")
+    const judgedWith = (it) => { const m = /^waiting:(\d+)$/.exec(String(it.curated || '')); return m ? Number(m[1]) : (String(it.curated || '') === 'waiting' ? 0 : -1); };
+    const again = (it) => judgedWith(it) >= 0 && (it.comments || []).length > judgedWith(it);
+    const list = (Array.isArray(all) ? all : []).filter((it) => it && it.status === 'pending' && (!it.curated || again(it)) && curatable(it) && (it.created || 0) >= since).sort((a, b) => (a.created || 0) - (b.created || 0)).slice(0, 24);
     if (!list.length) return;
     let published = 0, waiting = 0, failed = 0;
     for (let i = 0; i < list.length; i += 8) {
@@ -1993,7 +1996,7 @@ async function curateCatchup() {
       if (!Object.keys(out).length) { failed += batch.length; await new Promise((res) => setTimeout(res, 5000)); continue; }   // still no reader: the posts stay for next time
       for (const it of batch) {
         const c = out[String(it.id)]; if (!c) { failed++; continue; }
-        const patch = { curated: c.publish ? 'published' : 'waiting' };
+        const patch = { curated: c.publish ? 'published' : 'waiting' + ((it.comments || []).length ? ':' + it.comments.length : '') };
         if (c.title && String(c.title).trim().length >= 8 && !/https?:\/\//i.test(c.title)) patch.title = String(c.title).trim().substring(0, 150);
         if (c.publish) patch.status = 'public';
         try { const pr = await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', id: String(it.id), patch }) }); if (!pr.ok) { failed++; continue; } } catch (e) { failed++; continue; }
