@@ -220,7 +220,8 @@ async function sendSuggestions(list, opts, log) {
     + '<div style="font-weight:700;color:#3a2920;margin:2px 0 6px">' + esc(x.subject || '(no subject)') + '</div>'
     + (x.snippet ? '<div style="font-size:13px;color:#6b5d50;white-space:pre-wrap;margin-bottom:8px">' + esc(x.snippet) + '</div>' : '')
     + '<div style="background:#fbf6f0;border-radius:8px;padding:8px 10px;font-family:Georgia,serif;font-size:14px;white-space:pre-wrap;color:#3a2f27">' + esc(x.note.text) + '</div>'
-    + '<div style="margin-top:10px"><a href="' + approve(x) + '" style="display:inline-block;background:#7a2c0c;color:#fff;border-radius:99px;padding:10px 22px;text-decoration:none;font-weight:700;font-size:14px">✓ Send it from Chutznik</a></div></div>';
+    + '<div style="margin-top:10px"><a href="' + approve(x) + '" style="display:inline-block;background:#7a2c0c;color:#fff;border-radius:99px;padding:10px 22px;text-decoration:none;font-weight:700;font-size:14px">✓ Send it from Chutznik</a>'
+    + ' <a href="' + approve(x) + '&edit=1&text=' + encodeURIComponent(x.note.text) + '" style="display:inline-block;background:#fff;color:#7a2c0c;border:1.5px solid #d9c4b2;border-radius:99px;padding:9px 18px;text-decoration:none;font-weight:700;font-size:13px;margin-left:6px">✏️ Edit &amp; send</a></div></div>';
   const html = '<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px;line-height:1.5;color:#3a2920;max-width:640px">'
     + '<div style="font-family:Georgia,serif;font-size:20px;font-weight:700;color:#6b2a0c;margin-bottom:4px">' + list.length + ' poster' + (list.length === 1 ? '' : 's') + ' to write to</div>'
     + '<div style="color:#9a8c80;font-size:13px;margin-bottom:14px">Each one posted or asked about a rental or a job, or asked for a recommendation Chutznik has. Nothing was sent yet. Press a button and that note goes out from info@chutznik.org within a minute. Nobody is suggested twice.</div>'
@@ -307,12 +308,18 @@ async function run(log, opts) {
 }
 
 // Miriam pressed "Send it from Chutznik" on a suggested note (the approve token came back from the site)
-async function approve(token, opts, log) {
+async function approve(token, opts, log, text) {
   const p = PENDING[token]; if (!p) return false;
   if (p.sent) return true;
+  // Miriam edited the note on the site before pressing Send: her words go, not the suggestion
+  let note = p.note;
+  if (typeof text === 'string' && text.trim().length >= 10) {
+    const t = text.trim().slice(0, 2000);
+    note = { subject: p.note.subject, text: t, html: '<div style="font-family:Georgia,serif;font-size:16px;line-height:1.55;color:#3a2f27">' + t.split('\n').map((l) => esc(l).replace(/(https?:\/\/\S+)/g, '<a href="$1" style="color:#a8483f">$1</a>')).join('<br>') + '</div>' };
+  }
   try {
-    const via = await sendMail(p.who, p.note, log, opts);
-    p.sent = Date.now(); p.via = via; TOLD[p.who] = { ts: Date.now(), kind: p.kind, seek: p.seek, via, approved: true, subject: String(p.subject || '').slice(0, 80) };
+    const via = await sendMail(p.who, note, log, opts);
+    p.sent = Date.now(); p.via = via; if (note !== p.note) p.edited = true; TOLD[p.who] = { ts: Date.now(), kind: p.kind, seek: p.seek, via, approved: true, subject: String(p.subject || '').slice(0, 80) };
     log('📬 jerusaguide: emailed ' + p.who + ' — ' + p.note.subject + ' (approved by Miriam)');
   } catch (e) { p.tries = (p.tries || 0) + 1; log('📬 jerusaguide: note to ' + p.who + ' failed: ' + (e && e.message)); if (p.tries < 3) { savePending(); return false; } p.sent = Date.now(); p.failed = true; }
   savePending(); saveTold();

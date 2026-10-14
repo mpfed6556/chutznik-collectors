@@ -273,10 +273,11 @@ async function approvalsRun() {
     const r = await fetch(SITE + '/api/live-data?type=approvals&t=' + Date.now(), { headers: { 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, signal: AbortSignal.timeout(30000) });
     if (!r.ok) return;
     const list = await r.json(); const tokens = (Array.isArray(list) ? list : []).map((x) => String((x && x.token) || x || ''));
+    const edited = {}; for (const x of (Array.isArray(list) ? list : [])) if (x && x.token && typeof x.text === 'string') edited[String(x.token)] = x.text;   // the note as Miriam edited it on the site
     const done = [];
     for (const t of tokens) {
       const a = ASKED[t];
-      if (!a && JG && JG.pendingCount()) { try { if (await JG.approve(t, { site: SITE, ingestKey: INGEST_KEY }, log)) { done.push(t); continue; } } catch (e) { log('📬 jerusaguide approve: ' + (e && e.message)); } }
+      if (!a && JG && JG.pendingCount()) { try { if (await JG.approve(t, { site: SITE, ingestKey: INGEST_KEY }, log, edited[t])) { done.push(t); continue; } } catch (e) { log('📬 jerusaguide approve: ' + (e && e.message)); } }
       if (!a || a.sent) { if (!a) done.push(t); continue; }
       const sock = global._sock; if (!sock) { log('📨 approved note waiting: WhatsApp not connected yet'); break; }
       const who = optKey({ jid: a.jid }); if (who && OPTOUT.has(who)) { a.sent = Date.now(); a.skipped = 'opted out'; done.push(t); continue; }
@@ -1800,11 +1801,13 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
   const modPath = path.join(__dirname, 'scripts', 'jerusaguide-mail.js');
   if (!fs.existsSync(modPath)) { log('📬 jerusaguide notes: off (scripts/jerusaguide-mail.js missing)'); return; }
   const JG = require(modPath); global._JG = JG;
-  const every = Number(process.env.JG_MINUTES || 10);
   const opts = () => ({ site: SITE, ingestKey: INGEST_KEY, to: global._jgTo || [] });
-  setTimeout(() => JG.run(log, opts()), 75 * 1000);
-  setInterval(() => JG.run(log, opts()), every * 60 * 1000);
-  log('📬 jerusaguide notes: ' + JG.modeNow() + ' (.env; the site settings may change it) · watching ' + (process.env.GMAIL_USER || '?') + ' for ' + (process.env.JG_GROUP || 'jerusaguide@googlegroups.com') + ' every ' + every + ' min');
+  // every few minutes, faster at night in Israel (Miriam, 14 Oct 2026: "more often, especially at night time Israel time")
+  const everyNow = () => { const h = israelHour(); const night = h >= 20 || h < 8; return Math.max(2, Number(night ? (global._jgNightMinutes || process.env.JG_NIGHT_MINUTES || 3) : (global._jgMinutes || process.env.JG_MINUTES || 5))); };
+  let lastRun = 0;
+  setTimeout(() => { lastRun = Date.now(); JG.run(log, opts()); }, 75 * 1000);
+  setInterval(() => { if (Date.now() - lastRun >= everyNow() * 60 * 1000) { lastRun = Date.now(); JG.run(log, opts()); } }, 30 * 1000);
+  log('📬 jerusaguide notes: ' + JG.modeNow() + ' (.env; the site settings may change it) · watching ' + (process.env.GMAIL_USER || '?') + ' for ' + (process.env.JG_GROUP || 'jerusaguide@googlegroups.com') + ' every ' + everyNow() + ' min now (5 by day, 3 at night, Israel time)');
 })();
 
 // ── "Your post is up on Chutznik" — a private WhatsApp note to the poster ────
@@ -1855,6 +1858,8 @@ async function pullSettings() {
     // who gets the daily TODAY sheet (numbers with country code, no +)
     if (j.JG_MODE !== undefined) { const v = String(j.JG_MODE || 'off').toLowerCase(); if (['off', 'dry', 'suggest', 'live'].includes(v) && v !== (global._jgMode || '')) { global._jgMode = v; log('\u2699\ufe0f  jerusaguide notes: ' + v + ' (from the site settings)'); } }
     if (j.JG_RESUGGEST && typeof j.JG_RESUGGEST === 'object' && j.JG_RESUGGEST.stamp && global._JG) { try { if (global._JG.resuggest(String(j.JG_RESUGGEST.stamp), log)) setTimeout(() => global._JG.run(log, { site: SITE, ingestKey: INGEST_KEY, to: global._jgTo || [] }), 3000); } catch (e) { log('📬 jerusaguide resuggest: ' + (e && e.message)); } }
+    if (j.JG_MINUTES !== undefined) global._jgMinutes = Number(j.JG_MINUTES) || 0;
+    if (j.JG_NIGHT_MINUTES !== undefined) global._jgNightMinutes = Number(j.JG_NIGHT_MINUTES) || 0;
     if (Array.isArray(j.JG_TO)) { const list = j.JG_TO.map((x) => String(x || '').trim().toLowerCase()).filter((x) => x.includes('@')); if (JSON.stringify(list) !== JSON.stringify(global._jgTo || [])) { global._jgTo = list; log('\u2699\ufe0f  jerusaguide suggestions go to: ' + (list.join(', ') || '(Miriam)')); } }
     if (j.DIGEST !== undefined) { const v = String(j.DIGEST || 'off').toLowerCase(); if (v !== (global._digest || 'off')) { global._digest = v; log('\u2699\ufe0f  WhatsApp digest email: ' + v); } }
     if (Array.isArray(j.DIGEST_TO)) { const list = j.DIGEST_TO.map((x) => String(x || '').trim().toLowerCase()).filter((x) => x.includes('@')); if (JSON.stringify(list) !== JSON.stringify(global._digestTo || [])) { global._digestTo = list; log('\u2699\ufe0f  WhatsApp digest goes to: ' + (list.join(', ') || '(admin)')); } }
