@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-14T14:47:35.284Z",
+  "lastRun": "2026-10-14T19:02:47.244Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -32,7 +32,7 @@
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
-    "AACI": "blocked: robots.txt unreachable — skipping to be safe",
+    "AACI": "no feed, no scannable items, nothing in the news last 48h",
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-14T14:47:35.283Z",
-      "sent": 3,
+      "lastRun": "2026-10-14T19:02:47.242Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -70,9 +70,9 @@
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "15 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
-        "iTravelJerusalem": "ok via listing cards (1 new of 15)",
+        "iTravelJerusalem": "15 cards, nothing new (15 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/feed/ (10 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (16 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
         "Pardes": "no events · HTTP 403",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (3 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
@@ -153,15 +153,7 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [
-          {
-            "title": "International Oud Festival 2026",
-            "date": "2026-11-05",
-            "time": "21:00",
-            "link": "https://www.itraveljerusalem.com/event/international-oud-festival",
-            "raw": "1 dates; first {\"startDate\":\"2026-11-05T19:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"21:00\",\"endTime\":\"23:00\",\"repeats\":\"no\"}"
-          }
-        ],
+        "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
             "title": "Kahoot Family Fun in support of Crossroads",
@@ -196,12 +188,6 @@
         ],
         "OU Israel Center": [
           {
-            "title": "Yerushalayim Bat Mitzvah and Beyond 2026-2027",
-            "date": "2026-10-13",
-            "time": "19:00",
-            "link": "https://www.ouisrael.org/events/yerushalayim-bm27/"
-          },
-          {
             "title": "Beit Shemesh Bat Mitzvah and Beyond 2026-2027",
             "date": "2026-10-14",
             "time": "19:00",
@@ -224,6 +210,12 @@
             "date": "2026-10-26",
             "time": "20:00",
             "link": "https://www.ouisrael.org/events/nextgen-aliyah2026/"
+          },
+          {
+            "title": "Next Gen BS- Shabbos Project",
+            "date": "2026-10-26",
+            "time": "20:00",
+            "link": "https://www.ouisrael.org/events/nextgen-shabbasproject/"
           }
         ],
         "Nefesh B'Nefesh": [
