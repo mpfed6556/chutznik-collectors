@@ -1822,7 +1822,7 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
   const modPath = path.join(__dirname, 'scripts', 'jerusaguide-mail.js');
   if (!fs.existsSync(modPath)) { log('📬 jerusaguide notes: off (scripts/jerusaguide-mail.js missing)'); return; }
   const JG = require(modPath); global._JG = JG;
-  const opts = () => ({ site: SITE, ingestKey: INGEST_KEY, to: global._jgTo || [] });
+  const opts = () => ({ site: SITE, ingestKey: INGEST_KEY, to: global._jgTo || [], wa: global._jgWa || [], sock: () => global._sock });
   // every few minutes, faster at night in Israel (Miriam, 14 Oct 2026: "more often, especially at night time Israel time")
   const everyNow = () => { const h = israelHour(); const night = h >= 20 || h < 8; return Math.max(2, Number(night ? (global._jgNightMinutes || process.env.JG_NIGHT_MINUTES || 3) : (global._jgMinutes || process.env.JG_MINUTES || 5))); };
   let lastRun = 0;
@@ -1878,9 +1878,10 @@ async function pullSettings() {
     if (j.MILESTONES && typeof j.MILESTONES === 'object' && j.MILESTONES.stamp) { global._milestones = { stamp: String(j.MILESTONES.stamp), to: String(j.MILESTONES.to || 'preview').toLowerCase() }; setTimeout(milestonesRun, 2000); }
     // who gets the daily TODAY sheet (numbers with country code, no +)
     if (j.JG_MODE !== undefined) { const v = String(j.JG_MODE || 'off').toLowerCase(); if (['off', 'dry', 'suggest', 'live'].includes(v) && v !== (global._jgMode || '')) { global._jgMode = v; log('\u2699\ufe0f  jerusaguide notes: ' + v + ' (from the site settings)'); } }
-    if (j.JG_RESUGGEST && typeof j.JG_RESUGGEST === 'object' && j.JG_RESUGGEST.stamp && global._JG) { try { if (global._JG.resuggest(String(j.JG_RESUGGEST.stamp), log)) setTimeout(() => global._JG.run(log, { site: SITE, ingestKey: INGEST_KEY, to: global._jgTo || [] }), 3000); } catch (e) { log('📬 jerusaguide resuggest: ' + (e && e.message)); } }
+    if (j.JG_RESUGGEST && typeof j.JG_RESUGGEST === 'object' && j.JG_RESUGGEST.stamp && global._JG) { try { if (global._JG.resuggest(String(j.JG_RESUGGEST.stamp), log)) setTimeout(() => global._JG.run(log, { site: SITE, ingestKey: INGEST_KEY, to: global._jgTo || [], wa: global._jgWa || [], sock: () => global._sock }), 3000); } catch (e) { log('📬 jerusaguide resuggest: ' + (e && e.message)); } }
     if (j.JG_MINUTES !== undefined) global._jgMinutes = Number(j.JG_MINUTES) || 0;
     if (j.JG_NIGHT_MINUTES !== undefined) global._jgNightMinutes = Number(j.JG_NIGHT_MINUTES) || 0;
+    if (Array.isArray(j.JG_WA)) { const list = j.JG_WA.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._jgWa || [])) { global._jgWa = list; log('\u2699\ufe0f  jerusaguide suggestions go on WhatsApp to: ' + (list.join(', ') || '(nobody)')); } }
     if (Array.isArray(j.JG_TO)) { const list = j.JG_TO.map((x) => String(x || '').trim().toLowerCase()).filter((x) => x.includes('@')); if (JSON.stringify(list) !== JSON.stringify(global._jgTo || [])) { global._jgTo = list; log('\u2699\ufe0f  jerusaguide suggestions go to: ' + (list.join(', ') || '(Miriam)')); } }
     if (j.DIGEST !== undefined) { const v = String(j.DIGEST || 'off').toLowerCase(); if (v !== (global._digest || 'off')) { global._digest = v; log('\u2699\ufe0f  WhatsApp digest email: ' + v); } }
     if (Array.isArray(j.DIGEST_TO)) { const list = j.DIGEST_TO.map((x) => String(x || '').trim().toLowerCase()).filter((x) => x.includes('@')); if (JSON.stringify(list) !== JSON.stringify(global._digestTo || [])) { global._digestTo = list; log('\u2699\ufe0f  WhatsApp digest goes to: ' + (list.join(', ') || '(admin)')); } }

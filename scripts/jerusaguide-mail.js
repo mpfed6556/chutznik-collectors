@@ -211,10 +211,38 @@ function cleanText(t) {
 let busy = false, sentToday = 0, dayKey = '', firstRound = true;
 // the suggestions email, through the site's own mail function (logged like every other email)
 function esc(v) { return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+// the suggestions on WhatsApp (Miriam, 14 Oct 2026: "change to sending on whatsapp to 19294418833"): one message
+// per poster with the note and the same two links as the email; a tap opens the site, which sends the note
+async function sendSuggestionsWA(list, opts, log) {
+  const nums = (opts && opts.wa) || [], sock = opts && typeof opts.sock === 'function' ? opts.sock() : null;
+  if (!nums.length) return null;                                   // not asked for
+  if (!sock || !sock.user) { log('📬 jerusaguide: WhatsApp is not connected, the suggestions wait'); return false; }
+  const site = (opts && opts.site) || SITE;
+  const what = (x) => x.kind === 'ask' ? 'a ' + x.topic : (x.seek ? 'the ' : 'your ') + x.kind;
+  const label = (x) => x.kind === 'ask' ? 'is looking for a ' + x.topic : (x.seek ? 'is looking for a ' : 'posted a ') + x.kind;
+  const approve = (x) => site + '/israel/#approve/' + x.token + '?who=' + encodeURIComponent(x.who) + '&what=' + encodeURIComponent(what(x)) + '&via=wa';
+  let sent = 0;
+  for (const x of list) {
+    const text = '✉️ *' + x.who + '* ' + label(x) + '\n_' + (x.subject || '(no subject)') + '_'
+      + (x.snippet ? '\n' + x.snippet.slice(0, 220) + (x.snippet.length > 220 ? '…' : '') : '')
+      + '\n\n*Suggested note:*\n' + x.note.text
+      + '\n\n✓ Send it from Chutznik:\n' + approve(x)
+      + '\n\n✏️ Edit & send:\n' + approve(x) + '&edit=1&text=' + encodeURIComponent(x.note.text);
+    for (const num of nums) {
+      try { await Promise.race([sock.sendMessage(num + '@s.whatsapp.net', { text }), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 20000))]); sent++; }
+      catch (e) { log('📬 jerusaguide: WhatsApp to ' + num + ' failed: ' + (e && e.message)); }
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+  }
+  log('📬 jerusaguide: ' + list.length + ' suggestion(s) sent on WhatsApp to ' + nums.join(', '));
+  return sent > 0;
+}
 async function sendSuggestions(list, opts, log) {
+  const wa = await sendSuggestionsWA(list, opts, log);
+  if (wa !== null && !(opts && opts.to && opts.to.length)) return wa;   // WhatsApp asked for and no email list: done
   const to = (opts && opts.to && opts.to.length) ? opts.to : SUGGEST_DEFAULT_TO;
   const site = (opts && opts.site) || SITE, key = opts && opts.ingestKey;
-  if (!key) { log('📬 jerusaguide: no site key for the suggestions email'); return false; }
+  if (!key) { log('📬 jerusaguide: no site key for the suggestions email'); return !!wa; }
   const what = (x) => x.kind === 'ask' ? 'a ' + x.topic : (x.seek ? 'the ' : 'your ') + x.kind;
   const label = (x) => x.kind === 'ask' ? 'is looking for a ' + x.topic : (x.seek ? 'is looking for a ' : 'posted a ') + x.kind;
   const approve = (x) => site + '/israel/#approve/' + x.token + '?who=' + encodeURIComponent(x.who) + '&what=' + encodeURIComponent(what(x)) + '&via=email';
@@ -234,7 +262,7 @@ async function sendSuggestions(list, opts, log) {
   const r = await fetch(site + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': key, 'User-Agent': 'chutznik-bridge' },
     body: JSON.stringify({ type: 'custom', to, subject: list.length + ' suggested note' + (list.length === 1 ? '' : 's') + ' to send', body: text, html }) });
   const rt = (await r.text().catch(() => '')).slice(0, 160);
-  if (!r.ok) { log('📬 jerusaguide: suggestions mail failed ' + r.status + ' ' + rt); return false; }
+  if (!r.ok) { log('📬 jerusaguide: suggestions mail failed ' + r.status + ' ' + rt); return !!wa; }
   log('📬 jerusaguide: ' + list.length + ' suggestion(s) emailed to ' + to.join(', '));
   return true;
 }
