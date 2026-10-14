@@ -31,7 +31,7 @@ const GROUP = String(process.env.JG_GROUP || 'jerusaguide@googlegroups.com').toL
 const GROUP_KEY = GROUP.split('@')[0];                       // "jerusaguide"
 const FROM = process.env.JG_FROM || 'Chutznik <info@chutznik.org>';
 const REPLY_TO = process.env.JG_REPLY_TO || 'info@chutznik.org';
-const HOURS = Number(process.env.JG_HOURS || 48);
+const HOURS = Number(process.env.JG_HOURS || 48);   // the first look back; later rounds look at the last few hours only
 const DAILY = Number(process.env.JG_DAILY || 25);
 const SITE = (process.env.JG_SITE || 'https://chutznik.org').replace(/\/$/, '');
 const TOLD_FILE = path.join(__dirname, '..', 'jg-told.json');
@@ -205,7 +205,7 @@ function cleanText(t) {
   return x;
 }
 
-let busy = false, sentToday = 0, dayKey = '';
+let busy = false, sentToday = 0, dayKey = '', firstRound = true;
 // the suggestions email, through the site's own mail function (logged like every other email)
 function esc(v) { return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 async function sendSuggestions(list, opts, log) {
@@ -253,14 +253,16 @@ async function run(log, opts) {
     await client.connect();
     let box = '[Gmail]/All Mail';
     try { await client.mailboxOpen(box); } catch (e) { box = 'INBOX'; await client.mailboxOpen(box); }
-    const since = new Date(Date.now() - HOURS * 3600 * 1000);
+    const since = new Date(Date.now() - (firstRound ? HOURS : 3) * 3600 * 1000); firstRound = false;
     let uids = [];
     for (const q of [{ from: GROUP, since }, { to: GROUP, since }, { cc: GROUP, since }, { header: { 'List-ID': GROUP_KEY }, since }]) {
       let found = []; try { found = await client.search(q, { uid: true }) || []; } catch (e) {}
       for (const u of found) if (!uids.includes(u)) uids.push(u);
     }
     for (const uid of uids) {
-      if (sentToday >= DAILY) { log('📬 jerusaguide: daily cap of ' + DAILY + ' reached'); break; }
+      // the daily cap guards against spamming posters: it counts notes actually SENT. Suggestions to Miriam are
+      // not capped (14 Oct 2026: "daily cap of 25 reached" and nothing was suggested for the rest of the day)
+      if (MODE !== 'suggest' && sentToday >= DAILY) { log('📬 jerusaguide: daily cap of ' + DAILY + ' reached'); break; }
       let parsed;
       try { const msg = await client.fetchOne(uid, { source: true }, { uid: true }); if (!msg || !msg.source) continue; parsed = await simpleParser(msg.source); } catch (e) { continue; }
       const mid = 'jg_' + String(parsed.messageId || uid).replace(/[<>\s]/g, '').slice(0, 80);
@@ -285,7 +287,7 @@ async function run(log, opts) {
         try { const RM = require('./rental-match.js'); const it = RM.itemFromText(subject, text, c.seek); if (!recent) recent = await RM.fetchRecent(SITE); const m = RM.findMatches(it, recent); if (m.length) matchText = RM.message(it, m, SITE); } catch (e) { log('🤝 matches: ' + (e && e.message)); }
       }
       const note = noteFor(c, matchText);
-      if (MODE === 'suggest') { suggestions.push({ mid, token: require('crypto').randomBytes(16).toString('hex'), who, kind: c.kind, topic: c.topic || '', seek: c.seek, subject: subject.slice(0, 120), snippet: text.replace(/\s+/g, ' ').trim().slice(0, 280), note }); sent++; sentToday++; continue; }
+      if (MODE === 'suggest') { suggestions.push({ mid, token: require('crypto').randomBytes(16).toString('hex'), who, kind: c.kind, topic: c.topic || '', seek: c.seek, subject: subject.slice(0, 120), snippet: text.replace(/\s+/g, ' ').trim().slice(0, 280), note }); sent++; continue; }
       if (MODE === 'dry') { log('📬 jerusaguide (dry): would email ' + who + ' — ' + note.subject + ' — ' + (c.seek ? 'asking' : 'posting') + ' · "' + subject.slice(0, 60) + '"'); TOLD[who] = { ts: Date.now(), kind: c.kind, seek: c.seek, dry: true, subject: subject.slice(0, 80) }; sent++; sentToday++; continue; }
       try {
         const via = await sendMail(who, note, log, opts);
@@ -299,7 +301,7 @@ async function run(log, opts) {
       const ok = await sendSuggestions(suggestions, opts, log);
       if (ok) for (const x of suggestions) { TOLD[x.who] = { ts: Date.now(), kind: x.kind, seek: x.seek, suggested: true, subject: x.subject.slice(0, 80) }; PENDING[x.token] = { who: x.who, kind: x.kind, seek: x.seek, subject: x.subject, note: x.note, at: Date.now() }; }
       if (ok) savePending();
-      else { sent -= suggestions.length; sentToday -= suggestions.length; for (const x of suggestions) SEEN.delete(x.mid); }
+      else { sent -= suggestions.length; for (const x of suggestions) SEEN.delete(x.mid); }
     }
     saveSeen(); saveTold();
   } catch (e) { const inner = e && e.errors && e.errors[0] && e.errors[0].message; log('📬 jerusaguide: ' + (e && e.message ? e.message.slice(0, 160) : e) + (inner ? ' (' + String(inner).slice(0, 120) + ')' : '')); }
