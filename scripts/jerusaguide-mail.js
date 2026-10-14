@@ -136,7 +136,10 @@ function classify(subject, text) {
 // ── the note ────────────────────────────────────────────────────────────────
 function noteFor(c, matchText) {
   const rental = c.kind === 'rental';
-  const subject = rental ? 'rental info' : c.kind === 'ask' ? (c.topic + ' info') : 'job info';
+  // a personal subject from a named person, not a generic one: it reads like a letter, and Gmail treats it as one (14 Oct 2026)
+  const subject = rental ? (c.seek ? "About the rental you're looking for" : 'About your rental post')
+    : c.kind === 'ask' ? ('About the ' + c.topic + " you're looking for")
+    : (c.seek ? "About the work you're looking for" : 'About your job post');
   let text;
   if (matchText) text = matchText;   // her matches, in Miriam's words (rental-match.js)
   else if (c.kind === 'ask') text = 'hi! I saw you\'re looking for a ' + c.topic + '. there are a few recommended here 👉 ' + SITE + '/israel/search/' + encodeURIComponent(c.topic).replace(/%20/g, '+') + '\nhatzlachah!';
@@ -144,6 +147,8 @@ function noteFor(c, matchText) {
   else if (rental && c.seek) text = 'hi! I saw you\'re looking for a rental. there are tons listed here 👉 ' + SITE + '/israel/rental\nhatzlachah!';
   else if (!rental && !c.seek) text = 'hi! I saw you just posted a job. there are people looking for work here 👉 ' + SITE + '/israel/jobs\nhatzlachah!';
   else text = 'hi! I saw you\'re looking for work. there are tons of jobs listed here 👉 ' + SITE + '/israel/jobs\nhatzlachah!';
+  // a signature: who is writing, and an easy way out (the two things a spam filter looks for in a cold note)
+  text += '\n\nMiriam\nChutznik · the community board for English speakers in Jerusalem\n(if you\'d rather not hear from me, reply "stop")';
   const html = '<div style="font-family:Georgia,serif;font-size:16px;line-height:1.55;color:#3a2f27">'
     + text.split('\n').map(l => l.replace(/(https?:\/\/\S+)/g, '<a href="$1" style="color:#a8483f">$1</a>')).join('<br>')
     + '</div>';
@@ -155,7 +160,7 @@ async function sendMail(to, note, log, opts) {
   // the site's own mail function first: every note leaves as Chutznik <info@chutznik.org>, logged like every other email (Miriam, 13 Oct 2026)
   if (opts && opts.ingestKey) {
     const r = await fetch(((opts && opts.site) || SITE) + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': opts.ingestKey, 'User-Agent': 'chutznik-bridge' },
-      body: JSON.stringify({ type: 'custom', to: [to], subject: note.subject, body: note.text, html: note.html, plain: true }) });
+      body: JSON.stringify({ type: 'custom', to: [to], subject: note.subject, body: note.text, html: note.html, plain: true, fromName: 'Miriam from Chutznik' }) });
     if (!r.ok) throw new Error('site mail ' + r.status + ' ' + (await r.text().catch(() => '')).slice(0, 120));
     return 'site';
   }
@@ -316,7 +321,8 @@ async function approve(token, opts, log, text) {
   // Miriam edited the note on the site before pressing Send: her words go, not the suggestion
   let note = p.note;
   if (typeof text === 'string' && text.trim().length >= 10) {
-    const t = text.trim().slice(0, 2000);
+    let t = text.trim().slice(0, 2000);
+    if (!/chutznik/i.test(t.split('\n').slice(-3).join(' '))) t += '\n\nMiriam\nChutznik · the community board for English speakers in Jerusalem';
     note = { subject: p.note.subject, text: t, html: '<div style="font-family:Georgia,serif;font-size:16px;line-height:1.55;color:#3a2f27">' + t.split('\n').map((l) => esc(l).replace(/(https?:\/\/\S+)/g, '<a href="$1" style="color:#a8483f">$1</a>')).join('<br>') + '</div>' };
   }
   try {
