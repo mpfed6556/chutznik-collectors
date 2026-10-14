@@ -177,7 +177,7 @@ async function curateItems(items, review) {
       body: JSON.stringify({ review: !!review, items: items.map((it) => ({ id: String(it.id), title: it.title || '', text: String(it.memo || '').slice(0, review ? 2500 : 1500), group: it.group || '', pic: !!(it.attachments && it.attachments.length), phone: !!it.contactPhone, replies: (it.comments || []).length, replyText: (it.comments || []).slice(0, 5).map((c) => '- ' + String(c.content || '').replace(/\s+/g, ' ').slice(0, 160)).join('\n'), picUrl: review ? picUrl(it) : '' })) }),
       signal: AbortSignal.timeout(180000) });
     const j = await r.json().catch(() => null);
-    if (!r.ok || !j || !j.ok) { log('   ✍️ curate: ' + (j && j.error || ('HTTP ' + r.status))); return {}; }
+    if (!r.ok || !j || !j.ok) { log('   ✍️ curate: ' + (j && j.error || ('HTTP ' + r.status))); aiQuotaHit('curate', j && j.error); return {}; }
     return j.posts || {};
   } catch (e) { log('   ✍️ curate: ' + (e && e.message)); return {}; }
 }
@@ -1980,6 +1980,7 @@ setInterval(cvcRun, 6 * 3600 * 1000);
 let _catchupBusy = false;
 async function curateCatchup() {
   if (!CURATE || !INGEST_KEY || _catchupBusy) return;
+  if (!aiAllowed('catchup', 3)) return;   // three reader calls a round, within the day's share
   _catchupBusy = true;
   try {
     const r = await fetch(SITE + '/api/live-data?type=updates&queue=1&t=' + Date.now(), { headers: { 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' } }); const all = r.ok ? await r.json() : [];
@@ -2676,12 +2677,33 @@ setInterval(nudgeDraftEmails, 3 * 60 * 1000);
 //    transcribed so if someone searches … it should come up"). The site reads a few picture posts at a time
 //    with its AI reader; this machine, always on, gives it the nudge. New posts are read within minutes and
 //    the older ones are worked through, newest first.
+// ── The reader's daily allowance (14 Oct 2026: the free Gemini tier is 500 calls a day per model, and the
+//    picture reader with the catch-up used it all by the afternoon, leaving Ask Chutznik "busy"). The background
+//    jobs each get a share of the day; the rest stays for the women asking the site questions. A day's quota
+//    answer (429 "quota") pauses every background job for an hour.
+const AI_BUDGET = { pics: 120, catchup: 100, other: 60 };   // calls per UTC day (Google's day resets at midnight Pacific)
+function aiAllowed(kind, calls) {
+  const day = new Date().toISOString().slice(0, 10);
+  if (!global._aiDay || global._aiDay !== day) { global._aiDay = day; global._aiUsed = {}; }
+  if (global._aiPauseUntil && Date.now() < global._aiPauseUntil) return false;
+  const used = (global._aiUsed[kind] || 0);
+  if (used + (calls || 1) > (AI_BUDGET[kind] || 50)) return false;
+  global._aiUsed[kind] = used + (calls || 1);
+  return true;
+}
+function aiQuotaHit(where, msg) {
+  if (!/429|quota|rate limit|RESOURCE_EXHAUSTED/i.test(String(msg || ''))) return false;
+  if (!global._aiPauseUntil || Date.now() > global._aiPauseUntil) log('⏸️  ' + where + ': the reader is out of calls (' + String(msg).slice(0, 80) + ') — background reading pauses for an hour');
+  global._aiPauseUntil = Date.now() + 60 * 60 * 1000;
+  return true;
+}
 async function nudgePictureReading() {
+  if (!aiAllowed('pics', 3)) return;   // three pictures a nudge, within the day's share
   try {
-    const r = await fetch(SITE + '/api/live-data?type=readpics', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ max: 6 }), signal: AbortSignal.timeout(60000) });
+    const r = await fetch(SITE + '/api/live-data?type=readpics', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ max: 3 }), signal: AbortSignal.timeout(60000) });
     const j = await r.json().catch(() => ({}));
     if (j && j.done) log('🖼️  words read off ' + j.done + ' picture post' + (j.done === 1 ? '' : 's') + ((j.read || []).length < j.done ? ' (' + (j.read || []).length + ' had words)' : ''));
-    if (j && j.errors && j.errors.length) log('🖼️  picture reader: ' + j.errors[0]);
+    if (j && j.errors && j.errors.length) { log('🖼️  picture reader: ' + j.errors[0]); aiQuotaHit('picture reader', j.errors[0]); }
   } catch (e) { /* the next nudge will get it */ }
 }
 setInterval(nudgePictureReading, 3 * 60 * 1000);
