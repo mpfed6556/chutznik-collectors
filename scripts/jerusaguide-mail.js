@@ -42,6 +42,10 @@ let TOLD = {}; try { TOLD = JSON.parse(fs.readFileSync(TOLD_FILE, 'utf8')) || {}
 let PENDING = {}; try { PENDING = JSON.parse(fs.readFileSync(PENDING_FILE, 'utf8')) || {}; } catch (e) {}
 const savePending = () => { try { const cut = Date.now() - 14 * 86400000; for (const k of Object.keys(PENDING)) if ((PENDING[k].at || 0) < cut) delete PENDING[k]; fs.writeFileSync(PENDING_FILE, JSON.stringify(PENDING, null, 1)); } catch (e) {} };
 let SEEN = new Set(); try { SEEN = new Set(JSON.parse(fs.readFileSync(SEEN_FILE, 'utf8'))); } catch (e) {}
+// the highest UID handled per mailbox generation: the next round searches only after it
+const HIGH_FILE = path.join(__dirname, '..', 'jg-high.json');
+let HIGH = {}; try { HIGH = JSON.parse(fs.readFileSync(HIGH_FILE, 'utf8')) || {}; } catch (e) {}
+const saveHigh = () => { try { fs.writeFileSync(HIGH_FILE, JSON.stringify(HIGH)); } catch (e) {} };
 const saveTold = () => { try { fs.writeFileSync(TOLD_FILE, JSON.stringify(TOLD, null, 1)); } catch (e) {} };
 const saveSeen = () => { try { fs.writeFileSync(SEEN_FILE, JSON.stringify([...SEEN].slice(-5000))); } catch (e) {} };
 
@@ -297,21 +301,41 @@ async function run(log, opts) {
     let box = '[Gmail]/All Mail';
     try { await client.mailboxOpen(box); } catch (e) { box = 'INBOX'; await client.mailboxOpen(box); }
     const since = new Date(Date.now() - (firstRound ? HOURS : 3) * 3600 * 1000); firstRound = false;
+    // the group sends hundreds of emails a day (14 Oct 2026: 436 in the window) and every round used to pull the
+    // full text of each one, so a round never got to the end. Now: from the last UID handled onwards only (an IMAP
+    // "since" is a whole day), the headers in one call, and the full text only of the messages never seen before
+    const uv = String(client.mailbox && client.mailbox.uidValidity || '');
+    const hw = (uv && HIGH[uv]) ? Number(HIGH[uv]) : 0;
     let uids = [];
-    for (const q of [{ from: GROUP, since }, { to: GROUP, since }, { cc: GROUP, since }, { header: { 'List-ID': GROUP_KEY }, since }]) {
+    for (const base of [{ from: GROUP }, { to: GROUP }, { cc: GROUP }, { header: { 'List-ID': GROUP_KEY } }]) {
+      const q = hw ? Object.assign({ uid: (hw + 1) + ':*' }, base) : Object.assign({ since }, base);
       let found = []; try { found = await client.search(q, { uid: true }) || []; } catch (e) {}
-      for (const u of found) if (!uids.includes(u)) uids.push(u);
+      for (const u of found) if (u > hw && !uids.includes(u)) uids.push(u);
     }
-    rep.found = uids.length; step('searching: ' + uids.length + ' group message(s) in the window');
-    let n = 0;
-    for (const uid of uids) {
-      if (++n % 10 === 0) step('reading message ' + n + ' of ' + uids.length);
+    uids.sort((a, b) => a - b);
+    rep.found = uids.length; step('searching: ' + uids.length + ' group message(s) ' + (hw ? 'after UID ' + hw : 'in the window'));
+    // the headers of all of them in one go: a message already seen, or a reply in a thread, is never downloaded
+    const heads = [];
+    if (uids.length) { try { for await (const m of client.fetch(uids.join(','), { uid: true, envelope: true }, { uid: true })) heads.push(m); } catch (e) { log('📬 jerusaguide: headers: ' + (e && e.message)); } }
+    let maxUid = hw;
+    const toRead = [];
+    for (const h of heads) {
+      if (h.uid > maxUid) maxUid = h.uid;
+      const env = h.envelope || {};
+      const mid = 'jg_' + String(env.messageId || h.uid).replace(/[<>\s]/g, '').slice(0, 80);
+      if (SEEN.has(mid)) continue;
+      if (/^\s*re\s*:/i.test(env.subject || '')) { SEEN.add(mid); skipped++; why('a reply in a thread'); continue; }
+      toRead.push({ uid: h.uid, mid });
+    }
+    step('reading ' + toRead.length + ' new message(s)');
+    let n = 0, complete = true;
+    for (const { uid, mid } of toRead) {
+      if (++n % 10 === 0) step('reading message ' + n + ' of ' + toRead.length);
       // the daily cap guards against spamming posters: it counts notes actually SENT. Suggestions to Miriam are
       // not capped (14 Oct 2026: "daily cap of 25 reached" and nothing was suggested for the rest of the day)
-      if (MODE !== 'suggest' && sentToday >= DAILY) { log('📬 jerusaguide: daily cap of ' + DAILY + ' reached'); break; }
+      if (MODE !== 'suggest' && sentToday >= DAILY) { log('📬 jerusaguide: daily cap of ' + DAILY + ' reached'); complete = false; break; }
       let parsed;
       try { const msg = await client.fetchOne(uid, { source: true }, { uid: true }); if (!msg || !msg.source) continue; parsed = await simpleParser(msg.source); } catch (e) { continue; }
-      const mid = 'jg_' + String(parsed.messageId || uid).replace(/[<>\s]/g, '').slice(0, 80);
       if (SEEN.has(mid)) continue;
       SEEN.add(mid); rep.fresh++;
       if (!fromTheGroup(parsed)) { why('not from the group'); continue; }
@@ -350,6 +374,8 @@ async function run(log, opts) {
       if (ok) savePending();
       else { sent -= suggestions.length; for (const x of suggestions) SEEN.delete(x.mid); }
     }
+    // the high-water mark moves only when every new message was read: a round cut short reads the rest next time
+    if (complete && uv && maxUid > hw) { HIGH[uv] = maxUid; saveHigh(); }
     saveSeen(); saveTold();
   } catch (e) { const inner = e && e.errors && e.errors[0] && e.errors[0].message; rep.error = (e && e.message ? e.message.slice(0, 160) : String(e)) + (inner ? ' (' + String(inner).slice(0, 120) + ')' : ''); log('📬 jerusaguide: ' + rep.error); }
   finally { clearTimeout(killer); try { await client.logout(); } catch (e) {} busy = false; }
