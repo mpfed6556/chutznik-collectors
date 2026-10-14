@@ -126,19 +126,20 @@ function describe(item) {
 }
 function message(item, matches, SITE) {
   const wanted = isWanted(item), kind = kindOf(item);
-  const lines = ['hi it\'s Miriam from chutznik'];
+  // "hi, I'm Miriam. I saw you're…" and chutznik named once (Miriam, 14 Oct 2026)
+  const lines = ['hi, I\'m Miriam.'];
   if (kind === 'rental') {
     const what = describe(item);
-    lines.push(wanted ? 'I see you\'re looking for ' + what : 'I see you\'re renting out ' + what.replace(/^an? /, 'your '));
-    lines.push(wanted ? 'I found some apartments for what you posted:' : 'I found some people looking for what you posted:');
+    lines.push(wanted ? 'I saw you\'re looking for ' + what + '.' : 'I saw you\'re renting out ' + what.replace(/^an? /, 'your ') + '.');
+    lines.push(wanted ? 'there are some apartments on chutznik for what you posted:' : 'there are some people on chutznik looking for what you posted:');
   } else if (kind === 'job') {
     const tp = topic(item);
-    lines.push(wanted ? 'I see you\'re looking for work' + (tp ? ' (' + tp + ')' : '') : 'I see you\'re hiring' + (tp ? ' — ' + tp : ''));
-    lines.push(wanted ? 'I found some jobs for what you posted:' : 'I found some people looking for work:');
+    lines.push(wanted ? 'I saw you\'re looking for work' + (tp ? ' (' + tp + ')' : '') + '.' : 'I saw you\'re hiring' + (tp ? ' — ' + tp : '') + '.');
+    lines.push(wanted ? 'there are some jobs on chutznik for what you posted:' : 'there are some people on chutznik looking for work:');
   } else {
     const tp = topic(item) || 'that';
-    lines.push(wanted ? 'I see you\'re looking for ' + tp : 'I see you posted about ' + tp);
-    lines.push(wanted ? 'I found some posts that might help:' : 'I found some people looking for that:');
+    lines.push(wanted ? 'I saw you\'re asking about ' + tp + '.' : 'I saw you posted about ' + tp + '.');
+    lines.push(wanted ? 'there are some posts on chutznik that might help:' : 'there are some people on chutznik looking for that:');
   }
   const t = (p) => '"' + String(p.title || '(untitled)').replace(/\s+/g, ' ').slice(0, 80) + '"';
   if (matches.length <= 2) {
