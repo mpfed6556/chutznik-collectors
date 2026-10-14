@@ -343,6 +343,14 @@ async function sendToQueue(item) {
       }
     }
   } catch (e) {}
+  // every post gets a summary title from the site's reader, rentals, jobs and photo items included
+  // (Miriam, 14 Oct 2026: "ensure every subject is a few words of a summary of what the post is about")
+  if (!curatable(item) && CURATE && INGEST_KEY && item.source !== 'email') {
+    try {
+      const c = (await curateItems([item]))[String(item.id)];
+      if (c && c.title && String(c.title).trim().length >= 8 && !/https?:\/\//i.test(c.title)) { item.title = String(c.title).trim().substring(0, 150); log('   ✍️ titled · "' + item.title.slice(0, 70) + '"'); }
+    } catch (e) {}
+  }
   if (curatable(item) && item.status !== 'public') {
     const c = (await curateItems([item]))[String(item.id)];
     if (c) {
