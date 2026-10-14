@@ -308,10 +308,16 @@ async function run(log, opts) {
     const uv = String(client.mailbox && client.mailbox.uidValidity || '');
     const hw = (uv && HIGH[uv]) ? Number(HIGH[uv]) : 0;
     let uids = [];
-    for (const base of [{ from: GROUP }, { to: GROUP }, { cc: GROUP }, { header: { 'List-ID': GROUP_KEY } }]) {
-      const q = hw ? Object.assign({ uid: (hw + 1) + ':*' }, base) : Object.assign({ since }, base);
-      let found = []; try { found = await client.search(q, { uid: true }) || []; } catch (e) {}
+    if (hw) {
+      // one quick ask: everything after the last UID; the headers below say which are the group's
+      // (Miriam, 14 Oct 2026: "only read the first two lines… without reading all the long inlines")
+      let found = []; try { found = await client.search({ uid: (hw + 1) + ':*' }, { uid: true }) || []; } catch (e) {}
       for (const u of found) if (u > hw && !uids.includes(u)) uids.push(u);
+    } else {
+      for (const base of [{ from: GROUP }, { to: GROUP }, { cc: GROUP }, { header: { 'List-ID': GROUP_KEY } }]) {
+        let found = []; try { found = await client.search(Object.assign({ since }, base), { uid: true }) || []; } catch (e) {}
+        for (const u of found) if (!uids.includes(u)) uids.push(u);
+      }
     }
     uids.sort((a, b) => a - b);
     rep.found = uids.length; step('searching: ' + uids.length + ' group message(s) ' + (hw ? 'after UID ' + hw : 'in the window'));
@@ -325,6 +331,10 @@ async function run(log, opts) {
       const env = h.envelope || {};
       const mid = 'jg_' + String(env.messageId || h.uid).replace(/[<>\s]/g, '').slice(0, 80);
       if (SEEN.has(mid)) continue;
+      if (hw) {   // the headers say whether this is the group's mail at all; anything else is skipped unread
+        const addrs = ['from', 'to', 'cc', 'sender', 'replyTo'].flatMap((k) => (env[k] || []).map((a) => String(a.address || '').toLowerCase()));
+        if (!addrs.some((a) => a === GROUP || a.indexOf(GROUP_KEY) > -1)) { SEEN.add(mid); continue; }
+      }
       if (/^\s*re\s*:/i.test(env.subject || '')) { SEEN.add(mid); skipped++; why('a reply in a thread'); continue; }
       toRead.push({ uid: h.uid, mid });
     }
@@ -336,7 +346,8 @@ async function run(log, opts) {
       // not capped (14 Oct 2026: "daily cap of 25 reached" and nothing was suggested for the rest of the day)
       if (MODE !== 'suggest' && sentToday >= DAILY) { log('📬 jerusaguide: daily cap of ' + DAILY + ' reached'); complete = false; break; }
       let parsed;
-      try { const msg = await client.fetchOne(uid, { source: true }, { uid: true }); if (!msg || !msg.source) continue; parsed = await simpleParser(msg.source); } catch (e) { continue; }
+      // the top of the message only: the posting is in its first lines, the rest is quoted thread and footers
+      try { const msg = await client.fetchOne(uid, { source: { maxLength: 24000 } }, { uid: true }); if (!msg || !msg.source) continue; parsed = await simpleParser(msg.source); } catch (e) { continue; }
       if (SEEN.has(mid)) continue;
       SEEN.add(mid); rep.fresh++;
       if (!fromTheGroup(parsed)) { why('not from the group'); continue; }
@@ -345,7 +356,8 @@ async function run(log, opts) {
       if (TOLD[who]) { skipped++; why('already written to'); continue; }                         // never twice — whatever they post
       const subject = String(parsed.subject || '').replace(/^\s*(?:(?:re|fw|fwd)\s*:\s*)+/i, '').replace(/\[[^\]]*\]\s*/g, '').trim();
       if (/^\s*re\s*:/i.test(parsed.subject || '')) { skipped++; why('a reply in a thread'); continue; }   // a reply in a thread is not a posting
-      const text = cleanText(parsed.text || (parsed.html ? String(parsed.html).replace(/<[^>]+>/g, ' ') : ''));
+      // the first lines are the posting; the long quoted thread underneath is never read (Miriam, 14 Oct 2026)
+      const text = cleanText(parsed.text || (parsed.html ? String(parsed.html).replace(/<[^>]+>/g, ' ') : '')).split('\n').slice(0, 14).join('\n').slice(0, 1500);
       const c = classify(subject, text);
       if (!c) { skipped++; why('not a rental, job or request'); continue; }
       if (c.kind === 'ask') {
