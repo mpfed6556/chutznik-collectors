@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-15T10:09:09.373Z",
+  "lastRun": "2026-10-15T15:05:00.354Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-15T10:09:09.371Z",
+      "lastRun": "2026-10-15T15:05:00.353Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -220,18 +220,6 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Come discover Israel’s capital from a new angle at Open House Jerusalem!",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/come-discover-israels-capital-from-a-new-angle-at-open-house-jerusalem/"
-          },
-          {
-            "title": "Technology Made Simple: Empowering You, One App at a Time (TLV)",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/technology-made-simple-empowering-you-one-app-at-a-time-tlv-2/"
-          },
-          {
             "title": "Sailing Experience",
             "date": null,
             "time": "",
@@ -248,6 +236,18 @@
             "date": null,
             "time": "",
             "link": "https://israelwriterstudio.com/classes/"
+          },
+          {
+            "title": "Night Seder Program!",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/night-seder-program/"
+          },
+          {
+            "title": "Pickleball – All Level Open Play in Jaffa",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/pickleball-all-level-open-play-in-jaffa-2/"
           }
         ],
         "Pardes": [],
