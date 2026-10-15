@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-15T05:16:15.561Z",
+  "lastRun": "2026-10-15T10:09:09.373Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-15T05:16:15.559Z",
+      "lastRun": "2026-10-15T10:09:09.371Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -220,28 +220,28 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "KKL & SAR-EL Volunteer Experience",
+            "title": "Come discover Israel’s capital from a new angle at Open House Jerusalem!",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/kkl-sar-el-volunteer-experience/"
+            "link": "https://www.nbn.org.il/events/come-discover-israels-capital-from-a-new-angle-at-open-house-jerusalem/"
           },
           {
-            "title": "High Tea & Torah in the Garden",
+            "title": "Technology Made Simple: Empowering You, One App at a Time (TLV)",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/high-tea-torah-in-the-garden/"
+            "link": "https://www.nbn.org.il/events/technology-made-simple-empowering-you-one-app-at-a-time-tlv-2/"
           },
           {
-            "title": "Nishmat Online Beit Midrash",
+            "title": "Sailing Experience",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
+            "link": "https://www.nbn.org.il/events/sailing-experience-3/"
           },
           {
-            "title": "PHONE PHOTOGRAPHY WORKSHOP FOR KIDS AT THE BIALIK MUSEUM ㅤ",
+            "title": "Election Forum – Hear the Platforms, Ask Your Questions",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/phone-photography-workshop-for-kids-at-the-bialik-museum-%e3%85%a4/"
+            "link": "https://www.nbn.org.il/events/election-forum-hear-the-platforms-ask-your-questions/"
           },
           {
             "title": "JUST WRITE!",
