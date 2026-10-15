@@ -183,6 +183,11 @@ async function curateItems(items, review) {
 }
 const SELLER_FILE = path.join(__dirname, 'seller-seen.json');   // poster phone + group → when the curator last published them
 const sellerSeen = () => { if (!global._sellerSeen) { try { global._sellerSeen = JSON.parse(fs.readFileSync(SELLER_FILE, 'utf8')) || {}; } catch (e) { global._sellerSeen = {}; } } return global._sellerSeen; };
+// a post whose only call to action is joining a WhatsApp group never goes up on its own, whatever the reader
+// says (Miriam, 14 Oct 2026: "i said no whatsapp invites to groups!!"). English and Hebrew; a real way to reach
+// the business in the text (a phone, a website) makes it an advert the reader may judge instead
+const GROUP_INVITE_RE = /chat\.whatsapp\.com|\bjoin (?:our|the|this|my) (?:silent |new |free )?(?:whats?app |telegram )?(?:group|chat|channel)\b|\b(?:whats?app|telegram) (?:group|channel) (?:link|invite)\b|\bthe (?:link|invite) (?:is )?below\b|הצטרפ\w* לקבוצ|קבוצת (?:ה)?וו?א?טסאפ|לינק לקבוצה|קישור לקבוצה|להצטרפות לקבוצה/i;
+const inviteAd = (text) => { const t = String(text || ''); return GROUP_INVITE_RE.test(t) && !/\b0\d{1,2}[- ]?\d{3}[- ]?\d{4}\b|\+972|\+1[- ]?\d{3}|\bwww\.|https?:\/\/(?!chat\.whatsapp)/i.test(t); };
 const curatable = (it) => it && it.source === 'whatsapp' && !/^wa_(apt|BABYSIT|CLEANERS)/.test(String(it.id)) && !(it.types || []).some((t) => /^(Rental|Jobs|For Sale)$/.test(t));
 // ── News or advert? For groups that carry both (Miriam, 6 Oct 2026: "a lot of good ads and info, not news")
 const NEWS_RE = /\b(breaking|police|accident|crash|killed|injured|wounded|arrested|suspect|terror|attack|rocket|siren|sirens|protest|demonstration|minister|knesset|government|election|court|verdict|weather|storm|flood|fire ?fighters|wildfire|earthquake|road (?:closed|closure)|traffic jam|light rail (?:fault|stopped)|evacuat|hostage|idf|hamas|hezbollah|iran|gaza|ceasefire|update:|report:|malfunction|missing (?:person|man|woman|boy|girl|child|\w+(?: \w+)? (?:was|has|is|were))|found dead|searches (?:for|have|continue)|rescue(?:d|rs)?|stabbing|shooting|fatal|passed away|funeral|levaya|urgent:|drivers (?:drove|were|are|who)|light rail (?:line|is|was|will)|train line|bus line \d|road ?works|demonstrat|mayor|municipality|lawsuit|soldiers?|army|reservists|was (?:attacked|arrested|injured|killed|found))\b|תאונה|נפצע|פצוע|הרוג|נהרג|משטרה|נעצר|חשוד|פיגוע|אזעק|טיל|רקטה|הפגנ|מחאה|השר |שר ה|ראש הממשלה|הממשלה|כנסת|בג"ץ|בית המשפט|מזג האוויר|סופה|שיטפון|שריפה|כבאי|רעידת|כביש חסום|חסימ|פקק|תקלה ברכבת|חטופ|צה"ל|חמאס|חיזבאללה|איראן|עזה|הפסקת אש|מבזק|עדכון:|דיווח|חדשות|ערוץ|כתבת|כתב |תקלה|נעדר|החיפושים|נפטר|הלוויה|נהגים|הרכבת הקלה|ראש העיר|עיריית|עתירה|חיילים|מילואים|הותקף|נדקר|פיגוע/i;
@@ -365,7 +370,9 @@ async function sendToQueue(item) {
       if (c && c.title && String(c.title).trim().length >= 8 && !/https?:\/\//i.test(c.title)) { item.title = String(c.title).trim().substring(0, 150); log('   ✍️ titled · "' + item.title.slice(0, 70) + '"'); }
     } catch (e) {}
   }
-  if (curatable(item) && item.status !== 'public') {
+  if (curatable(item) && item.status !== 'public' && inviteAd(String(item.title || '') + '\n' + String(item.memo || ''))) {
+    item.curated = 'waiting:invite'; log('   ✍️ waits for Miriam · "' + String(item.title || '').slice(0, 60) + '" · a WhatsApp group invite, never on its own');
+  } else if (curatable(item) && item.status !== 'public') {
     const c = (await curateItems([item]))[String(item.id)];
     if (c) {
       if (c.title) item.title = c.title.substring(0, 150);
@@ -1988,7 +1995,7 @@ async function curateCatchup() {
     // a "waiting" question is asked about again once replies have come in (Miriam, 14 Oct 2026: "only answers")
     const judgedWith = (it) => { const m = /^waiting:(\d+)$/.exec(String(it.curated || '')); return m ? Number(m[1]) : (String(it.curated || '') === 'waiting' ? 0 : -1); };
     const again = (it) => judgedWith(it) >= 0 && (it.comments || []).length > judgedWith(it);
-    const list = (Array.isArray(all) ? all : []).filter((it) => it && it.status === 'pending' && (!it.curated || again(it)) && curatable(it) && (it.created || 0) >= since).sort((a, b) => (a.created || 0) - (b.created || 0)).slice(0, 24);
+    const list = (Array.isArray(all) ? all : []).filter((it) => it && it.status === 'pending' && (!it.curated || again(it)) && curatable(it) && (it.created || 0) >= since && !inviteAd(String(it.title || '') + '\n' + String(it.memo || ''))).sort((a, b) => (a.created || 0) - (b.created || 0)).slice(0, 24);
     if (!list.length) return;
     let published = 0, waiting = 0, failed = 0;
     for (let i = 0; i < list.length; i += 8) {
