@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-14T22:18:13.513Z",
+  "lastRun": "2026-10-15T00:42:13.732Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-14T22:18:13.511Z",
+      "lastRun": "2026-10-15T00:42:13.730Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -79,7 +79,7 @@
         "Israel Museum": "no events · fetch failed",
         "Tower of David": "no events · nothing parsed at https://www.tod.org.il/en/",
         "Bible Lands Museum": "no events · nothing parsed at https://www.blmj.org/en/",
-        "Bloomfield Science Museum": "no events · HTTP 404",
+        "Bloomfield Science Museum": "no events · HTTP 522",
         "Jerusalem Botanical Gardens": "no events · nothing parsed at https://www.botanic.co.il/en/",
         "Biblical Zoo": "no events · HTTP 403",
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
