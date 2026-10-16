@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-16T04:59:24.647Z",
+  "lastRun": "2026-10-16T09:41:12.830Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -58,10 +58,10 @@
     "Chaim V'Chessed": "blocked: robots.txt unreachable — skipping to be safe",
     "Moovit": "ok via RSS (6 items)",
     "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
-    "Shaare Zedek Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
-    "Herzog Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
+    "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
+    "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-16T04:59:24.645Z",
+      "lastRun": "2026-10-16T09:41:12.829Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -72,7 +72,7 @@
         "iTravelJerusalem hints": "15 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
         "iTravelJerusalem": "15 cards, nothing new (15 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/feed/ (10 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (13 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (14 upcoming)",
         "Pardes": "no events · HTTP 403",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (3 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
