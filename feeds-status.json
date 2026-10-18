@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-18T11:48:31.776Z",
+  "lastRun": "2026-10-18T14:57:52.656Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -32,7 +32,7 @@
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
-    "AACI": "blocked: robots.txt unreachable — skipping to be safe",
+    "AACI": "no feed, no scannable items, nothing in the news last 48h",
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "ok via page-scan (1 items) — no RSS found",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-18T11:48:31.774Z",
-      "sent": 5,
+      "lastRun": "2026-10-18T14:57:52.654Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -73,7 +73,7 @@
         "iTravelJerusalem": "15 cards, nothing new (15 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/feed/ (10 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
-        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
+        "Pardes": "no events · HTTP 403",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (8 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
+        "Secret Jerusalem": "no events · fetch failed"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -122,6 +122,12 @@
         ],
         "The Kotel": [
           {
+            "title": "Following the Inauguration of Colombia’s Embassy in Jerusalem: Colombia’s Foreign Minister Visits the Western Wall: “This Is the Most Sublime and Profound Moment of My Life!”",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157881/"
+          },
+          {
             "title": "The Main Thing Is the Intention – Parashat Noah",
             "date": null,
             "time": "",
@@ -144,12 +150,6 @@
             "date": null,
             "time": "",
             "link": "https://thekotel.org/en/157796/"
-          },
-          {
-            "title": "The Refined Person – Sukkot 5787",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157771/"
           }
         ],
         "Jerusalem Municipality": [],
