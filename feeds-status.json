@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-18T06:38:47.616Z",
+  "lastRun": "2026-10-18T11:48:31.776Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -32,7 +32,7 @@
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
-    "AACI": "no feed, no scannable items, nothing in the news last 48h",
+    "AACI": "blocked: robots.txt unreachable — skipping to be safe",
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-18T06:38:47.614Z",
-      "sent": 0,
+      "lastRun": "2026-10-18T11:48:31.774Z",
+      "sent": 5,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -72,9 +72,9 @@
         "iTravelJerusalem hints": "15 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
         "iTravelJerusalem": "15 cards, nothing new (15 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/feed/ (10 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (14 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
         "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
-        "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (3 upcoming)",
+        "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (8 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
         "Tower of David": "no events · nothing parsed at https://www.tod.org.il/en/",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · fetch failed"
+        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -206,24 +206,30 @@
             "link": "https://www.ouisrael.org/events/nextgen-shabbasproject/"
           },
           {
+            "title": "North Central Bat Mitzvah and Beyond",
+            "date": "2026-10-27",
+            "time": "",
+            "link": "https://www.ouisrael.org/events/bm-nc/"
+          },
+          {
             "title": "Tuesday Learning for Women",
             "date": "2026-10-27",
             "time": "09:15",
             "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-10-27/"
-          },
-          {
-            "title": "Sefer Yirmiyahu Yom Iyun",
-            "date": "2026-10-29",
-            "time": "09:15",
-            "link": "https://www.ouisrael.org/events/yirmiyahu2026/"
           }
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Come discover Israel’s capital from a new angle at Open House Jerusalem!",
+            "title": "When Ancient Beit She’an Comes to Life",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/come-discover-israels-capital-from-a-new-angle-at-open-house-jerusalem/"
+            "link": "https://www.nbn.org.il/events/when-ancient-beit-shean-comes-to-life/"
+          },
+          {
+            "title": "Nishmat Online Beit Midrash",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
           },
           {
             "title": "JUST WRITE!",
@@ -232,22 +238,16 @@
             "link": "https://israelwriterstudio.com/classes/"
           },
           {
-            "title": "Judean Football, Open Practices!",
+            "title": "Olé Olé | Celebrating Yom HaAliyah through the flavors, stories and cultures Olim bring to Israel.",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/judean-football-open-practices/"
+            "link": "https://www.nbn.org.il/events/ole-ole-celebrating-yom-haaliyah-through-the-flavors-stories-and-cultures-olim-bring-to-israel/"
           },
           {
-            "title": "Midrash Agnon: The Jewish Genius of S.Y. Agnon",
+            "title": "Café Netanya Presents: Stirling Austin Trio “Acoustic Legends” | Iconic Singers & Classics of the 60s & 70s",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/midrash-agnon-the-jewish-genius-of-s-y-agnon/"
-          },
-          {
-            "title": "When Ancient Beit She’an Comes to Life",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/when-ancient-beit-shean-comes-to-life/"
+            "link": "https://www.nbn.org.il/events/cafe-netanya-presents-stirling-austin-trio-acoustic-legends-iconic-singers-classics-of-the-60s-70s/"
           }
         ],
         "Pardes": [],
@@ -265,10 +265,22 @@
             "link": "https://www.bac.org.il/en/events/?eventID=25820"
           },
           {
+            "title": "Searching for Biblical Jerusalem Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 01, 2026 Sun | ",
+            "date": "2026-11-01",
+            "time": "7pm",
+            "link": "https://www.bac.org.il/en/events/?eventID=26125"
+          },
+          {
             "title": "Jerusalem, Face to Face: Guided Exhibition Tour November 02, 2026-January 22, 2027",
             "date": "2026-11-02",
             "time": "",
             "link": "https://www.bac.org.il/en/events/?eventID=26003"
+          },
+          {
+            "title": "From Treasure Hunting to Science Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 08, 2026 Sun | ",
+            "date": "2026-11-08",
+            "time": "7pm",
+            "link": "https://www.bac.org.il/en/events/?eventID=26126"
           }
         ],
         "Jerusalem Theatre": [],
