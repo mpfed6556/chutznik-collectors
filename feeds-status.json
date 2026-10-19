@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-19T05:19:12.727Z",
+  "lastRun": "2026-10-19T11:00:33.047Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -27,7 +27,7 @@
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
+    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Electric Corporation": "blocked: robots.txt disallows this path",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
     "United Hatzalah": "ok via page-scan (1 items) — no RSS found",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,19 +61,19 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-19T05:19:12.726Z",
-      "sent": 0,
+      "lastRun": "2026-10-19T11:00:33.045Z",
+      "sent": 1,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
-        "iTravelJerusalem hints": "15 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
-        "iTravelJerusalem": "15 cards, nothing new (15 distinct)",
+        "iTravelJerusalem hints": "16 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
+        "iTravelJerusalem": "ok via listing cards (1 new of 16)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/feed/ (10 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
-        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
+        "Pardes": "no events · HTTP 403",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (7 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
@@ -153,7 +153,15 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [],
+        "iTravelJerusalem": [
+          {
+            "title": "Hanukkah Candle Lighting at the Western Wall",
+            "date": "2026-12-04",
+            "time": "15:30",
+            "link": "https://www.itraveljerusalem.com/event/hanukkah-western-wall",
+            "raw": "1 dates; first {\"startDate\":\"2026-12-04T13:30:00.000Z\",\"endDate\":\"\",\"startTime\":\"15:30\",\"endTime\":\"16:00\",\"repeats\":\"no\"}"
+          }
+        ],
         "Fun In Jerusalem": [
           {
             "title": "Kahoot Family Fun in support of Crossroads",
@@ -220,10 +228,10 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "When Ancient Beit She’an Comes to Life",
+            "title": "Personal Finance Help Desk – with Suzy Kahati",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/when-ancient-beit-shean-comes-to-life/"
+            "link": "https://www.nbn.org.il/events/personal-finance-help-desk-with-suzy-kahati-11/"
           },
           {
             "title": "Nishmat Online Beit Midrash",
@@ -238,16 +246,16 @@
             "link": "https://israelwriterstudio.com/classes/"
           },
           {
-            "title": "Olé Olé | Celebrating Yom HaAliyah through the flavors, stories and cultures Olim bring to Israel.",
+            "title": "Salsa classes in Spanish",
             "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/ole-ole-celebrating-yom-haaliyah-through-the-flavors-stories-and-cultures-olim-bring-to-israel/"
+            "time": "19:30",
+            "link": "https://www.nbn.org.il/events/salsa-classes-in-spanish/"
           },
           {
-            "title": "Café Netanya Presents: Stirling Austin Trio “Acoustic Legends” | Iconic Singers & Classics of the 60s & 70s",
+            "title": "How To Access Inner Wisdom — Kabbalah, Spirituality; Personal Growth with Rabbi Jonathan Feldman (Tribe Tel Aviv)",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/cafe-netanya-presents-stirling-austin-trio-acoustic-legends-iconic-singers-classics-of-the-60s-70s/"
+            "link": "https://www.nbn.org.il/events/how-to-access-inner-wisdom-kabbalah-spirituality-personal-growth-with-rabbi-jonathan-feldman-tribe-tel-aviv/"
           }
         ],
         "Pardes": [],
