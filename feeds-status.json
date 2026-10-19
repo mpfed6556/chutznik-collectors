@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-19T00:32:49.058Z",
+  "lastRun": "2026-10-19T05:19:12.727Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -27,13 +27,11 @@
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
+    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Electric Corporation": "blocked: robots.txt disallows this path",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
-    "Nefesh B'Nefesh": "ok via RSS (6 items)",
-    "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
     "AACI": "no feed, no scannable items, nothing in the news last 48h",
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
@@ -46,7 +44,6 @@
     "Metropoline": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Post": "no feed, no scannable items, nothing in the news last 48h",
     "Kol Zchut (All Rights)": "page HTTP 403",
-    "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Beit Shemesh Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "ok via page-scan (5 items) — no RSS found",
@@ -64,14 +61,14 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-18T22:39:52.024Z",
+      "lastRun": "2026-10-19T05:19:12.726Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
-        "The Kotel": "nothing parsed · SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON",
+        "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "15 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
         "iTravelJerusalem": "15 cards, nothing new (15 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/feed/ (10 upcoming)",
@@ -85,10 +82,10 @@
         "Bloomfield Science Museum": "no events · HTTP 404",
         "Jerusalem Botanical Gardens": "no events · nothing parsed at https://www.botanic.co.il/en/",
         "Biblical Zoo": "no events · HTTP 403",
-        "Jerusalem Symphony": "no events · nothing parsed at https://www.jso.co.il/feed/",
+        "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
+        "Secret Jerusalem": "no events · fetch failed"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -123,7 +120,38 @@
             "link": "https://reconnectshiurim.com/product/listening-and-the-four-family-types/"
           }
         ],
-        "The Kotel": [],
+        "The Kotel": [
+          {
+            "title": "Following the Inauguration of Colombia’s Embassy in Jerusalem: Colombia’s Foreign Minister Visits the Western Wall: “This Is the Most Sublime and Profound Moment of My Life!”",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157881/"
+          },
+          {
+            "title": "The Main Thing Is the Intention – Parashat Noah",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157856/"
+          },
+          {
+            "title": "Paraguay’s Vice President Visits the Western Wall",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157823/"
+          },
+          {
+            "title": "The World of Water – Parashat Bereishit",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157817/"
+          },
+          {
+            "title": "What Are We Joyous About? – Simchat Torah",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157796/"
+          }
+        ],
         "Jerusalem Municipality": [],
         "iTravelJerusalem": [],
         "Fun In Jerusalem": [
@@ -262,7 +290,38 @@
         "Bloomfield Science Museum": [],
         "Jerusalem Botanical Gardens": [],
         "Biblical Zoo": [],
-        "Jerusalem Symphony": [],
+        "Jerusalem Symphony": [
+          {
+            "title": "האופרה 'העטלף' מאת שטראוס – בהפקה מלאה!",
+            "date": null,
+            "time": "",
+            "link": "https://www.jso.co.il/%d7%9c%d7%a8%d7%90%d7%a9%d7%95%d7%a0%d7%94-%d7%91%d7%99%d7%a9%d7%a8%d7%90%d7%9c-%d7%94%d7%90%d7%95%d7%a4%d7%a8%d7%94-%d7%94%d7%a2%d7%98%d7%9c%d7%a3-%d7%9e%d7%90%d7%aa-%d7%a9%d7%98%d7%a8%d7%90/"
+          },
+          {
+            "title": "סדרת המוסיקה הקאמרית",
+            "date": "2022-12-27",
+            "time": "",
+            "link": "https://www.jso.co.il/%d7%94%d7%a1%d7%93%d7%a8%d7%94-%d7%94%d7%a7%d7%90%d7%9e%d7%a8%d7%99%d7%aa/"
+          },
+          {
+            "title": "הסדרה הקלאסית",
+            "date": null,
+            "time": "",
+            "link": "https://www.jso.co.il/%d7%94%d7%a1%d7%93%d7%a8%d7%94-%d7%94%d7%a7%d7%9c%d7%90%d7%a1%d7%99%d7%aa/"
+          },
+          {
+            "title": "פסטיבל הללויה",
+            "date": "2022-12-05",
+            "time": "",
+            "link": "https://www.jso.co.il/%d7%a4%d7%a1%d7%98%d7%99%d7%91%d7%9c-%d7%94%d7%9c%d7%9c%d7%95%d7%99%d7%94/"
+          },
+          {
+            "title": "בין הפטיש למגל",
+            "date": "2023-02-04",
+            "time": "",
+            "link": "https://www.jso.co.il/%d7%91%d7%99%d7%9f-%d7%94%d7%a4%d7%98%d7%99%d7%a9-%d7%9c%d7%9e%d7%92%d7%9c/"
+          }
+        ],
         "Eventbrite Jerusalem": [],
         "Janglo events": [],
         "Secret Jerusalem": []
