@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-21T05:58:12.117Z",
+  "lastRun": "2026-10-21T11:40:28.761Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,10 +61,10 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-21T05:58:12.116Z",
-      "sent": 0,
+      "lastRun": "2026-10-21T11:40:28.760Z",
+      "sent": 1,
       "sources": {
-        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
+        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
@@ -72,7 +72,7 @@
         "iTravelJerusalem hints": "16 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId coE1919NFQ-dJvDNBOzFg",
         "iTravelJerusalem": "16 cards, nothing new (16 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (1 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (14 upcoming)",
         "Pardes": "no events · HTTP 403",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (7 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
+        "Secret Jerusalem": "no events · fetch failed"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -164,12 +164,6 @@
         ],
         "OU Israel Center": [
           {
-            "title": "Tuesday Learning for Women",
-            "date": "2026-10-20",
-            "time": "09:15",
-            "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-10-20/"
-          },
-          {
             "title": "NextGen Yerushalayim- Chodesh HaAliyah",
             "date": "2026-10-26",
             "time": "20:00",
@@ -192,38 +186,20 @@
             "date": "2026-10-27",
             "time": "09:15",
             "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-10-27/"
+          },
+          {
+            "title": "Sefer Yirmiyahu Yom Iyun",
+            "date": "2026-10-29",
+            "time": "09:15",
+            "link": "https://www.ouisrael.org/events/yirmiyahu2026/"
           }
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Memoir Workshop with Carol Ungar",
-            "date": null,
+            "title": "KAYAKING & EXCURSION AT THE KINNERET — OCTOBER 22–23",
+            "date": "2026-10-22",
             "time": "",
-            "link": "https://www.nbn.org.il/events/memoir-workshop-with-carol-ungar/"
-          },
-          {
-            "title": "Nishmat Online Beit Midrash",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
-          },
-          {
-            "title": "Aliyah Day",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/aliyah-day/"
-          },
-          {
-            "title": "JUST WRITE!",
-            "date": null,
-            "time": "",
-            "link": "https://israelwriterstudio.com/classes/"
-          },
-          {
-            "title": "Evening Hebrew Club",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/evening-hebrew-club/"
+            "link": "https://www.nbn.org.il/events/kayaking-excursion-at-the-kinneret-october-22-23/"
           }
         ],
         "Pardes": [],
