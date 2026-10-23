@@ -374,6 +374,8 @@ async function run(log, opts) {
       try { if (link) link.memoryPush({ src: 'jerusaguide', group: 'jerusaguide', ts: when, author: whoName || who, title: subject, text }); } catch (e) {}
       if (looksLikeQuestion(subject, text, c)) { leads.push({ id: mid, group: 'jerusaguide', text: (subject + '\n' + text).trim().slice(0, 700), name: whoName, email: who, at: when }); rep.leads = (rep.leads || 0) + 1; }
       if (notesOff) { skipped++; why('notes are off'); continue; }
+      // only people posting or seeking a rental are written to — not jobs, not other questions (Miriam, 23 Oct 2026)
+      if (c.kind !== 'rental') { skipped++; why('not a rental — only rental posters and seekers get the note'); continue; }
       if (TOLD[who]) { skipped++; why('already written to'); continue; }                         // never twice — whatever they post
       if (!c) { skipped++; why('not a rental, job or request'); continue; }
       if (c.kind === 'ask') {
