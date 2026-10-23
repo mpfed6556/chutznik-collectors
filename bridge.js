@@ -1864,9 +1864,10 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
 // ── the site's ledgers (Miriam, 22–23 Oct 2026): contacted (never twice), the admin's WhatsApp outbox,
 //    memory bundles every three hours, jerusaguide leads. See scripts/site-link.js.
 let SL = null;
-(function () {
+(function loadLink() {
   const modPath = path.join(__dirname, 'scripts', 'site-link.js');
-  if (!fs.existsSync(modPath)) { log('🔗 site link: off (scripts/site-link.js arrives with the next self-update)'); return; }
+  // the file rides along with the self-update; until it is here, look again every two minutes (23 Oct 2026: the first restart ran without it)
+  if (!fs.existsSync(modPath)) { if (!global._linkWaitSaid) { global._linkWaitSaid = true; log('🔗 site link: waiting for scripts/site-link.js (the self-update brings it)'); } setTimeout(loadLink, 2 * 60 * 1000); return; }
   try {
     SL = require(modPath); global._SL = SL;
     SL.init({ site: SITE, key: INGEST_KEY, log, sock: () => global._sock, optedOut: (d) => { const k = String(d || '').replace(/\D/g, '').slice(-9); return !!k && OPTOUT.has(k); } });
