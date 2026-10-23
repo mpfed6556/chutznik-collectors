@@ -3,3 +3,6 @@ package-lock.json
 *.log
 jg-told.json
 jg-seen.json
+memory-buffer.jsonl
+jg-high.json
+jg-pending.json

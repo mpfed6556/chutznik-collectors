@@ -214,6 +214,14 @@ function cleanText(t) {
 }
 
 let busy = false, sentToday = 0, dayKey = '', firstRound = true;
+let LINK = null; try { LINK = require('./site-link.js'); } catch (e) {}
+// a lead is anyone asking the group for something: a question mark up top, "looking for", "anyone know"… or the classifier's ask / seek
+const LEAD_RE = /\b(?:looking for|anyone (?:know|have|has|recommend)|does anyone|do you know|where (?:can|do|to)|recommend|recommendation|suggestion|in search of|iso|seeking|need(?:ed|s)? (?:a|an|some|help)|wanted|any (?:good|idea|leads?)|who (?:does|has|knows)|is there)\b/i;
+function looksLikeQuestion(subject, text, c) {
+  if (c && (c.kind === 'ask' || c.seek)) return true;
+  const head = String(subject || '') + '\n' + String(text || '').split('\n').slice(0, 4).join('\n');
+  return /\?/.test(head) || LEAD_RE.test(head);
+}
 // the suggestions email, through the site's own mail function (logged like every other email)
 function esc(v) { return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 // the suggestions on WhatsApp (Miriam, 14 Oct 2026: "change to sending on whatsapp to 19294418833"): one message
@@ -275,7 +283,8 @@ async function run(log, opts) {
   log = log || ((s) => console.log(s));
   MODE = modeNow();
   const early = (why) => { global._jgReport = Object.assign({}, global._jgReport || {}, { mode: MODE, skippedAt: new Date().toISOString(), skippedWhy: why }); if (global._jgLastWhy !== why) { global._jgLastWhy = why; log('📬 jerusaguide: ' + why); } };
-  if (MODE === 'off') return early('mode is off');
+  const notesOff = MODE === 'off';   // off: no note, no suggestion — the inbox is still read for the leads and the memory (23 Oct 2026)
+  if (notesOff && global._jgLastWhy !== 'off-reading') { global._jgLastWhy = 'off-reading'; log('📬 jerusaguide: notes are off — reading the group for leads and memory only'); }
   // a round that hangs (Gmail not answering) must not block every round after it: ten minutes and the lock is dropped
   if (busy && Date.now() - (global._jgBusySince || 0) < 10 * 60 * 1000) return; busy = true; global._jgBusySince = Date.now();
   const today = new Date().toISOString().slice(0, 10); if (today !== dayKey) { dayKey = today; sentToday = 0; }
@@ -294,7 +303,7 @@ async function run(log, opts) {
   const killer = setTimeout(() => { step('timed out after 4 minutes — the connection was closed'); log('📬 jerusaguide: the round took over 4 minutes, closing the connection'); try { client.close(); } catch (e) {} }, 4 * 60 * 1000);
   const ours = new Set([user.toLowerCase(), REPLY_TO.toLowerCase(), (FROM.match(/<([^>]+)>/) || [])[1] || ''].filter(Boolean));
   let sent = 0, skipped = 0, recent = null;   // recent: the site's rentals of the last three days, for the matches
-  const suggestions = [], siteCache = {};
+  const suggestions = [], siteCache = {}, leads = [];
   try {
     step('connecting to Gmail');
     await client.connect();
@@ -344,7 +353,7 @@ async function run(log, opts) {
       if (++n % 10 === 0) step('reading message ' + n + ' of ' + toRead.length);
       // the daily cap guards against spamming posters: it counts notes actually SENT. Suggestions to Miriam are
       // not capped (14 Oct 2026: "daily cap of 25 reached" and nothing was suggested for the rest of the day)
-      if (MODE !== 'suggest' && sentToday >= DAILY) { log('📬 jerusaguide: daily cap of ' + DAILY + ' reached'); complete = false; break; }
+      if (MODE !== 'suggest' && !notesOff && sentToday >= DAILY) { log('📬 jerusaguide: daily cap of ' + DAILY + ' reached'); complete = false; break; }
       let parsed;
       // the top of the message only: the posting is in its first lines, the rest is quoted thread and footers
       try { const msg = await client.fetchOne(uid, { source: { maxLength: 24000 } }, { uid: true }); if (!msg || !msg.source) continue; parsed = await simpleParser(msg.source); } catch (e) { continue; }
@@ -353,12 +362,19 @@ async function run(log, opts) {
       if (!fromTheGroup(parsed)) { why('not from the group'); continue; }
       const who = posterAddress(parsed);
       if (!who || ours.has(who)) { skipped++; why('our own address'); continue; }
-      if (TOLD[who]) { skipped++; why('already written to'); continue; }                         // never twice — whatever they post
       const subject = String(parsed.subject || '').replace(/^\s*(?:(?:re|fw|fwd)\s*:\s*)+/i, '').replace(/\[[^\]]*\]\s*/g, '').trim();
       if (/^\s*re\s*:/i.test(parsed.subject || '')) { skipped++; why('a reply in a thread'); continue; }   // a reply in a thread is not a posting
       // the first lines are the posting; the long quoted thread underneath is never read (Miriam, 14 Oct 2026)
       const text = cleanText(parsed.text || (parsed.html ? String(parsed.html).replace(/<[^>]+>/g, ' ') : '')).split('\n').slice(0, 14).join('\n').slice(0, 1500);
       const c = classify(subject, text);
+      // every posting goes to Chutznik memory, and a question goes to the admin's leads — told before or not (23 Oct 2026)
+      const link = (opts && opts.link) || LINK;
+      const when = (parsed.date && new Date(parsed.date).getTime()) || Date.now();
+      const whoName = String(parsed.from && parsed.from.value && parsed.from.value[0] && parsed.from.value[0].name || '').replace(/\s*via\s+.*$/i, '').trim();
+      try { if (link) link.memoryPush({ src: 'jerusaguide', group: 'jerusaguide', ts: when, author: whoName || who, title: subject, text }); } catch (e) {}
+      if (looksLikeQuestion(subject, text, c)) { leads.push({ id: mid, group: 'jerusaguide', text: (subject + '\n' + text).trim().slice(0, 700), name: whoName, email: who, at: when }); rep.leads = (rep.leads || 0) + 1; }
+      if (notesOff) { skipped++; why('notes are off'); continue; }
+      if (TOLD[who]) { skipped++; why('already written to'); continue; }                         // never twice — whatever they post
       if (!c) { skipped++; why('not a rental, job or request'); continue; }
       if (c.kind === 'ask') {
         let n = 0; try { n = await siteHas(c.topic, (opts && opts.site) || SITE, opts && opts.ingestKey, siteCache); } catch (e) {}
@@ -387,6 +403,7 @@ async function run(log, opts) {
       if (ok) savePending();
       else { sent -= suggestions.length; for (const x of suggestions) SEEN.delete(x.mid); }
     }
+    if (leads.length) { const link = (opts && opts.link) || LINK; try { if (link) await link.leadsPush(leads); } catch (e) {} }
     // the high-water mark moves only when every new message was read: a round cut short reads the rest next time
     if (complete && uv && maxUid > hw) { HIGH[uv] = maxUid; saveHigh(); }
     saveSeen(); saveTold();

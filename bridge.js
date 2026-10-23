@@ -1861,11 +1861,23 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
 //    JG_MODE in bridge-settings.json on the site overrides the .env (off | dry | suggest | live);
 //    suggest emails Miriam the notes to send herself (13 Oct 2026). The round runs
 //    either way and looks at the mode each time, so a switch on the site needs no restart.
+// ── the site's ledgers (Miriam, 22–23 Oct 2026): contacted (never twice), the admin's WhatsApp outbox,
+//    memory bundles every three hours, jerusaguide leads. See scripts/site-link.js.
+let SL = null;
+(function () {
+  const modPath = path.join(__dirname, 'scripts', 'site-link.js');
+  if (!fs.existsSync(modPath)) { log('🔗 site link: off (scripts/site-link.js arrives with the next self-update)'); return; }
+  try {
+    SL = require(modPath); global._SL = SL;
+    SL.init({ site: SITE, key: INGEST_KEY, log, sock: () => global._sock, optedOut: (d) => { const k = String(d || '').replace(/\D/g, '').slice(-9); return !!k && OPTOUT.has(k); } });
+    setTimeout(() => { try { SL.start(); } catch (e) { log('🔗 site link: ' + (e && e.message)); } }, 20 * 1000);
+  } catch (e) { SL = null; log('🔗 site link failed to load: ' + (e && e.message)); }
+})();
 (function () {
   const modPath = path.join(__dirname, 'scripts', 'jerusaguide-mail.js');
   if (!fs.existsSync(modPath)) { log('📬 jerusaguide notes: off (scripts/jerusaguide-mail.js missing)'); return; }
   const JG = require(modPath); global._JG = JG;
-  const opts = () => ({ site: SITE, ingestKey: INGEST_KEY, to: global._jgTo || [], wa: global._jgWa || [], sock: () => global._sock });
+  const opts = () => ({ site: SITE, ingestKey: INGEST_KEY, to: global._jgTo || [], wa: global._jgWa || [], sock: () => global._sock, link: SL });
   // every few minutes, faster at night in Israel (Miriam, 14 Oct 2026: "more often, especially at night time Israel time")
   const everyNow = () => { const h = israelHour(); const night = h >= 20 || h < 8; return Math.max(2, Number(night ? (global._jgNightMinutes || process.env.JG_NIGHT_MINUTES || 3) : (global._jgMinutes || process.env.JG_MINUTES || 5))); };
   let lastRun = 0;
@@ -2233,7 +2245,7 @@ async function replyNotes() {
       const mark = async (patch) => { try { await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', id, patch }) }); } catch (err) {} };
       if (!jid) { log('📲 reply note: no number on ' + id + ' — skipped'); u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted }); continue; }
       const who = optKey({ jid }); if (who && OPTOUT.has(who)) { log('📲 reply note: ' + who + ' opted out — skipped'); u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted }); continue; }
-      try { await sock.sendMessage(jid, { text: String(u.replyNote) }); log('📲 reply note → ' + jid.split('@')[0] + ': "' + String(u.title || '').slice(0, 50) + '"'); }
+      try { await sock.sendMessage(jid, { text: String(u.replyNote) }); log('📲 reply note → ' + jid.split('@')[0] + ': "' + String(u.title || '').slice(0, 50) + '"'); try { if (SL) SL.contactedAdd(jid.split('@')[0], 'reply', id); } catch (err) {} }
       catch (err) { log('📲 reply note failed → ' + jid.split('@')[0] + ': ' + (err && err.message)); u._replyTries = (u._replyTries || 0) + 1; if (u._replyTries >= 3) { u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted }); } continue; }
       u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted });
       await new Promise(r => setTimeout(r, 4000 + Math.floor(Math.random() * 6000)));
@@ -2275,6 +2287,8 @@ async function notifyPosters() {
       // one note per person, ever (Miriam, 8 Sep 2026): whoever was already
       // told about one post is never messaged about another
       if (NOTIFY_STATE.people[who] || TOLD.has(who)) { e.notified = true; e.skipped = 'already told'; continue; }
+      // …and whoever the site itself ever wrote to, from any button (Miriam, 22 Oct 2026: never twice)
+      try { if (SL && await SL.contactedHas(who)) { e.notified = true; e.skipped = 'contacted before'; continue; } } catch (err) {}
       const text = await rentalNoteOrPlain(e, postId);
       if (NOTIFY_MODE === 'dry') {
         // a rehearsal: say what would go, once, and leave the post waiting for live mode
@@ -2288,6 +2302,7 @@ async function notifyPosters() {
       }
       e.notified = true; e.sentLive = true; e.notifiedAt = Date.now(); NOTIFY_STATE.sent++; NOTIFY_STATE.people[who] = true;
       TOLD.add(who); saveTold();
+      try { if (SL && NOTIFY_MODE === 'live') SL.contactedAdd(who, 'notify', postId); } catch (err) {}
       savePosted();
       if (NOTIFY_MODE === 'live') {
         try { await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
@@ -2315,13 +2330,13 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/bizlist.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+const EXTRA_FILES = ['scripts/site-link.js', 'scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/bizlist.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
 // helper modules the bridge holds in memory: a new copy on disk does nothing until a restart
 // (13 Oct 2026: the jerusaguide rules were updated three times on disk and the old ones kept running)
-const LOADED_HELPERS = /jerusaguide-mail\.js|rental-match\.js|events-lib\.js|events-sync\.js|milestones(?:-pdf)?\.js|cvc-sync\.js|bizlist\.js|today-pdf\.js|rentals-pdf\.js$/;
+const LOADED_HELPERS = /site-link\.js|jerusaguide-mail\.js|rental-match\.js|events-lib\.js|events-sync\.js|milestones(?:-pdf)?\.js|cvc-sync\.js|bizlist\.js|today-pdf\.js|rentals-pdf\.js$/;
 async function syncExtras() {
   let n = 0, reload = [];
   for (const rel of EXTRA_FILES) {
@@ -2409,6 +2424,7 @@ async function sendStatus() {
       log: LOG_RING.slice(-80),
       events: global._eventsReport || null,
       jerusaguide: global._jgReport || null,
+      link: (SL && SL.report) ? SL.report() : null,
     };
     await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
       body: JSON.stringify({ file: 'updates', action: 'status', status }) });
@@ -2839,6 +2855,7 @@ async function handleMessages(sock, messages, label) {
       if (adsOnly && !isAdvertText(it.body + ' ' + (it.docText || ''), !!it.media)) continue;
       if (isOptedOut(it)) continue;                          // asked us not to post her messages
       buffersPush(name, it); n++;
+      try { if (SL) SL.memoryPush({ src: 'whatsapp', group: name, ts: ts || Date.now(), author: it.sender || '', text: String(it.body || '') + (it.docText ? '\n' + String(it.docText) : '') }); } catch (e) {}
       if (label === 'live') {
         log('💬 ' + name + ' · ' + it.sender + ' · ' + it.kind + (m.key.fromMe ? ' (you)' : '') + (it.media ? ' 📷' : ''));
         if (!global._fast) { global._fast = true; setTimeout(() => { log('⚡ sending…'); flush(); }, 10000); }
@@ -2896,7 +2913,7 @@ async function start() {
   });
   sock.ev.on('messages.upsert', ({ messages, type }) => { handleMessages(sock, messages || [], type === 'notify' ? 'live' : 'history'); });
 }
-process.on('SIGINT', async () => { log('flushing before exit…'); await flush(); process.exit(0); });
+process.on('SIGINT', async () => { log('flushing before exit…'); await flush(); try { if (SL) await SL.memoryFlush(); } catch (e) {} process.exit(0); });
 // A stray error must never take the whole feed down (the bridge went quiet for a day, 15 Sep 2026):
 // log it, upload the status so it shows on the site, and carry on
 process.on('uncaughtException', (e) => { try { log('💥 uncaught: ' + (e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e)); } catch (x) {} });
