@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-22T23:47:25.815Z",
+  "lastRun": "2026-10-23T02:05:40.846Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -27,7 +27,7 @@
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (4 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
+    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Electric Corporation": "blocked: robots.txt disallows this path",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
@@ -61,10 +61,10 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-22T23:47:25.810Z",
+      "lastRun": "2026-10-23T02:05:40.844Z",
       "sent": 0,
       "sources": {
-        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
+        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
@@ -196,10 +196,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "KAYAKING & EXCURSION AT THE KINNERET — OCTOBER 22–23",
-            "date": "2026-10-22",
+            "title": "Sussita: History Above the Kinneret",
+            "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/kayaking-excursion-at-the-kinneret-october-22-23/"
+            "link": "https://www.nbn.org.il/events/sussita-history-above-the-kinneret/"
+          },
+          {
+            "title": "High Tea & Torah in the Garden",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/high-tea-torah-in-the-garden/"
+          },
+          {
+            "title": "Nishmat Online Beit Midrash",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
+          },
+          {
+            "title": "JUST WRITE!",
+            "date": null,
+            "time": "",
+            "link": "https://israelwriterstudio.com/classes/"
+          },
+          {
+            "title": "Art Wednesday",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/art-wednesday/"
           }
         ],
         "Pardes": [],
