@@ -284,7 +284,7 @@ async function askerConfirmEmail(a) {
 // the tokens Miriam pressed Send on, every minute
 let _approvalsBusy = false;
 async function approvalsRun() {
-  if (_approvalsBusy || !INGEST_KEY) return; _approvalsBusy = true;
+  if (_approvalsBusy || !INGEST_KEY || SH.quiet('approved notes')) return; _approvalsBusy = true;
   try {
     const JG = global._JG;   // the jerusaguide notes wait for the same one-tap button
     const waiting = Object.keys(ASKED).filter((t) => !ASKED[t].sent); if (!waiting.length && !(JG && JG.pendingCount())) return;
@@ -1863,6 +1863,9 @@ if (GMAIL_USER && GMAIL_APP_PASSWORD) {
 //    either way and looks at the mode each time, so a switch on the site needs no restart.
 // ── the site's ledgers (Miriam, 22–23 Oct 2026): contacted (never twice), the admin's WhatsApp outbox,
 //    memory bundles every three hours, jerusaguide leads. See scripts/site-link.js.
+// nothing goes out on Shabbos — Israel's or America's (Miriam, 24 Oct 2026); see scripts/shabbos.js
+const SH = { isShabbos() { try { return require(path.join(__dirname, 'scripts', 'shabbos.js')).isShabbos(); } catch (e) { return false; } },
+  quiet(what) { if (!this.isShabbos()) return false; const k = 'shabbos:' + what; if (!global._shSaid || global._shSaid !== k) { global._shSaid = k; log('🕯️ Shabbos — ' + what + ' waits until after Shabbos (New York time)'); } return true; } };
 let SL = null;
 (function loadLink() {
   const modPath = path.join(__dirname, 'scripts', 'site-link.js');
@@ -2232,7 +2235,7 @@ async function refreshUpdInfo() {
 // asked for this one herself. replyNoted marks it done on the site.
 let _replyBusy = false;
 async function replyNotes() {
-  if (_replyBusy) return; _replyBusy = true;
+  if (_replyBusy || SH.quiet('reply notes')) return; _replyBusy = true;
   try {
     await refreshUpdInfo();
     const items = Object.values(global._updItems || {}).filter((u) => u && u.replyNote && !u.replyNoted);
@@ -2258,7 +2261,7 @@ setInterval(replyNotes, 90 * 1000);
 setTimeout(replyNotes, 60 * 1000);
 
 async function notifyPosters() {
-  if (NOTIFY_MODE === 'off' || _notifyBusy) return;
+  if (NOTIFY_MODE === 'off' || _notifyBusy || SH.quiet('poster notes')) return;
   _notifyBusy = true;
   try {
     const day = todayKey();
@@ -2331,13 +2334,13 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/site-link.js', 'scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/bizlist.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+const EXTRA_FILES = ['scripts/shabbos.js', 'scripts/site-link.js', 'scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/bizlist.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
 // helper modules the bridge holds in memory: a new copy on disk does nothing until a restart
 // (13 Oct 2026: the jerusaguide rules were updated three times on disk and the old ones kept running)
-const LOADED_HELPERS = /site-link\.js|jerusaguide-mail\.js|rental-match\.js|events-lib\.js|events-sync\.js|milestones(?:-pdf)?\.js|cvc-sync\.js|bizlist\.js|today-pdf\.js|rentals-pdf\.js$/;
+const LOADED_HELPERS = /shabbos\.js|site-link\.js|jerusaguide-mail\.js|rental-match\.js|events-lib\.js|events-sync\.js|milestones(?:-pdf)?\.js|cvc-sync\.js|bizlist\.js|today-pdf\.js|rentals-pdf\.js$/;
 async function syncExtras() {
   let n = 0, reload = [];
   for (const rel of EXTRA_FILES) {
@@ -2449,6 +2452,7 @@ async function todaySheet() {
     if (sent[day]) return;
     const hour = israelHour();
     if (hour < TODAY_HOUR || hour >= 13) return;          // mornings only; after 13:00 the day is half gone
+    if (SH.quiet('the TODAY sheet')) return;
     const sock = global._sock; if (!sock || !sock.user) return;
     const T = require('./scripts/today-pdf.js');
     const { events, pdf } = await T.makeTodaySheet(SITE);
@@ -2494,6 +2498,7 @@ async function rentalsSheet() {
     if (sent[day]) return;
     const hour = israelHour();
     if (hour < RENTALS_HOUR || hour >= 14) return;
+    if (SH.quiet('the rentals sheet')) return;
     const sock = global._sock; if (!sock || !sock.user) return;
     const R = require('./scripts/rentals-pdf.js');
     const { offers, wanted, pdf } = await R.makeRentalsSheet(SITE);
@@ -2818,7 +2823,7 @@ async function handleMessages(sock, messages, label) {
             if (/^\s*(stop|unsubscribe|remove me|no thanks|לא תודה|תפסיקי|די)\b/i.test(txt)) {
               const k = String(jid).replace(/\D/g, '').slice(-9);
               if (k) { OPTOUT.add(k); saveOptout(); log('📣 STOP from ' + jid + ' — will not post or message again'); }
-              if (NOTIFY_MODE === 'live') { try { await sock.sendMessage(jid, { text: "Okay — I won't post or message you again. Wishing you all the best 💜" }); } catch (e) {} }
+              if (NOTIFY_MODE === 'live' && !SH.isShabbos()) { try { await sock.sendMessage(jid, { text: "Okay — I won't post or message you again. Wishing you all the best 💜" }); } catch (e) {} }
             }
           }
         } catch (e) {}

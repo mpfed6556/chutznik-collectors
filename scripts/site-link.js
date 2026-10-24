@@ -37,7 +37,9 @@ async function contactedAdd(key, via, postId) {
 // ── outbox ───────────────────────────────────────────────────────────────────────────────────────
 let _outBusy = false;
 async function outboxRound() {
-  if (_outBusy) return; _outBusy = true;
+  if (_outBusy) return;
+  try { if (require('./shabbos.js').isShabbos()) { if (!global._shOutSaid) { global._shOutSaid = true; CFG.log('🕯️ Shabbos — the WhatsApp outbox waits until after Shabbos (New York time)'); } return; } global._shOutSaid = false; } catch (e) {}
+  _outBusy = true;
   try {
     const sock = CFG.sock(); if (!sock) return;
     const r = await fetch(CFG.site + '/api/live-data?type=wa-outbox&t=' + Date.now(), { headers: hdrs(), signal: AbortSignal.timeout(20000) });

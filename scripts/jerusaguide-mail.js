@@ -283,7 +283,9 @@ async function run(log, opts) {
   log = log || ((s) => console.log(s));
   MODE = modeNow();
   const early = (why) => { global._jgReport = Object.assign({}, global._jgReport || {}, { mode: MODE, skippedAt: new Date().toISOString(), skippedWhy: why }); if (global._jgLastWhy !== why) { global._jgLastWhy = why; log('📬 jerusaguide: ' + why); } };
-  const notesOff = MODE === 'off';   // off: no note, no suggestion — the inbox is still read for the leads and the memory (23 Oct 2026)
+  let shabbos = false; try { shabbos = require('./shabbos.js').isShabbos(); } catch (e) {}
+  const notesOff = MODE === 'off' || shabbos;   // off, or Shabbos: no note, no suggestion — the inbox is still read for the leads and the memory (23–24 Oct 2026)
+  if (shabbos && global._jgLastWhy !== 'shabbos') { global._jgLastWhy = 'shabbos'; log('🕯️ Shabbos — jerusaguide notes wait until after Shabbos (New York time)'); }
   if (notesOff && global._jgLastWhy !== 'off-reading') { global._jgLastWhy = 'off-reading'; log('📬 jerusaguide: notes are off — reading the group for leads and memory only'); }
   // a round that hangs (Gmail not answering) must not block every round after it: ten minutes and the lock is dropped
   if (busy && Date.now() - (global._jgBusySince || 0) < 10 * 60 * 1000) return; busy = true; global._jgBusySince = Date.now();
