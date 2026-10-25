@@ -1877,6 +1877,19 @@ let SL = null;
     setTimeout(() => { try { SL.start(); } catch (e) { log('🔗 site link: ' + (e && e.message)); } }, 20 * 1000);
   } catch (e) { SL = null; log('🔗 site link failed to load: ' + (e && e.message)); }
 })();
+// the free picture reader: Tesseract, here on the droplet, reads the words off every public post's picture the site's
+// AI has not reached (Miriam, 25 Oct 2026: "there's got to be a free unlimited tool to convert pic to text")
+let OS = null;
+(function loadOcr() {
+  if (!OCR) return;
+  const modPath = path.join(__dirname, 'scripts', 'ocr-sweep.js');
+  if (!fs.existsSync(modPath)) { setTimeout(loadOcr, 2 * 60 * 1000); return; }
+  try {
+    OS = require(modPath); global._OS = OS;
+    OS.init({ site: SITE, key: INGEST_KEY, log, items: () => global._updItems || {} });
+    setTimeout(() => { try { OS.start(); } catch (e) { log('🔤 ' + (e && e.message)); } }, 60 * 1000);
+  } catch (e) { OS = null; log('🔤 free picture reader failed to load: ' + (e && e.message)); }
+})();
 (function () {
   const modPath = path.join(__dirname, 'scripts', 'jerusaguide-mail.js');
   if (!fs.existsSync(modPath)) { log('📬 jerusaguide notes: off (scripts/jerusaguide-mail.js missing)'); return; }
@@ -2334,13 +2347,13 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/shabbos.js', 'scripts/site-link.js', 'scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/bizlist.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+const EXTRA_FILES = ['scripts/shabbos.js', 'scripts/site-link.js', 'scripts/ocr-sweep.js', 'scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/bizlist.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
 // helper modules the bridge holds in memory: a new copy on disk does nothing until a restart
 // (13 Oct 2026: the jerusaguide rules were updated three times on disk and the old ones kept running)
-const LOADED_HELPERS = /shabbos\.js|site-link\.js|jerusaguide-mail\.js|rental-match\.js|events-lib\.js|events-sync\.js|milestones(?:-pdf)?\.js|cvc-sync\.js|bizlist\.js|today-pdf\.js|rentals-pdf\.js$/;
+const LOADED_HELPERS = /shabbos\.js|site-link\.js|ocr-sweep\.js|jerusaguide-mail\.js|rental-match\.js|events-lib\.js|events-sync\.js|milestones(?:-pdf)?\.js|cvc-sync\.js|bizlist\.js|today-pdf\.js|rentals-pdf\.js$/;
 async function syncExtras() {
   let n = 0, reload = [];
   for (const rel of EXTRA_FILES) {
@@ -2429,6 +2442,7 @@ async function sendStatus() {
       events: global._eventsReport || null,
       jerusaguide: global._jgReport || null,
       link: (SL && SL.report) ? SL.report() : null,
+      ocr: (OS && OS.report) ? OS.report() : null,
     };
     await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY },
       body: JSON.stringify({ file: 'updates', action: 'status', status }) });
