@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-25T12:12:34.426Z",
+  "lastRun": "2026-10-25T19:13:33.213Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "no feed, no scannable items, nothing in the news last 48h",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,19 +61,19 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-25T12:12:34.425Z",
-      "sent": 14,
+      "lastRun": "2026-10-25T19:13:33.212Z",
+      "sent": 2,
       "sources": {
-        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
+        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "17 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId bzU9g9b0fjlmFlQFUavk1",
-        "iTravelJerusalem": "ok via listing cards (1 new of 17)",
+        "iTravelJerusalem": "17 cards, nothing new (17 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (10 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (18 upcoming)",
-        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (19 upcoming)",
+        "Pardes": "no events · HTTP 403",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (7 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
@@ -153,15 +153,7 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [
-          {
-            "title": "The Soup Festival at the Inbal Hotel",
-            "date": "2026-11-03",
-            "time": "12:00",
-            "link": "https://www.itraveljerusalem.com/event/soup-festival-inbal-hotel",
-            "raw": "1 dates; first {\"startDate\":\"2026-11-03T10:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"12:00\",\"endTime\":\"22:00\",\"repeats\":\"no\"}"
-          }
-        ],
+        "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
             "title": "Election Day at the Israel Museum",
@@ -228,34 +220,10 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Temech English Conference,",
-            "date": null,
+            "title": "5th Jerusalem Business Conference – Monday, October 26th",
+            "date": "2026-10-26",
             "time": "",
-            "link": "https://www.nbn.org.il/events/temech-english-conference/"
-          },
-          {
-            "title": "Nishmat Online Beit Midrash",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
-          },
-          {
-            "title": "Lecture Series",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/lecture-series-2/"
-          },
-          {
-            "title": "JUST WRITE!",
-            "date": null,
-            "time": "",
-            "link": "https://israelwriterstudio.com/classes/"
-          },
-          {
-            "title": "From Right to Left: Modern Antisemitism with Charlotte Korchak",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/from-right-to-left-modern-antisemitism-with-charlotte-korchak/"
+            "link": "https://www.nbn.org.il/events/5th-jerusalem-business-conference-monday-october-26th/"
           }
         ],
         "Pardes": [],
