@@ -75,15 +75,20 @@ async function patch(id, fields) {
   return r.ok;
 }
 
-let busy = false, stats = { read: 0, blank: 0, failed: 0, lastRun: 0, lastRead: 0, waiting: 0 }; const FAILS = {};
+let busy = false, stats = { read: 0, blank: 0, failed: 0, lastRun: 0, lastRead: 0, waiting: 0, liveWaiting: 0 }; const FAILS = {};
 const failed = (id) => { stats.failed++; FAILS[id] = (FAILS[id] || 0) + 1; if (FAILS[id] >= 3) DONE[id] = Date.now(); };   // three strikes: left for the AI
 async function round(max) {
   if (busy) return; busy = true;
   try {
     const items = Object.values(CFG.items() || {});
-    const all = items.filter((u) => u && u.status === 'public' && !u.picText && !DONE[String(u.id)] && (u.attachments || []).some((a) => isPic(pathOf(a))))
-      .sort((a, b) => (Number(b.created) || Date.parse(b.created) || 0) - (Number(a.created) || Date.parse(a.created) || 0));
-    stats.lastRun = Date.now(); stats.waiting = all.length;
+    // live posts first, newest first; the posts not on the site (the queue, Chutznik memory's material) only once no live
+    // picture waits (Miriam, 25 Oct 2026: "always go to the live things first")
+    const when = (u) => Number(u.created) || Date.parse(u.created) || 0;
+    const want = (u) => u && !u.picText && !u.deletedAt && !DONE[String(u.id)] && (u.attachments || []).some((a) => isPic(pathOf(a)));
+    const live = items.filter((u) => want(u) && u.status === 'public').sort((a, b) => when(b) - when(a));
+    const rest = live.length ? [] : items.filter((u) => want(u) && u.status !== 'public' && Date.now() - when(u) > 2 * 3600 * 1000).sort((a, b) => when(b) - when(a));
+    const all = live.concat(rest);
+    stats.lastRun = Date.now(); stats.waiting = all.length; stats.liveWaiting = live.length;
     const todo = all.slice(0, max || 6);
     if (!todo.length) { await release(); return; }
     for (const u of todo) {
