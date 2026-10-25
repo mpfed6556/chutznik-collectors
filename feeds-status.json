@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-25T21:52:31.968Z",
+  "lastRun": "2026-10-25T23:41:01.906Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -32,6 +32,8 @@
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
+    "Nefesh B'Nefesh": "ok via RSS (6 items)",
+    "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
     "AACI": "no feed, no scannable items, nothing in the news last 48h",
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
@@ -44,6 +46,7 @@
     "Metropoline": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Post": "no feed, no scannable items, nothing in the news last 48h",
     "Kol Zchut (All Rights)": "page HTTP 403",
+    "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Beit Shemesh Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "no feed, no scannable items, nothing in the news last 48h",
@@ -59,7 +62,7 @@
     "Moovit": "ok via RSS (6 items)",
     "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
-    "Herzog Medical Center": "page HTTP 502",
+    "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
       "lastRun": "2026-10-25T21:52:31.967Z",
       "sent": 0,
