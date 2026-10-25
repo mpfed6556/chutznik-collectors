@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-25T19:13:33.213Z",
+  "lastRun": "2026-10-25T21:52:31.968Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -59,10 +59,10 @@
     "Moovit": "ok via RSS (6 items)",
     "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
-    "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
+    "Herzog Medical Center": "page HTTP 502",
     "_events": {
-      "lastRun": "2026-10-25T19:13:33.212Z",
-      "sent": 2,
+      "lastRun": "2026-10-25T21:52:31.967Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -74,7 +74,7 @@
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (10 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (19 upcoming)",
         "Pardes": "no events · HTTP 403",
-        "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (7 upcoming)",
+        "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
         "Tower of David": "ok via https://www.tod.org.il/en/events/ (1 upcoming)",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
+        "Secret Jerusalem": "no events · fetch failed"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -229,12 +229,6 @@
         "Pardes": [],
         "Beit Avi Chai": [
           {
-            "title": "Today The Battle for the Jewish Future Prof. Daniel R. Schwartz Series: Conflicts in Ancient Judean Society: The Second ",
-            "date": "2026-10-25",
-            "time": "7pm",
-            "link": "https://www.bac.org.il/en/events/?eventID=25820"
-          },
-          {
             "title": "Searching for Biblical Jerusalem Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 01, 2026 Sun | ",
             "date": "2026-11-01",
             "time": "7pm",
@@ -257,6 +251,12 @@
             "date": "2026-11-15",
             "time": "7pm",
             "link": "https://www.bac.org.il/en/events/?eventID=26127"
+          },
+          {
+            "title": "Excavating in the State of Israel Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 22, 2026 Sun |",
+            "date": "2026-11-22",
+            "time": "7pm",
+            "link": "https://www.bac.org.il/en/events/?eventID=26128"
           }
         ],
         "Jerusalem Theatre": [],
