@@ -81,12 +81,12 @@ async function round(max) {
   if (busy) return; busy = true;
   try {
     const items = Object.values(CFG.items() || {});
-    // live posts first, newest first; the posts not on the site (the queue, Chutznik memory's material) only once no live
-    // picture waits (Miriam, 25 Oct 2026: "always go to the live things first")
+    // live posts first, newest first; whatever room is left in the round goes to the posts not on the site (the queue,
+    // Chutznik memory's material) — Miriam, 25 Oct 2026: "always go to the live things first … if there's more, give to memory"
     const when = (u) => Number(u.created) || Date.parse(u.created) || 0;
     const want = (u) => u && !u.picText && !u.deletedAt && !DONE[String(u.id)] && (u.attachments || []).some((a) => isPic(pathOf(a)));
     const live = items.filter((u) => want(u) && u.status === 'public').sort((a, b) => when(b) - when(a));
-    const rest = live.length ? [] : items.filter((u) => want(u) && u.status !== 'public' && Date.now() - when(u) > 2 * 3600 * 1000).sort((a, b) => when(b) - when(a));
+    const rest = items.filter((u) => want(u) && u.status !== 'public' && Date.now() - when(u) > 2 * 3600 * 1000).sort((a, b) => when(b) - when(a));
     const all = live.concat(rest);
     stats.lastRun = Date.now(); stats.waiting = all.length; stats.liveWaiting = live.length;
     const todo = all.slice(0, max || 6);
@@ -117,8 +117,8 @@ async function round(max) {
 let started = false;
 function start() {
   if (started) return; started = true;
-  setInterval(() => round(6), 5 * 60 * 1000); setTimeout(() => round(6), 2 * 60 * 1000);
-  CFG.log('🔤 free picture reader (Tesseract) on: six pictures every five minutes, newest first (' + Object.keys(DONE).length + ' looked at so far)');
+  setInterval(() => round(8), 4 * 60 * 1000); setTimeout(() => round(8), 2 * 60 * 1000);
+  CFG.log('🔤 free picture reader (Tesseract) on: eight pictures every four minutes, live posts first, then the queue (' + Object.keys(DONE).length + ' looked at so far)');
 }
 function report() { return Object.assign({}, stats, { done: Object.keys(DONE).length, lastRun: stats.lastRun ? new Date(stats.lastRun).toISOString() : null, lastRead: stats.lastRead ? new Date(stats.lastRead).toISOString() : null }); }
 module.exports = { init, start, round, report, ocrBuffer, keepLines, titleFrom, release };
