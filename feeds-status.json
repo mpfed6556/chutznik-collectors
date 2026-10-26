@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-26T01:48:31.531Z",
+  "lastRun": "2026-10-26T07:11:20.018Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -32,7 +32,7 @@
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
-    "AACI": "blocked: robots.txt unreachable — skipping to be safe",
+    "AACI": "no feed, no scannable items, nothing in the news last 48h",
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-26T01:48:31.530Z",
+      "lastRun": "2026-10-26T07:11:20.016Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
