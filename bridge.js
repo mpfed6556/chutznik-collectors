@@ -2262,6 +2262,8 @@ async function replyNotes() {
       const mark = async (patch) => { try { await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', id, patch }) }); } catch (err) {} };
       if (!jid) { log('📲 reply note: no number on ' + id + ' — skipped'); u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted }); continue; }
       const who = optKey({ jid }); if (who && OPTOUT.has(who)) { log('📲 reply note: ' + who + ' opted out — skipped'); u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted }); continue; }
+      // never twice: whoever the site ever wrote to, from any button, is not written to again (Miriam, 26 Oct 2026)
+      try { if (SL && await SL.contactedHas(jid.split('@')[0])) { log('📲 reply note: ' + jid.split('@')[0] + ' was written to before — skipped'); u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted }); continue; } } catch (err) {}
       try { await sock.sendMessage(jid, { text: String(u.replyNote) }); log('📲 reply note → ' + jid.split('@')[0] + ': "' + String(u.title || '').slice(0, 50) + '"'); try { if (SL) SL.contactedAdd(jid.split('@')[0], 'reply', id); } catch (err) {} }
       catch (err) { log('📲 reply note failed → ' + jid.split('@')[0] + ': ' + (err && err.message)); u._replyTries = (u._replyTries || 0) + 1; if (u._replyTries >= 3) { u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted }); } continue; }
       u.replyNoted = Date.now(); await mark({ replyNoted: u.replyNoted });

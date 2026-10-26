@@ -53,6 +53,8 @@ async function outboxRound() {
       if (!id) continue;
       if (d.length < 11 || d.length > 13 || !text) { CFG.log('📤 outbox: ' + id + ' has no usable number — dropped'); done.push(id); continue; }
       if (CFG.optedOut(d)) { CFG.log('📤 outbox: ' + d + ' asked not to be messaged — dropped'); done.push(id); continue; }
+      // never twice, whatever button queued it (Miriam, 26 Oct 2026: a realty office got the same note twice)
+      if (await contactedHas(d)) { CFG.log('📤 outbox: ' + d + ' was written to before — dropped'); done.push(id); continue; }
       try {
         await sock.sendMessage(d + '@s.whatsapp.net', { text });
         CFG.log('📤 outbox → ' + d + ': "' + text.slice(0, 60).replace(/\n/g, ' ') + '"');
