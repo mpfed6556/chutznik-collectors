@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-25T23:41:01.906Z",
+  "lastRun": "2026-10-26T01:48:31.531Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -32,9 +32,7 @@
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
-    "Nefesh B'Nefesh": "ok via RSS (6 items)",
-    "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
-    "AACI": "no feed, no scannable items, nothing in the news last 48h",
+    "AACI": "blocked: robots.txt unreachable — skipping to be safe",
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
@@ -46,7 +44,6 @@
     "Metropoline": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Post": "no feed, no scannable items, nothing in the news last 48h",
     "Kol Zchut (All Rights)": "page HTTP 403",
-    "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Beit Shemesh Municipality": "blocked: robots.txt unreachable — skipping to be safe",
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "no feed, no scannable items, nothing in the news last 48h",
@@ -64,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-25T21:52:31.967Z",
+      "lastRun": "2026-10-26T01:48:31.530Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
@@ -88,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · fetch failed"
+        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
       },
       "samples": {
         "Reconnect Shiurim": [
