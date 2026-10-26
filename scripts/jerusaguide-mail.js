@@ -377,9 +377,9 @@ async function run(log, opts) {
       if (looksLikeQuestion(subject, text, c)) { leads.push({ id: mid, group: 'jerusaguide', text: (subject + '\n' + text).trim().slice(0, 700), name: whoName, email: who, at: when }); rep.leads = (rep.leads || 0) + 1; }
       if (notesOff) { skipped++; why('notes are off'); continue; }
       // only people posting or seeking a rental are written to — not jobs, not other questions (Miriam, 23 Oct 2026)
+      if (!c) { skipped++; why('not a rental, job or request'); continue; }   // (26 Oct 2026: this check came after the rental one and a null threw, ending the round)
       if (c.kind !== 'rental') { skipped++; why('not a rental — only rental posters and seekers get the note'); continue; }
       if (TOLD[who]) { skipped++; why('already written to'); continue; }                         // never twice — whatever they post
-      if (!c) { skipped++; why('not a rental, job or request'); continue; }
       if (c.kind === 'ask') {
         let n = 0; try { n = await siteHas(c.topic, (opts && opts.site) || SITE, opts && opts.ingestKey, siteCache); } catch (e) {}
         if (n < 2) { skipped++; why('asked for something the site has under 2 of'); log('📬 jerusaguide: ' + who + ' asked for a ' + c.topic + ' — the site has ' + n + ' post(s) on it, left alone'); continue; }

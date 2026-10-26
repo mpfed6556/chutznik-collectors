@@ -19,8 +19,10 @@ let DONE = {}; try { DONE = JSON.parse(fs.readFileSync(DONE_FILE, 'utf8')) || {}
 function saveDone() { try { fs.writeFileSync(DONE_FILE, JSON.stringify(DONE)); } catch (e) {} }
 
 // the worker lives while there is a backlog and is let go when a round finds nothing to read (it holds ~150 MB)
-let workerP = null;
+let workerP = null, recognized = 0;
 async function worker() {
+  // a fresh worker every 60 pictures: tesseract.js keeps a little memory from every picture it reads (26 Oct 2026: the bridge went quiet after ~1,000 pictures)
+  if (workerP && recognized >= 60) { await release(); recognized = 0; }
   if (!workerP) {
     const { createWorker } = require('tesseract.js');
     workerP = (async () => { const w = await createWorker(['eng', 'heb'], 1, { logger: () => {} }); await w.setParameters({ tessedit_pageseg_mode: '11' }); return w; })();   // 11: sparse text, the way flyers are laid out
@@ -47,7 +49,7 @@ function keepLines(data) {
 }
 // the words off one picture (a Buffer): '' when Tesseract found fewer than two sure lines
 async function ocrBuffer(buf) {
-  const w = await worker();
+  const w = await worker(); recognized++;
   const { data } = await w.recognize(buf, {}, { blocks: true, text: true });
   const lines = keepLines(data);
   if (lines.length < 2 || lines.join(' ').length < 20) return '';
@@ -68,7 +70,7 @@ const isPic = (p) => /\.(jpe?g|png|webp)$/i.test(p);
 async function fetchImage(p) {
   const r = await fetch(CFG.site + '/api/live-data?type=file&path=' + encodeURIComponent(p), { headers: { 'x-ingest-key': CFG.key, 'User-Agent': 'chutznik-bridge' }, signal: AbortSignal.timeout(25000) });
   if (!r.ok) return null; const buf = Buffer.from(await r.arrayBuffer());
-  return buf.length > 1000 && buf.length < 8 * 1024 * 1024 ? buf : null;
+  return buf.length > 1000 && buf.length < 4 * 1024 * 1024 ? buf : null;
 }
 async function patch(id, fields) {
   const r = await fetch(CFG.site + '/api/ingest-whatsapp', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': CFG.key, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ file: 'updates', id, patch: fields }), signal: AbortSignal.timeout(30000) });
@@ -78,7 +80,10 @@ async function patch(id, fields) {
 let busy = false, stats = { read: 0, blank: 0, failed: 0, lastRun: 0, lastRead: 0, waiting: 0, liveWaiting: 0 }; const FAILS = {};
 const failed = (id) => { stats.failed++; FAILS[id] = (FAILS[id] || 0) + 1; if (FAILS[id] >= 3) DONE[id] = Date.now(); };   // three strikes: left for the AI
 async function round(max) {
-  if (busy) return; busy = true;
+  if (busy) return;
+  // the droplet is small: when the bridge itself has grown past 650 MB, the reader lets its worker go and sits this round out
+  try { const rss = process.memoryUsage().rss; if (rss > 650 * 1024 * 1024) { stats.heldForMemory = (stats.heldForMemory || 0) + 1; await release(); return; } } catch (e) {}
+  busy = true;
   try {
     const items = Object.values(CFG.items() || {});
     // live posts first, newest first; whatever room is left in the round goes to the posts not on the site (the queue,
