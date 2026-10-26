@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-26T07:11:20.018Z",
+  "lastRun": "2026-10-26T14:19:13.861Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-26T07:11:20.016Z",
+      "lastRun": "2026-10-26T14:19:13.859Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
@@ -122,6 +122,12 @@
         ],
         "The Kotel": [
           {
+            "title": "Bridging Heaven and Earth",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/157954/"
+          },
+          {
             "title": "There Is No Wisdom Like That Gained Through Experience",
             "date": null,
             "time": "",
@@ -144,12 +150,6 @@
             "date": null,
             "time": "",
             "link": "https://thekotel.org/en/157823/"
-          },
-          {
-            "title": "The World of Water – Parashat Bereishit",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157817/"
           }
         ],
         "Jerusalem Municipality": [],
