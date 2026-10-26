@@ -34,6 +34,24 @@ async function contactedAdd(key, via, postId) {
   try { await fetch(CFG.site + '/api/live-data?type=contacted', { method: 'POST', headers: hdrs(), body: JSON.stringify({ key: k, via: String(via || 'bridge'), postId: String(postId || '') }), signal: AbortSignal.timeout(20000) }); } catch (e) {}
 }
 
+// ── the pace of notes (26 Oct 2026: WhatsApp logged the bridge out twice in a day, each time right after a burst of
+//    notes to numbers that had never written to it). Whatever queued the note — the poster notes, the admin's buttons,
+//    the reply notes — at most one every few minutes, a dozen an hour, fifty a day. The rest wait their turn.
+const SEND_FILE = path.join(__dirname, '..', 'send-log.json');
+const SEND_GAP = Number(process.env.NOTE_GAP_MIN || 3) * 60 * 1000, SEND_HOUR = Number(process.env.NOTES_PER_HOUR || 12), SEND_DAY = Number(process.env.NOTES_PER_DAY || 50);
+let SENT = []; try { SENT = JSON.parse(fs.readFileSync(SEND_FILE, 'utf8')) || []; } catch (e) {}
+function sendAllowed() {
+  const now = Date.now(); SENT = SENT.filter((t) => now - t < 24 * 3600 * 1000);
+  const last = SENT.length ? SENT[SENT.length - 1] : 0; const hour = SENT.filter((t) => now - t < 3600 * 1000).length;
+  if (now - last < SEND_GAP) return 'the last note went ' + Math.round((now - last) / 1000) + ' s ago';
+  if (hour >= SEND_HOUR) return hour + ' notes in the last hour';
+  if (SENT.length >= SEND_DAY) return SENT.length + ' notes today';
+  return '';
+}
+function sendDone() { SENT.push(Date.now()); try { fs.writeFileSync(SEND_FILE, JSON.stringify(SENT)); } catch (e) {} }
+let _paceSaid = 0;
+function paceLog(why, what) { if (Date.now() - _paceSaid > 10 * 60 * 1000) { _paceSaid = Date.now(); CFG.log('🐢 ' + what + ' wait: ' + why + ' (one note every ' + Math.round(SEND_GAP / 60000) + ' min, ' + SEND_HOUR + ' an hour, ' + SEND_DAY + ' a day)'); } }
+
 // ── outbox ───────────────────────────────────────────────────────────────────────────────────────
 let _outBusy = false;
 async function outboxRound() {
@@ -55,12 +73,12 @@ async function outboxRound() {
       if (CFG.optedOut(d)) { CFG.log('📤 outbox: ' + d + ' asked not to be messaged — dropped'); done.push(id); continue; }
       // never twice, whatever button queued it (Miriam, 26 Oct 2026: a realty office got the same note twice)
       if (await contactedHas(d)) { CFG.log('📤 outbox: ' + d + ' was written to before — dropped'); done.push(id); continue; }
+      const why = sendAllowed(); if (why) { paceLog(why, 'outbox'); break; }   // the rest next round
       try {
-        await sock.sendMessage(d + '@s.whatsapp.net', { text });
+        sendDone(); await sock.sendMessage(d + '@s.whatsapp.net', { text });
         CFG.log('📤 outbox → ' + d + ': "' + text.slice(0, 60).replace(/\n/g, ' ') + '"');
         done.push(id); await contactedAdd(d, 'outbox', m.postId || '');
       } catch (e) { CFG.log('📤 outbox failed → ' + d + ': ' + (e && e.message)); }
-      await new Promise((res) => setTimeout(res, 4000 + Math.floor(Math.random() * 5000)));
     }
     if (done.length) { try { await fetch(CFG.site + '/api/live-data?type=wa-outbox', { method: 'POST', headers: hdrs(), body: JSON.stringify({ done }), signal: AbortSignal.timeout(20000) }); } catch (e) {} }
   } catch (e) { CFG.log('📤 outbox: ' + (e && e.message)); }
@@ -125,6 +143,6 @@ function start() {
   setTimeout(memoryFlush, 4 * 60 * 1000);   // whatever waited through a restart goes soon after it
   CFG.log('🔗 site link: outbox every minute · memory bundles every ' + Math.round(MEM_EVERY / 60000) + ' min (' + _memLines + ' waiting) · contacted ledger on');
 }
-function report() { return { memoryWaiting: _memLines, memoryLastSent: _memLast ? new Date(_memLast).toISOString() : null, contactedKnown: _keys ? _keys.size : null }; }
+function report() { return { notesHour: SENT.filter((t) => Date.now() - t < 3600 * 1000).length, notesDay: SENT.length, memoryWaiting: _memLines, memoryLastSent: _memLast ? new Date(_memLast).toISOString() : null, contactedKnown: _keys ? _keys.size : null }; }
 
-module.exports = { init, start, contactedHas, contactedAdd, contactedKeys, outboxRound, memoryPush, memoryFlush, leadsPush, report, norm };
+module.exports = { init, start, contactedHas, contactedAdd, contactedKeys, outboxRound, memoryPush, memoryFlush, leadsPush, report, norm, sendAllowed, sendDone, paceLog };
