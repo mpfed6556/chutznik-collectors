@@ -97,17 +97,39 @@ async function imageOfPage(link) {
       if (a && /^https?:/.test(a) && !/pixel|spacer|1x1|emoji|icon|logo|avatar|gravatar|flag|sprite/i.test(a) && (w === 0 || w >= 240)) out = a; });
     return out; } catch (e) { return ''; }
 }
+// what a file really is, from its first bytes: a JPEG, PNG, WebP or GIF — or nothing (HTML, AVIF, SVG, …)
+function pictureMime(buf) {
+  if (!buf || buf.length < 12) return '';
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+  if (buf.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+  if (buf.slice(0, 4).toString('latin1') === 'RIFF' && buf.slice(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
+  if (/^GIF8[79]a/.test(buf.slice(0, 6).toString('latin1'))) return 'image/gif';
+  return '';
+}
+// the posts whose "picture" was a web page or an AVIF before the check above (26 Oct 2026): their picture is taken off, once
+const BAD_PICS = ['ext_1793040478586_gegqxx', 'ext_1793040463006_h67r1i', 'ext_1793040448725_i7twjk', 'ext_1793040437042_z9jf45', 'ext_1792927933195_ar352h', 'ext_1792920794750_svacs4'];
+async function dropBadPictures() {
+  const doneFile = path.join(__dirname, '..', 'ev-pics-fixed.json');
+  try { if (fs.existsSync(doneFile)) return; } catch (e) {}
+  const api = String(process.env.INGEST_URL || '').replace(/\?.*$/, ''); if (!/ingest-whatsapp/.test(api)) return;
+  let n = 0;
+  for (const id of BAD_PICS) {
+    try { const r = await fetch(api, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': process.env.INGEST_KEY, 'User-Agent': 'chutznik-events' }, body: JSON.stringify({ file: 'updates', id, patch: { attachments: [] } }) }); if (r.ok) n++; } catch (e) {}
+  }
+  try { fs.writeFileSync(doneFile, JSON.stringify({ at: Date.now(), fixed: n })); } catch (e) {}
+  log('📷 ' + n + ' event post(s) had a web page for a picture — taken off');
+}
 // download the picture and put it on the site; returns its /attachments/… url or ''
 async function uploadPicture(url, tag) {
   try {
     if (!/^https?:\/\//i.test(String(url || ''))) return '';
     const r = await fetch(url, { headers: Object.assign({}, UA, { Accept: 'image/*,*/*;q=0.5' }), redirect: 'follow' });
     if (!r.ok) return '';
-    let mime = String(r.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
     const buf = Buffer.from(await r.arrayBuffer());
     if (buf.length < 3000 || buf.length > 2_900_000) return '';   // a 1-pixel placeholder is not a picture
-    if (!/^image\/(jpe?g|png|webp|gif)$/.test(mime)) { mime = /\.png(\?|$)/i.test(url) ? 'image/png' : (/\.webp(\?|$)/i.test(url) ? 'image/webp' : (/\.gif(\?|$)/i.test(url) ? 'image/gif' : 'image/jpeg')); }
-    if (mime === 'image/jpg') mime = 'image/jpeg';
+    // the bytes decide what it is (26 Oct 2026: a site answered with its HTML page and four "pictures" were web pages)
+    const mime = pictureMime(buf);
+    if (!mime) { log('  📷 not a picture (' + String(r.headers.get('content-type') || '').split(';')[0] + '): ' + url.slice(0, 80)); return ''; }
     const saveUrl = String(process.env.INGEST_URL || '').replace(/\/api\/ingest-whatsapp.*$/, '/api/save-attachment');
     if (!/save-attachment/.test(saveUrl)) return '';
     const res = await fetch(saveUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': process.env.INGEST_KEY, 'User-Agent': 'chutznik-events' },
@@ -403,6 +425,7 @@ async function forward(item) {
 
 async function run(seenSet, statusObj, force) {
   SEEN = seenSet; STATUS = statusObj;
+  try { await dropBadPictures(); } catch (e) {}
   const prev = (loadJSON(STATUS_FILE, {}) || {}).orgs || {}; const prevEv = prev._events || {};
   if (!force && prevEv.lastRun && Date.now() - Date.parse(prevEv.lastRun) < EVERY_MS) { statusObj._events = prevEv; return 0; }
   let sent = 0; const samples = {}; PAGE_PICS = 0;
@@ -454,7 +477,7 @@ async function run(seenSet, statusObj, force) {
   log('=== events sync done — ' + sent + ' new ===');
   return sent;
 }
-module.exports = { run, SOURCES, VERSION: 'ev-2026-10-06e' };
+module.exports = { run, SOURCES, pictureMime, VERSION: 'ev-2026-10-26a' };
 
 if (require.main === module) {
   // standalone: node events-sync.js  (needs INGEST_URL / INGEST_KEY)
