@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-27T15:55:43.968Z",
+  "lastRun": "2026-10-27T20:38:20.310Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "no feed, no scannable items, nothing in the news last 48h",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "ok via RSS (6 items)",
+    "Yad Sarah": "blocked: robots.txt unreachable — skipping to be safe",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-27T15:55:43.966Z",
+      "lastRun": "2026-10-27T20:38:20.309Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -72,8 +72,8 @@
         "iTravelJerusalem hints": "17 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId bzU9g9b0fjlmFlQFUavk1",
         "iTravelJerusalem": "17 cards, nothing new (17 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (10 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (19 upcoming)",
-        "Pardes": "ok via https://www.pardes.org.il/events/?ical=1 (9 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (17 upcoming)",
+        "Pardes": "no events · fetch failed",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · fetch failed"
+        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -188,18 +188,6 @@
         ],
         "OU Israel Center": [
           {
-            "title": "NextGen Yerushalayim- Chodesh HaAliyah",
-            "date": "2026-10-26",
-            "time": "20:00",
-            "link": "https://www.ouisrael.org/events/nextgen-aliyah2026/"
-          },
-          {
-            "title": "Next Gen BS- Shabbos Project",
-            "date": "2026-10-26",
-            "time": "20:00",
-            "link": "https://www.ouisrael.org/events/nextgen-shabbasproject/"
-          },
-          {
             "title": "North Central Bat Mitzvah and Beyond",
             "date": "2026-10-27",
             "time": "",
@@ -216,6 +204,18 @@
             "date": "2026-10-29",
             "time": "09:15",
             "link": "https://www.ouisrael.org/events/yirmiyahu2026/"
+          },
+          {
+            "title": "The Secrets of Shabbat: A North-Central Regional Event",
+            "date": "2026-10-29",
+            "time": "20:00",
+            "link": "https://www.ouisrael.org/events/shabbat-ncr/"
+          },
+          {
+            "title": "ATID- Kever Rochel Experience",
+            "date": "2026-10-29",
+            "time": "20:00",
+            "link": "https://www.ouisrael.org/events/atid-kever-rochel-experience/"
           }
         ],
         "Nefesh B'Nefesh": [
@@ -250,38 +250,7 @@
             "link": "https://www.nbn.org.il/events/cafe-oleh-fall-2026/"
           }
         ],
-        "Pardes": [
-          {
-            "title": "Professional Development for Educators: Inviting God and God-talk into Your Classroom",
-            "date": "2026-10-27",
-            "time": "12:00",
-            "link": "https://pardes.org.il/calendar/professional-development-for-educators-inviting-god-and-god-talk-into-your-classroom/"
-          },
-          {
-            "title": "Judaism: A Living Theology of Love",
-            "date": "2026-11-04",
-            "time": "19:45",
-            "link": "https://pardes.org.il/calendar/judaism-a-living-theology-of-love/"
-          },
-          {
-            "title": "Online Beit Midrash: Torah for Our Lives",
-            "date": "2026-11-05",
-            "time": "19:00",
-            "link": "https://pardes.org.il/calendar/torah-for-our-lives/"
-          },
-          {
-            "title": "Alumni book clubs",
-            "date": "2026-11-08",
-            "time": "",
-            "link": "https://pardes.org.il/calendar/alumni-book-clubs/"
-          },
-          {
-            "title": "CRS and Pardes Event: Jewish Wisdom for American Jews in Divided Democracy",
-            "date": "2026-11-08",
-            "time": "18:30",
-            "link": "https://pardes.org.il/calendar/crs-and-pardes-event-jewish-wisdom-for-american-jews-in-divided-democracy/"
-          }
-        ],
+        "Pardes": [],
         "Beit Avi Chai": [
           {
             "title": "Searching for Biblical Jerusalem Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 01, 2026 Sun | ",
