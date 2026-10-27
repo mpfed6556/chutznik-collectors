@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-26T23:54:58.418Z",
+  "lastRun": "2026-10-27T04:44:07.056Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "no feed, no scannable items, nothing in the news last 48h",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,10 +61,10 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-26T23:54:58.416Z",
-      "sent": 0,
+      "lastRun": "2026-10-27T04:44:07.055Z",
+      "sent": 9,
       "sources": {
-        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
+        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
@@ -73,7 +73,7 @@
         "iTravelJerusalem": "17 cards, nothing new (17 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (10 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (19 upcoming)",
-        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
+        "Pardes": "ok via https://www.pardes.org.il/events/?ical=1 (9 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
@@ -224,9 +224,64 @@
             "date": "2026-10-26",
             "time": "",
             "link": "https://www.nbn.org.il/events/5th-jerusalem-business-conference-monday-october-26th/"
+          },
+          {
+            "title": "Nishmat Online Beit Midrash",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
+          },
+          {
+            "title": "JUST WRITE!",
+            "date": null,
+            "time": "",
+            "link": "https://israelwriterstudio.com/classes/"
+          },
+          {
+            "title": "Salsa classes in Spanish",
+            "date": null,
+            "time": "19:30",
+            "link": "https://www.nbn.org.il/events/salsa-classes-in-spanish/"
+          },
+          {
+            "title": "Cafe Oleh | Fall 2026",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/cafe-oleh-fall-2026/"
           }
         ],
-        "Pardes": [],
+        "Pardes": [
+          {
+            "title": "Professional Development for Educators: Inviting God and God-talk into Your Classroom",
+            "date": "2026-10-27",
+            "time": "12:00",
+            "link": "https://pardes.org.il/calendar/professional-development-for-educators-inviting-god-and-god-talk-into-your-classroom/"
+          },
+          {
+            "title": "Judaism: A Living Theology of Love",
+            "date": "2026-11-04",
+            "time": "19:45",
+            "link": "https://pardes.org.il/calendar/judaism-a-living-theology-of-love/"
+          },
+          {
+            "title": "Online Beit Midrash: Torah for Our Lives",
+            "date": "2026-11-05",
+            "time": "19:00",
+            "link": "https://pardes.org.il/calendar/torah-for-our-lives/"
+          },
+          {
+            "title": "Alumni book clubs",
+            "date": "2026-11-08",
+            "time": "",
+            "link": "https://pardes.org.il/calendar/alumni-book-clubs/"
+          },
+          {
+            "title": "CRS and Pardes Event: Jewish Wisdom for American Jews in Divided Democracy",
+            "date": "2026-11-08",
+            "time": "18:30",
+            "link": "https://pardes.org.il/calendar/crs-and-pardes-event-jewish-wisdom-for-american-jews-in-divided-democracy/"
+          }
+        ],
         "Beit Avi Chai": [
           {
             "title": "Searching for Biblical Jerusalem Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 01, 2026 Sun | ",
