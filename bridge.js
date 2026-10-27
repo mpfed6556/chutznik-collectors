@@ -1925,6 +1925,7 @@ async function pullSettings() {
   try {
     const r = await fetch(SITE + '/api/live-data?type=settings'); if (!r.ok) return;
     const j = await r.json(); if (!j || typeof j !== 'object') return;
+    { const on = String(j.WA_SEND || 'off').toLowerCase() === 'on'; if (on !== !!global._waSendOn) { global._waSendOn = on; log('⚙️  WhatsApp sending is ' + (on ? 'ON' : 'OFF') + ' (WA_SEND in the site settings)'); } }
     if (j.NOTIFY_MODE && ['off', 'dry', 'live'].includes(String(j.NOTIFY_MODE).toLowerCase()) && String(j.NOTIFY_MODE).toLowerCase() !== NOTIFY_MODE) {
       NOTIFY_MODE = String(j.NOTIFY_MODE).toLowerCase(); log('⚙️  poster notes mode is now: ' + NOTIFY_MODE + ' (from the site settings)');
     }
@@ -2436,6 +2437,38 @@ setTimeout(() => { try { require.resolve('pdf-parse'); } catch (e) {
 // without logging in to the droplet.
 function logKeep(s) { LOG_RING.push(new Date().toISOString().slice(11, 19) + ' ' + s); if (LOG_RING.length > 120) LOG_RING.shift(); }
 // the pairing code to the owners, through the site's mailer
+// after a logout: one email, then quiet — the site's watchdog reminds every six hours on its own
+async function emailLoggedOutOnce() {
+  const f = path.join(__dirname, 'pair-state.json'); let st = {}; try { st = JSON.parse(fs.readFileSync(f, 'utf8')) || {}; } catch (e) {}
+  const outAt = global._loggedOut || Date.now();
+  if (st.loggedOutAt && Math.abs(st.loggedOutAt - outAt) < 60000 && st.emailedAt) return;   // this logout was already announced (a restart does not announce it again)
+  try { fs.writeFileSync(f, JSON.stringify({ loggedOutAt: outAt, emailedAt: Date.now() })); } catch (e) {}
+  const to = String(process.env.OWNER_EMAILS || 'mpfederman@gmail.com,miriam@chutznik.org').split(',').map((x) => x.trim()).filter(Boolean);
+  const when = new Date(outAt).toLocaleString('en-GB', { timeZone: 'Asia/Jerusalem' });
+  const body = 'WhatsApp logged the Chutznik bridge out (' + when + ' Israel time). Nothing comes in from the groups until it is linked again.\n\n'
+    + 'To link it, from your phone:\n  1. Open the admin: https://chutznik.org/admin → the WhatsApp bridge tile → "Get a pairing code". The code appears on the tile within a minute and is good for about two minutes; a fresh one follows on its own for ten minutes.\n'
+    + '  2. WhatsApp → Settings → Linked devices → Link a device → "Link with phone number instead" → type the code.\n\n'
+    + 'This is the only email about it; the watchdog reminds you every six hours while the feed stays down.\n— Chutznik';
+  try {
+    const r = await fetch(SITE + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ type: 'custom', to, subject: '⚠️ Chutznik: WhatsApp logged the bridge out — link it again from the admin', body }) });
+    log('✉️ logged-out note ' + (r.ok ? 'emailed to ' + to.join(', ') : 'failed (' + r.status + ')'));
+  } catch (e) { log('✉️ logged-out note failed: ' + (e && e.message)); }
+}
+// while logged out: every 20 s, is there a fresh PAIR_NOW on the site? (the admin's bridge tile writes it)
+function pairIdle() {
+  if (global._pairIdleTimer) return;
+  global._pairIdleTimer = setInterval(async () => {
+    try {
+      const r = await fetch(SITE + '/api/live-data?type=settings&t=' + Date.now(), { signal: AbortSignal.timeout(15000) }); if (!r.ok) return;
+      const j = await r.json(); const at = Number(j && j.PAIR_NOW) || Date.parse(String(j && j.PAIR_NOW || '')) || 0;
+      if (!at || at === (global._pairHandled || 0) || Date.now() - at > 15 * 60000) return;
+      global._pairHandled = at; global._pairUntil = Date.now() + 10 * 60000; global._pairCount = 0;
+      log('🔗 pairing requested from the admin — asking WhatsApp for a code');
+      pairIdleStop(); start();
+    } catch (e) {}
+  }, 20 * 1000);
+}
+function pairIdleStop() { if (global._pairIdleTimer) { clearInterval(global._pairIdleTimer); global._pairIdleTimer = null; } }
 async function emailPairingCode(code, phone) {
   const to = String(process.env.OWNER_EMAILS || 'mpfederman@gmail.com,miriam@chutznik.org').split(',').map((x) => x.trim()).filter(Boolean);
   const body = 'WhatsApp logged the Chutznik bridge out (' + new Date(global._loggedOut || Date.now()).toLocaleString('en-GB', { timeZone: 'Asia/Jerusalem' }) + ' Israel time). Nothing comes in from the groups until it is linked again.\n\n'
@@ -2451,8 +2484,8 @@ async function sendStatus() {
   try {
     const status = {
       node: process.version, at: new Date().toISOString(), version: (fs.statSync(__filename).mtime || '').toString(), pid: process.pid, up: Math.round(process.uptime()),
-      connected: !!(global._sock && global._sock.user), loggedOut: global._loggedOut ? new Date(global._loggedOut).toISOString() : null, pairing: global._pairCount || 0, me: global._sock && global._sock.user ? String(global._sock.user.id || '').split(':')[0] : '',
-      lids: Object.keys(LIDS).length, seen: SEEN.size, posted: Object.keys(POSTED).length, notifyMode: NOTIFY_MODE,
+      connected: !!(global._sock && global._sock.user), loggedOut: global._loggedOut ? new Date(global._loggedOut).toISOString() : null, pairing: global._pairCount || 0, pairCode: global._pairCode || null, pairCodeAt: global._pairCodeAt || 0, pairUntil: global._pairUntil || 0, me: global._sock && global._sock.user ? String(global._sock.user.id || '').split(':')[0] : '',
+      lids: Object.keys(LIDS).length, seen: SEEN.size, posted: Object.keys(POSTED).length, notifyMode: NOTIFY_MODE, waSend: global._waSendOn ? 'on' : 'off',
       log: LOG_RING.slice(-80),
       events: global._eventsReport || null,
       jerusaguide: global._jgReport || null,
@@ -2910,32 +2943,44 @@ async function start() {
     browser: ['Chutznik Bridge', 'Chrome', '3.0'],
   });
   global._sock = sock;
+  // ── Never a WhatsApp message from the site (Miriam, 27 Oct 2026, the account put under review): the socket itself refuses
+  //    to send — poster notes, reply notes, the outbox, codes, sheets, lists, all of it — unless WA_SEND is 'on' in the
+  //    site settings. Reading the groups goes on as before.
+  const realSend = sock.sendMessage.bind(sock);
+  sock.sendMessage = async (jid, content, opts) => {
+    if (!global._waSendOn) { const k = String(jid).split('@')[0]; if (!global._sendOffSaid || Date.now() - global._sendOffSaid > 600000) { global._sendOffSaid = Date.now(); log('🚫 WhatsApp sending is off — nothing sent to ' + k + ' (or anyone) until WA_SEND is on in the site settings'); } throw new Error('WhatsApp sending is off'); }
+    return realSend(jid, content, opts);
+  };
   sock.ev.on('creds.update', saveCreds);
   // Pairing by code instead of the QR (Miriam, 16 Sep 2026): start with
   //   PAIR_PHONE=19295630370 node bridge.js
   // and an 8-character code is printed; on the phone: Linked devices → Link a device → Link with phone number.
   let savedNumber = ''; try { savedNumber = fs.readFileSync(path.join(__dirname, 'my-number.txt'), 'utf8').replace(/\D/g, ''); } catch (e) {}
   const pairPhone = String(process.env.PAIR_PHONE || '').replace(/\D/g, '') || (global._loggedOut ? savedNumber : '');
+  // ── Pairing on demand (27 Oct 2026): after a logout the bridge no longer loops — a fresh socket every two minutes with a
+  //    code emailed each time flooded Miriam's inbox (18 codes in forty minutes). Now one email says it is out; the admin's
+  //    bridge tile asks for a code (PAIR_NOW in the site settings), the code goes into the status for the tile to show, and a
+  //    fresh one follows on its own while the request is fresh (ten minutes). Between requests the bridge sits quiet.
+  const onDemand = !!(global._loggedOut && savedNumber && (global._pairUntil || 0) > Date.now());
   let pairAsked = false;
   sock.ev.on('connection.update', (u) => {
-    if (u.qr && pairPhone && !state.creds.registered && !pairAsked) {
+    if (u.qr && pairPhone && !state.creds.registered && !pairAsked && (process.env.PAIR_PHONE || onDemand)) {
       pairAsked = true;
       setTimeout(async () => {
         try { const code = await sock.requestPairingCode(pairPhone); const nice = String(code || '').replace(/(.{4})(?=.)/, '$1-');
           console.log('\n🔗 Pairing code for +' + pairPhone + ':   ' + nice + '\n   WhatsApp → Settings → Linked devices → Link a device → "Link with phone number instead" → type the code.\n');
-          if (global._loggedOut) { global._pairCount = (global._pairCount || 0) + 1; await emailPairingCode(nice, pairPhone); } }
-        catch (e) { console.log('pairing code failed: ' + (e && e.message) + ' — the QR below still works'); qrcode.generate(u.qr, { small: true }); }
+          if (onDemand) { global._pairCount = (global._pairCount || 0) + 1; global._pairCode = nice; global._pairCodeAt = Date.now(); log('🔗 pairing code ' + nice + ' is on the admin\'s bridge tile (good for about two minutes)'); try { await sendStatus(); } catch (e) {} } }
+        catch (e) { console.log('pairing code failed: ' + (e && e.message)); if (!onDemand) qrcode.generate(u.qr, { small: true }); }
       }, 2500);
       return;
     }
-    if (u.qr && global._loggedOut && pairAsked && !state.creds.registered && !global._pairRetry) {
-      global._pairRetry = setTimeout(() => { global._pairRetry = null; if (!state.creds.registered && (global._pairCount || 0) < 6) { log('🔗 the pairing code was not used; a fresh one'); try { sock.end(undefined); } catch (e) {} start(); } }, 10 * 60 * 1000);
-    }
-    if (u.qr) { console.log('\n📱 Scan with WhatsApp → Settings → Linked devices → Link a device:\n'); qrcode.generate(u.qr, { small: true }); }
+    if (u.qr && !global._loggedOut) { console.log('\n📱 Scan with WhatsApp → Settings → Linked devices → Link a device:\n'); qrcode.generate(u.qr, { small: true }); }
     if (u.connection === 'open') {
-      global._loggedOut = 0; global._pairCount = 0;
+      const wasOut = !!global._loggedOut;
+      global._loggedOut = 0; global._pairCount = 0; global._pairCode = null; global._pairUntil = 0; pairIdleStop(); try { fs.unlinkSync(path.join(__dirname, 'pair-state.json')); } catch (e) {}
       try { const me = String(sock.user && sock.user.id || '').split(':')[0].replace(/\D/g, ''); if (me) fs.writeFileSync(path.join(__dirname, 'my-number.txt'), me); } catch (e) {}
       log('✅ Connected. Watching ALL groups. History for the last ' + HOURS + 'h arrives on its own; live messages reach the site within seconds.');
+      if (wasOut) { try { sendStatus(); } catch (e) {} }
       setTimeout(async () => { await refreshLids(sock); await backfillContacts(); }, 8000);
       if (!global._lidTimer) global._lidTimer = setInterval(async () => { try { await refreshLids(global._sock); await backfillContacts(); } catch (e) {} }, 60 * 60 * 1000);
     }
@@ -2943,12 +2988,20 @@ async function start() {
       const code = u.lastDisconnect?.error?.output?.statusCode;
       if (code === DisconnectReason.loggedOut) {
         // 26 Oct 2026 (twice in a day): the bridge no longer dies and restarts every five seconds. The old pairing is put
-        // aside, a fresh one starts, and the pairing code goes to Miriam by email — she links it again from her phone,
-        // WhatsApp → Linked devices → Link a device → "Link with phone number instead". No console needed.
-        global._loggedOut = global._loggedOut || Date.now(); global._sock = null;
-        log('❌ Logged out by WhatsApp. Starting a fresh pairing; the code goes to the owners by email.');
+        // aside; one email says it is out, and the admin's bridge tile hands out the code when Miriam is ready for it.
+        global._loggedOut = global._loggedOut || Date.now(); global._sock = null; global._pairCode = null;
+        log('❌ Logged out by WhatsApp. Waiting for a pairing request from the admin\'s bridge tile.');
         try { const a = path.join(__dirname, 'baileys_auth'); if (fs.existsSync(a)) fs.renameSync(a, a + '.old-' + Date.now()); } catch (e) { log('could not put the old pairing aside: ' + (e && e.message)); }
-        setTimeout(start, 3000);
+        emailLoggedOutOnce().catch(() => {});
+        try { sendStatus(); } catch (e) {}
+        pairIdle();
+        return;
+      }
+      if (!state.creds.registered && global._loggedOut) {
+        // the pairing socket timed out: another code while the request is fresh, otherwise back to waiting
+        global._sock = null; global._pairCode = null;
+        if ((global._pairUntil || 0) > Date.now()) { log('🔗 the code was not used in time — a fresh one'); setTimeout(start, 2000); }
+        else { log('🔗 no pairing request in the last ten minutes — waiting for the admin\'s bridge tile'); try { sendStatus(); } catch (e) {} pairIdle(); }
         return;
       }
       log('🔌 Connection dropped (' + code + ') — reconnecting in 5s…');
@@ -2966,4 +3019,5 @@ process.on('SIGINT', async () => { log('flushing before exit…'); await flush()
 // log it, upload the status so it shows on the site, and carry on
 process.on('uncaughtException', (e) => { try { log('💥 uncaught: ' + (e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e)); } catch (x) {} });
 process.on('unhandledRejection', (e) => { try { log('💥 unhandled: ' + (e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e)); } catch (x) {} });
-start();
+// a restart while logged out (pair-state.json from before): straight to the quiet wait, no fresh socket
+try { const st = JSON.parse(fs.readFileSync(path.join(__dirname, 'pair-state.json'), 'utf8')); if (st && st.loggedOutAt && !fs.existsSync(path.join(__dirname, 'baileys_auth'))) { global._loggedOut = st.loggedOutAt; log('❌ still logged out since ' + new Date(st.loggedOutAt).toISOString() + ' — waiting for a pairing request from the admin'); pairIdle(); } else start(); } catch (e) { start(); }

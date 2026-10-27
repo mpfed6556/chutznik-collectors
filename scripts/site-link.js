@@ -41,6 +41,7 @@ const SEND_FILE = path.join(__dirname, '..', 'send-log.json');
 const SEND_GAP = Number(process.env.NOTE_GAP_MIN || 3) * 60 * 1000, SEND_HOUR = Number(process.env.NOTES_PER_HOUR || 12), SEND_DAY = Number(process.env.NOTES_PER_DAY || 50);
 let SENT = []; try { SENT = JSON.parse(fs.readFileSync(SEND_FILE, 'utf8')) || []; } catch (e) {}
 function sendAllowed() {
+  if (!global._waSendOn) return 'WhatsApp sending is off (Miriam, 27 Oct 2026: never via the site, for now)';   // the master switch: WA_SEND 'on' in the site settings turns it back on
   const now = Date.now(); SENT = SENT.filter((t) => now - t < 24 * 3600 * 1000);
   const last = SENT.length ? SENT[SENT.length - 1] : 0; const hour = SENT.filter((t) => now - t < 3600 * 1000).length;
   if (now - last < SEND_GAP) return 'the last note went ' + Math.round((now - last) / 1000) + ' s ago';
