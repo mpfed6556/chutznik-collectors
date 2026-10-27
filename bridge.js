@@ -2955,7 +2955,8 @@ async function start() {
   const sock = makeWASocket({
     version, auth: state, logger: pino({ level: 'silent' }),
     syncFullHistory: false, markOnlineOnConnect: false,
-    browser: ['Chutznik Bridge', 'Chrome', '3.0'],
+    // a pairing code is accepted only from a browser WhatsApp knows (27 Oct 2026: "Couldn't link device" with the old made-up name)
+    browser: (baileys.Browsers && baileys.Browsers.macOS) ? baileys.Browsers.macOS('Chrome') : ['Mac OS', 'Chrome', '14.4.1'],
   });
   global._sock = sock;
   // ── Never a WhatsApp message from the site (Miriam, 27 Oct 2026, the account put under review): the socket itself refuses
@@ -3007,6 +3008,12 @@ async function start() {
         // 26 Oct 2026 (twice in a day): the bridge no longer dies and restarts every five seconds. The old pairing is put
         // aside; one email says it is out, and the admin's bridge tile hands out the code when Miriam is ready for it.
         global._loggedOut = global._loggedOut || Date.now(); global._sock = null; global._pairCode = null;
+        // the code was refused or ran out while a request is fresh: another code (four at most), not the quiet wait
+        if (!state.creds.registered && (global._pairUntil || 0) > Date.now() && (global._pairCount || 0) < 4) {
+          log('🔗 that code did not link — a fresh one in a few seconds');
+          try { const a = path.join(__dirname, 'baileys_auth'); if (fs.existsSync(a)) fs.rmSync(a, { recursive: true, force: true }); } catch (e) {}
+          setTimeout(start, 4000); return;
+        }
         log('❌ Logged out by WhatsApp. Waiting for a pairing request from the admin\'s bridge tile.');
         try { const a = path.join(__dirname, 'baileys_auth'); if (fs.existsSync(a)) fs.renameSync(a, a + '.old-' + Date.now()); } catch (e) { log('could not put the old pairing aside: ' + (e && e.message)); }
         emailLoggedOutOnce().catch(() => {});
