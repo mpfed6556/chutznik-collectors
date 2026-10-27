@@ -2826,7 +2826,20 @@ function backfillOn(name) {
 // group stays short; a backfill aimed at named groups is allowed to go properly
 // deep, since it is only ever a handful of chats.
 function maxBackfillRounds() { return (global._backfillChats || []).length ? 40 : 8; }
+// ── A gentle start (Miriam, 27 Oct 2026: "only catch up the 48 hrs like 10 min after it's linked"): for the first
+//    GENTLE_MIN minutes after the link opens, live messages come in as usual but the 48-hour catch-up waits in memory,
+//    nothing reaches back for older messages and the group lists are not fetched. Then the catch-up is read in slices.
+const GENTLE_MS = Math.max(0, Number(process.env.GENTLE_MIN || 10)) * 60 * 1000;
+const gentle = () => !!(global._linkedAt && Date.now() - global._linkedAt < GENTLE_MS);
+global._histBuf = global._histBuf || [];
+function holdHistory(sock, messages) { global._histBuf.push(...messages); if (!global._histSaid) { global._histSaid = true; log('🕊️ gentle start: the 48-hour catch-up waits ' + Math.round(GENTLE_MS / 60000) + ' min after linking'); } }
+async function releaseHistory(sock) {
+  const all = global._histBuf.splice(0); global._histSaid = false; if (!all.length) return;
+  log('🕊️ gentle start over: reading the catch-up (' + all.length + ' message(s)) in slices');
+  for (let i = 0; i < all.length; i += 200) { try { await handleMessages(sock, all.slice(i, i + 200), 'history'); } catch (e) {} await new Promise((r) => setTimeout(r, 3000)); }
+}
 async function maybeBackfill(sock, m, ts, name) {
+  if (gentle()) return;
   try {
     const since = global._backfillSince || 0; if (!since || !ts || !m.key || !m.key.id) return;
     if (!backfillOn(name)) return;
@@ -2854,7 +2867,7 @@ setInterval(() => { if (!_lkDirty) return; _lkDirty = false; try { fs.writeFileS
 async function nudgeBackfill() {
   try {
     const sock = global._sock, since = global._backfillSince || 0;
-    if (!sock || !since) return;
+    if (!sock || !since || gentle()) return;
     if (!(global._backfillChats || []).length) return;   // targeted backfills only
     for (const jid of Object.keys(LASTKEY)) {
       const st = BACKFILL.chats[jid];
@@ -2983,7 +2996,9 @@ async function start() {
       try { const me = String(sock.user && sock.user.id || '').split(':')[0].replace(/\D/g, ''); if (me) fs.writeFileSync(path.join(__dirname, 'my-number.txt'), me); } catch (e) {}
       log('✅ Connected. Watching ALL groups. History for the last ' + HOURS + 'h arrives on its own; live messages reach the site within seconds.');
       if (wasOut) { try { sendStatus(); } catch (e) {} }
-      setTimeout(async () => { await refreshLids(sock); await backfillContacts(); }, 8000);
+      global._linkedAt = Date.now();
+      setTimeout(async () => { await refreshLids(sock); await backfillContacts(); }, GENTLE_MS + 8000);   // gentle start: after the window
+      setTimeout(() => { releaseHistory(sock).catch(() => {}); }, GENTLE_MS + 30000);
       if (!global._lidTimer) global._lidTimer = setInterval(async () => { try { await refreshLids(global._sock); await backfillContacts(); } catch (e) {} }, 60 * 60 * 1000);
     }
     if (u.connection === 'close') {
@@ -3013,9 +3028,10 @@ async function start() {
   });
   sock.ev.on('messaging-history.set', ({ messages, syncType, isLatest }) => {
     try { const ms = (messages || []); const ts = ms.map((m) => Number(m.messageTimestamp || 0)).filter(Boolean); if (global._backfillSince) log('⏪ history arrived: ' + ms.length + ' message(s)' + (ts.length ? ', oldest ' + new Date(Math.min(...ts) * 1000).toISOString().slice(5, 16) : '') + (syncType ? ' (sync ' + syncType + ')' : '')); } catch (e) {}
+    if (gentle()) { holdHistory(sock, messages || []); return; }
     handleMessages(sock, messages || [], 'history');
   });
-  sock.ev.on('messages.upsert', ({ messages, type }) => { handleMessages(sock, messages || [], type === 'notify' ? 'live' : 'history'); });
+  sock.ev.on('messages.upsert', ({ messages, type }) => { if (type !== 'notify' && gentle()) { holdHistory(sock, messages || []); return; } handleMessages(sock, messages || [], type === 'notify' ? 'live' : 'history'); });
 }
 process.on('SIGINT', async () => { log('flushing before exit…'); await flush(); try { if (SL) await SL.memoryFlush(); } catch (e) {} process.exit(0); });
 // A stray error must never take the whole feed down (the bridge went quiet for a day, 15 Sep 2026):
