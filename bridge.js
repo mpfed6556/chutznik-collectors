@@ -2997,7 +2997,8 @@ async function start() {
         pairIdle();
         return;
       }
-      if (!state.creds.registered && global._loggedOut) {
+      if (!state.creds.registered && !process.env.PAIR_PHONE) {
+        global._loggedOut = global._loggedOut || Date.now();
         // the pairing socket timed out: another code while the request is fresh, otherwise back to waiting
         global._sock = null; global._pairCode = null;
         if ((global._pairUntil || 0) > Date.now()) { log('🔗 the code was not used in time — a fresh one'); setTimeout(start, 2000); }
@@ -3020,4 +3021,19 @@ process.on('SIGINT', async () => { log('flushing before exit…'); await flush()
 process.on('uncaughtException', (e) => { try { log('💥 uncaught: ' + (e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e)); } catch (x) {} });
 process.on('unhandledRejection', (e) => { try { log('💥 unhandled: ' + (e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e)); } catch (x) {} });
 // a restart while logged out (pair-state.json from before): straight to the quiet wait, no fresh socket
-try { const st = JSON.parse(fs.readFileSync(path.join(__dirname, 'pair-state.json'), 'utf8')); if (st && st.loggedOutAt && !fs.existsSync(path.join(__dirname, 'baileys_auth'))) { global._loggedOut = st.loggedOutAt; log('❌ still logged out since ' + new Date(st.loggedOutAt).toISOString() + ' — waiting for a pairing request from the admin'); pairIdle(); } else start(); } catch (e) { start(); }
+(function boot() {
+  try {
+    let registered = false; try { registered = !!JSON.parse(fs.readFileSync(path.join(__dirname, 'baileys_auth', 'creds.json'), 'utf8')).registered; } catch (e) {}
+    if (registered || process.env.PAIR_PHONE) return start();
+    // not paired: a logout put the old pairing aside (baileys_auth.old-<time>) — wait for the admin's request, never a socket every two minutes
+    const olds = fs.readdirSync(__dirname).map((n) => (n.match(/^baileys_auth\.old-?(\d+)$/) || [])[1]).filter(Boolean).map(Number);
+    let st = {}; try { st = JSON.parse(fs.readFileSync(path.join(__dirname, 'pair-state.json'), 'utf8')) || {}; } catch (e) {}
+    const outAt = st.loggedOutAt || (olds.length ? Math.max(...olds) : 0);
+    if (!outAt) return start();   // never paired on this droplet: the QR in the console
+    global._loggedOut = outAt;
+    if (!st.loggedOutAt) { try { fs.writeFileSync(path.join(__dirname, 'pair-state.json'), JSON.stringify({ loggedOutAt: outAt, emailedAt: Date.now(), note: 'announced before the quiet wait existed' })); } catch (e) {} }
+    log('❌ logged out since ' + new Date(outAt).toISOString() + ' — waiting for a pairing request from the admin\'s bridge tile (no sockets until then)');
+    try { sendStatus(); } catch (e) {}
+    pairIdle();
+  } catch (e) { start(); }
+})();
