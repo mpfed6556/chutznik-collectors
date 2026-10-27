@@ -70,14 +70,15 @@ async function outboxRound() {
       const text = String(m.text || '').trim();
       if (!id) continue;
       if (d.length < 11 || d.length > 13 || !text) { CFG.log('📤 outbox: ' + id + ' has no usable number — dropped'); done.push(id); continue; }
-      if (CFG.optedOut(d)) { CFG.log('📤 outbox: ' + d + ' asked not to be messaged — dropped'); done.push(id); continue; }
+      const isCode = String(m.kind || '') === 'code';   // a one-time code the business asked for itself (claiming its listing, 27 Oct 2026): never a note, so neither rule below applies
+      if (!isCode && CFG.optedOut(d)) { CFG.log('📤 outbox: ' + d + ' asked not to be messaged — dropped'); done.push(id); continue; }
       // never twice, whatever button queued it (Miriam, 26 Oct 2026: a realty office got the same note twice)
-      if (await contactedHas(d)) { CFG.log('📤 outbox: ' + d + ' was written to before — dropped'); done.push(id); continue; }
+      if (!isCode && await contactedHas(d)) { CFG.log('📤 outbox: ' + d + ' was written to before — dropped'); done.push(id); continue; }
       const why = sendAllowed(); if (why) { paceLog(why, 'outbox'); break; }   // the rest next round
       try {
         sendDone(); await sock.sendMessage(d + '@s.whatsapp.net', { text });
         CFG.log('📤 outbox → ' + d + ': "' + text.slice(0, 60).replace(/\n/g, ' ') + '"');
-        done.push(id); await contactedAdd(d, 'outbox', m.postId || '');
+        done.push(id); if (!isCode) await contactedAdd(d, 'outbox', m.postId || '');
       } catch (e) { CFG.log('📤 outbox failed → ' + d + ': ' + (e && e.message)); }
     }
     if (done.length) { try { await fetch(CFG.site + '/api/live-data?type=wa-outbox', { method: 'POST', headers: hdrs(), body: JSON.stringify({ done }), signal: AbortSignal.timeout(20000) }); } catch (e) {} }
