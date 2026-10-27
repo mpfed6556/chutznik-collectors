@@ -2463,6 +2463,8 @@ function pairIdle() {
       const j = await r.json(); const at = Number(j && j.PAIR_NOW) || Date.parse(String(j && j.PAIR_NOW || '')) || 0;
       if (!at || at === (global._pairHandled || 0) || Date.now() - at > 15 * 60000) return;
       global._pairHandled = at; global._pairUntil = Date.now() + 10 * 60000; global._pairCount = 0;
+      // the number to link comes with the request (Miriam, 27 Oct 2026: "I'm not using my own number") — a new account, not the old one
+      { const want = String(j.PAIR_PHONE || '').replace(/\D/g, ''); if (want.length >= 10 && want.length <= 15) { global._pairPhoneReq = want; log('🔗 linking +' + want.slice(0, -4).replace(/\d/g, '•') + want.slice(-4)); } }
       log('🔗 pairing requested from the admin — asking WhatsApp for a code');
       pairIdleStop(); start();
     } catch (e) {}
@@ -2956,12 +2958,12 @@ async function start() {
   //   PAIR_PHONE=19295630370 node bridge.js
   // and an 8-character code is printed; on the phone: Linked devices → Link a device → Link with phone number.
   let savedNumber = ''; try { savedNumber = fs.readFileSync(path.join(__dirname, 'my-number.txt'), 'utf8').replace(/\D/g, ''); } catch (e) {}
-  const pairPhone = String(process.env.PAIR_PHONE || '').replace(/\D/g, '') || (global._loggedOut ? savedNumber : '');
+  const pairPhone = String(process.env.PAIR_PHONE || '').replace(/\D/g, '') || (global._loggedOut ? (global._pairPhoneReq || savedNumber) : '');
   // ── Pairing on demand (27 Oct 2026): after a logout the bridge no longer loops — a fresh socket every two minutes with a
   //    code emailed each time flooded Miriam's inbox (18 codes in forty minutes). Now one email says it is out; the admin's
   //    bridge tile asks for a code (PAIR_NOW in the site settings), the code goes into the status for the tile to show, and a
   //    fresh one follows on its own while the request is fresh (ten minutes). Between requests the bridge sits quiet.
-  const onDemand = !!(global._loggedOut && savedNumber && (global._pairUntil || 0) > Date.now());
+  const onDemand = !!(global._loggedOut && (global._pairPhoneReq || savedNumber) && (global._pairUntil || 0) > Date.now());
   let pairAsked = false;
   sock.ev.on('connection.update', (u) => {
     if (u.qr && pairPhone && !state.creds.registered && !pairAsked && (process.env.PAIR_PHONE || onDemand)) {
