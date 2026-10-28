@@ -306,6 +306,66 @@ function oneSentence(kind, ctx) {
   }
   return null;   // every wording was used already: nothing goes rather than the same words again
 }
+// ── a business ad with a flyer: posted on Chutznik as a fresh post, and the poster told where it is (Miriam, 28 Oct 2026:
+//    "each time a business is posted on jerusaguide with a flier it should post as a fresh new post on chutznik and then inform
+//    the author that we posted it for them … show the link … they can claim the listing so people can reach them from there")
+const FLYER_OPEN = ['Hi!', 'Hey!', 'Hello!', 'Hi there!', 'Hey there!', 'Hello there!'];
+const FLYER_BODY = [
+  "I posted your ad on Chutznik for free so English speakers in Jerusalem can find you, here it is: {U}, and you can claim the listing there so people reach you directly",
+  "your ad is now up on Chutznik at no cost, take a look at {U}, and if you like you can claim the listing so customers contact you straight from there",
+  "I put your flyer up on Chutznik for free, you can see it here {U}, and claiming the listing lets people reach you right from the page",
+  "your business is now listed on Chutznik for free at {U}, feel free to claim it there so people can get in touch with you directly",
+  "I shared your ad on Chutznik so more people see it, it's here: {U}, and you can claim the listing to have people reach you from there",
+  "your flyer is posted on Chutznik for free, have a look at {U}, and you're welcome to claim the listing so customers can contact you there",
+];
+const FLYER_CLOSE = ['.', '!', ', hatzlacha!', ', wishing you lots of success!', ', all the best!'];
+const FLYER_SUBJ = ['Your ad is on Chutznik', 'I posted your ad', 'Your flyer on Chutznik', 'Your business on Chutznik', 'Your listing'];
+function flyerNote(url) {
+  for (let tries = 0; tries < 80; tries++) {
+    const body = pick(FLYER_BODY).replace('{U}', url);
+    const text = (pick(FLYER_OPEN) + ' ' + body.charAt(0).toUpperCase() + body.slice(1) + pick(FLYER_CLOSE)).replace(/\s+/g, ' ').trim();
+    if (!TEXTS.has(textKey(text))) {
+      const html = '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#222">' + esc(text).replace(esc(url), '<a href="' + url + '">' + esc(url) + '</a>') + '</div>';
+      return { subject: pick(FLYER_SUBJ), text, html, kind: 'business' };
+    }
+  }
+  return null;
+}
+// the message again in full (the round reads only its top), its pictures uploaded, the post made; the post's link, or '' when
+// there is no flyer or the site already has this business
+async function postFlyer(client, uid, mid, subject, text, who, whoName, opts, log) {
+  const site = (opts && opts.site) || SITE, key = opts && opts.ingestKey; if (!key) return '';
+  let full; try { const msg = await client.fetchOne(uid, { source: true }, { uid: true }); if (!msg || !msg.source || msg.source.length > 12e6) return ''; const { simpleParser } = require('mailparser'); full = await simpleParser(msg.source); } catch (e) { return ''; }
+  const pics = (full.attachments || []).filter((a) => /^image\/(?:jpeg|jpg|png|webp|gif)$/i.test(String(a.contentType || '')) && a.size >= 15000 && a.size <= 2.9e6).slice(0, 3);
+  if (!pics.length) return '';
+  const id = 'jg_' + require('crypto').createHash('sha1').update(mid).digest('hex').slice(0, 14);
+  const H = { 'Content-Type': 'application/json', 'x-ingest-key': key, 'User-Agent': 'chutznik-bridge' };
+  const attachments = [];
+  for (let i = 0; i < pics.length; i++) {
+    try {
+      const mime = /png/i.test(pics[i].contentType) ? 'image/png' : /webp/i.test(pics[i].contentType) ? 'image/webp' : /gif/i.test(pics[i].contentType) ? 'image/gif' : 'image/jpeg';
+      const r = await fetch(site + '/api/save-attachment', { method: 'POST', headers: H, body: JSON.stringify({ postId: id, index: i, mime, base64: Buffer.from(pics[i].content).toString('base64') }), signal: AbortSignal.timeout(60000) });
+      const j = await r.json().catch(() => ({})); if (r.ok && j && j.url) attachments.push({ url: j.url, name: 'flyer.jpg' });
+    } catch (e) {}
+  }
+  if (!attachments.length) return '';   // every picture was turned away (the dress check) or failed: no post
+  // the ad as written, without the quoted thread or the group's footer
+  const lines = []; for (const l of cleanText(full.text || '').split('\n')) { if (QUOTE_START.test(l)) break; lines.push(l); }
+  const body = lines.join('\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500);
+  const phone = (body.match(/(?:\+?972[\s-]?|0)(?:5\d|[2-9])[\s-]?\d{3}[\s-]?\d{4}/) || [''])[0];
+  const area = areaOf(subject + ' ' + body);
+  const item = { id, source: 'jerusaguide', group: 'jerusaguide', title: String(subject || 'Local business').slice(0, 90), memo: body || subject, types: ['Company / Organization / Store / Group'],
+    area: 'Jerusalem & Surrounding', communities: area ? [area] : [], author: String(whoName || '').slice(0, 60) || 'Jerusaguide', contactPhone: phone.replace(/[\s-]/g, ''), contactWebsite: '',
+    claimEmail: who, created: Date.now(), status: 'public', attachments, dedupeKey: 'jg|' + id };
+  try {
+    const r = await fetch(site + '/api/ingest-whatsapp?file=updates', { method: 'POST', headers: H, body: JSON.stringify({ file: 'updates', items: [item] }), signal: AbortSignal.timeout(120000) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j || !(j.added > 0)) { log('📬 jerusaguide: flyer from ' + who + ' not posted (' + (r.status) + (j && j.added === 0 ? ', the site already has this business' : '') + ')'); return ''; }
+  } catch (e) { return ''; }
+  log('📬 jerusaguide: posted the flyer "' + item.title.slice(0, 50) + '" as up_' + id);
+  return site + '/israel/post/up_' + id;
+}
+
 function noteFor(c, ctx) {
   const kind = c.kind === 'business' ? 'business' : c.kind === 'job' ? 'job' : c.seek ? 'rental_seek' : 'rental_offer';
   const one = oneSentence(kind, ctx); if (!one) return null;
@@ -502,7 +562,12 @@ async function run(log, opts) {
       if (!(c.kind === 'rental' || (c.kind === 'job' && !c.seek) || c.kind === 'business')) { skipped++; why(c.kind === 'job' ? 'looking for work — no note' : 'not a rental, job post or business advert'); continue; }
       if (neverWrite(who, whoName)) { skipped++; why('the group\'s admins and the never-write list'); continue; }
       if (TOLD[who]) { skipped++; why('already written to'); continue; }                         // never twice — whatever they post
-      const note = noteFor(c, { name: whoName, text: subject + ' ' + text });
+      let note = null;
+      if (c.kind === 'business' && MODE === 'live') {   // a flyer: posted for them first, then the note says where
+        let url = ''; try { url = await postFlyer(client, uid, mid, subject, text, who, whoName, opts, log); } catch (e) {}
+        if (url) { note = flyerNote(url); rep.flyers = (rep.flyers || 0) + 1; }
+      }
+      if (!note) note = noteFor(c, { name: whoName, text: subject + ' ' + text });
       if (!note) { skipped++; why('every wording already used'); continue; }
       if (MODE === 'suggest') { suggestions.push({ mid, token: require('crypto').randomBytes(16).toString('hex'), who, kind: c.kind, topic: c.topic || '', seek: c.seek, subject: subject.slice(0, 120), snippet: text.replace(/\s+/g, ' ').trim().slice(0, 280), note }); sent++; continue; }
       if (MODE === 'dry') { log('📬 jerusaguide (dry): would email ' + who + ' — ' + note.subject + ' — ' + (c.seek ? 'asking' : 'posting') + ' · "' + subject.slice(0, 60) + '"'); TOLD[who] = { ts: Date.now(), kind: c.kind, seek: c.seek, dry: true, subject: subject.slice(0, 80) }; sent++; sentToday++; continue; }
@@ -573,7 +638,7 @@ function resuggest(stamp, log) {
   return true;
 }
 
-module.exports = { run, approve, neverWrite, pendingCount, resuggest, askTopic, classify, classifyReply, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
+module.exports = { run, approve, neverWrite, flyerNote, pendingCount, resuggest, askTopic, classify, classifyReply, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
 
 if (require.main === module) {
   // a quick look at the classifier: node scripts/jerusaguide-mail.js
