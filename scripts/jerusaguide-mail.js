@@ -833,7 +833,8 @@ async function outreachTick() {
     OG_LOG('✉️  outreach: ' + (ok ? 'emailed ' : 'could not email ') + it.to + ' from ' + user + (ok ? '' : ' — ' + error) + (j.left != null ? ' (' + Math.max(0, j.left - 1) + ' to go)' : ''));
   } catch (e) {} finally { OG_BUSY = false; }
 }
-if (require.main !== module) { const t = setInterval(outreachTick, 45 * 1000); if (t.unref) t.unref(); }
+// OFF (28 Oct 2026, Miriam: "i dont want it to go from that email. send them through resend") — runs only with OUTREACH_GMAIL=on
+if (require.main !== module && process.env.OUTREACH_GMAIL === 'on') { const t = setInterval(outreachTick, 45 * 1000); if (t.unref) t.unref(); }
 
 module.exports = { run, approve, neverWrite, flyerNote, flyerKind, recommendationIn, bizTypeOf, pendingCount, resuggest, askTopic, classify, classifyReply, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
 
