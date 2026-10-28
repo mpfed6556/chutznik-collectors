@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-27T20:38:20.310Z",
+  "lastRun": "2026-10-28T00:04:51.539Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "no feed, no scannable items, nothing in the news last 48h",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "blocked: robots.txt unreachable — skipping to be safe",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-27T20:38:20.309Z",
-      "sent": 0,
+      "lastRun": "2026-10-28T00:04:51.537Z",
+      "sent": 2,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -71,9 +71,9 @@
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "17 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId bzU9g9b0fjlmFlQFUavk1",
         "iTravelJerusalem": "17 cards, nothing new (17 distinct)",
-        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (10 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (17 upcoming)",
-        "Pardes": "no events · fetch failed",
+        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (2 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (16 upcoming)",
+        "Pardes": "ok via https://www.pardes.org.il/events/?ical=1 (9 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
+        "Secret Jerusalem": "no events · fetch failed"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -156,43 +156,19 @@
         "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
-            "title": "Election Day at the Israel Museum",
-            "date": "2026-10-27",
+            "title": "The Inbal Soup Festival",
+            "date": "2026-11-03",
             "time": "",
-            "link": "https://www.funinjerusalem.com/events/election-day-israel-museum/"
+            "link": "https://www.funinjerusalem.com/events/the-inbal-soup-festival/"
           },
           {
-            "title": "Election Day - Highlights JLM: A Show in the Sky",
-            "date": "2026-10-27",
+            "title": "Winter Dreams - Lights Festival at Botanical Gardens",
+            "date": "2026-11-17",
             "time": "",
-            "link": "https://www.funinjerusalem.com/events/highlights-jlm-a-show-in-the-sky/"
-          },
-          {
-            "title": "Election Day Creative Workshops",
-            "date": "2026-10-27",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/election-day-creative-workshops/"
-          },
-          {
-            "title": "Election Day Adventure Activities",
-            "date": "2026-10-27",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/election-day-adventure-activities/"
-          },
-          {
-            "title": "Election Day Tours",
-            "date": "2026-10-27",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/election-day-tours/"
+            "link": "https://www.funinjerusalem.com/events/winter-lights-festival/"
           }
         ],
         "OU Israel Center": [
-          {
-            "title": "North Central Bat Mitzvah and Beyond",
-            "date": "2026-10-27",
-            "time": "",
-            "link": "https://www.ouisrael.org/events/bm-nc/"
-          },
           {
             "title": "Tuesday Learning for Women",
             "date": "2026-10-27",
@@ -216,6 +192,12 @@
             "date": "2026-10-29",
             "time": "20:00",
             "link": "https://www.ouisrael.org/events/atid-kever-rochel-experience/"
+          },
+          {
+            "title": "Tuesday Learning for Women",
+            "date": "2026-11-03",
+            "time": "09:15",
+            "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-11-03/"
           }
         ],
         "Nefesh B'Nefesh": [
@@ -250,7 +232,38 @@
             "link": "https://www.nbn.org.il/events/cafe-oleh-fall-2026/"
           }
         ],
-        "Pardes": [],
+        "Pardes": [
+          {
+            "title": "Professional Development for Educators: Inviting God and God-talk into Your Classroom",
+            "date": "2026-10-27",
+            "time": "12:00",
+            "link": "https://pardes.org.il/calendar/professional-development-for-educators-inviting-god-and-god-talk-into-your-classroom/"
+          },
+          {
+            "title": "Judaism: A Living Theology of Love",
+            "date": "2026-11-04",
+            "time": "19:45",
+            "link": "https://pardes.org.il/calendar/judaism-a-living-theology-of-love/"
+          },
+          {
+            "title": "Online Beit Midrash: Torah for Our Lives",
+            "date": "2026-11-05",
+            "time": "19:00",
+            "link": "https://pardes.org.il/calendar/torah-for-our-lives/"
+          },
+          {
+            "title": "Alumni book clubs",
+            "date": "2026-11-08",
+            "time": "",
+            "link": "https://pardes.org.il/calendar/alumni-book-clubs/"
+          },
+          {
+            "title": "CRS and Pardes Event: Jewish Wisdom for American Jews in Divided Democracy",
+            "date": "2026-11-08",
+            "time": "18:30",
+            "link": "https://pardes.org.il/calendar/crs-and-pardes-event-jewish-wisdom-for-american-jews-in-divided-democracy/"
+          }
+        ],
         "Beit Avi Chai": [
           {
             "title": "Searching for Biblical Jerusalem Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 01, 2026 Sun | ",
