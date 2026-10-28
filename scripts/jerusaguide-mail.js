@@ -366,26 +366,48 @@ const FLYER_BODY = [
   "I shared your ad on Chutznik so more people see it, it's here: {U}, and you can claim the listing to have people reach you from there",
   "your flyer is posted on Chutznik for free, have a look at {U}, and you're welcome to claim the listing so customers can contact you there",
 ];
+const FLYER_EVENT = [
+  "I posted your event on Chutznik for free so more people in Jerusalem see it, here it is: {U}, and you can claim the listing there so people reach you directly",
+  "your event is now up on Chutznik at no cost, take a look at {U}, and if you like you can claim the listing so people contact you straight from there",
+  "I put your flyer up on Chutznik's calendar for free, you can see it here {U}, and claiming the listing lets people reach you right from the page",
+  "your event is listed on Chutznik for free at {U}, feel free to claim it there so people can get in touch with you directly",
+  "I shared your event on Chutznik so more people come, it's here: {U}, and you can claim the listing to have people reach you from there",
+];
 const FLYER_CLOSE = ['.', '!', ', hatzlacha!', ', wishing you lots of success!', ', all the best!'];
 const FLYER_SUBJ = ['Your ad is on Chutznik', 'I posted your ad', 'Your flyer on Chutznik', 'Your business on Chutznik', 'Your listing'];
-function flyerNote(url) {
+function flyerNote(url, kind) {
   for (let tries = 0; tries < 80; tries++) {
-    const body = pick(FLYER_BODY).replace('{U}', url);
+    const body = pick(kind === 'event' ? FLYER_EVENT : FLYER_BODY).replace('{U}', url);
     const text = (pick(FLYER_OPEN) + ' ' + body.charAt(0).toUpperCase() + body.slice(1) + pick(FLYER_CLOSE)).replace(/\s+/g, ' ').trim();
     if (!TEXTS.has(textKey(text))) {
       const html = '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#222">' + esc(text).replace(esc(url), '<a href="' + url + '">' + esc(url) + '</a>') + '</div>';
-      return { subject: pick(FLYER_SUBJ), text, html, kind: 'business' };
+      return { subject: kind === 'event' ? pick(['Your event is on Chutznik', 'I posted your event', 'Your flyer on Chutznik', 'Your event listing']) : pick(FLYER_SUBJ), text, html, kind: kind || 'business' };
     }
   }
   return null;
 }
 // the message again in full (the round reads only its top), its pictures uploaded, the post made; the post's link, or '' when
 // there is no flyer or the site already has this business
-async function postFlyer(client, uid, mid, subject, text, who, whoName, opts, log) {
+// what a flyer is about, when the message's own words do not say (Miriam, 28 Oct 2026, on the RCCS "Holding onto Shabbos" flyer:
+// "you should have caught this to make into a post and then inform author. Also do it for events")
+const EVENT_WORDS = /\b(?:motzei shabb?(?:os|at)|shabbaton|melave malka|kumzit[sz]|concert|live music|choir|shiur(?:im)?|lecture|workshop|seminar|event|tickets?|register|registration|rsvp|admission|doors open|farbreng\w*|gathering|evening of|night of|tour|trip|fair|bazaar|party|siyum|gala|dinner|chinese auction|auction|raffle|performance|show|program|retreat|class(?:es)?|course)\b/i;
+const DATE_WORDS = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2}\b|\b\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b|\b\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\b|\b(?:sunday|monday|tuesday|wednesday|thursday|friday|motzei)\b|\bparsh(?:as|at)\b/i;
+function flyerKind(words) {
+  const t = String(words || '');
+  if (EVENT_WORDS.test(t) && DATE_WORDS.test(t)) return 'event';
+  if (isBusinessAd('', t) || bizTypeOf(t)) return 'business';
+  if (EVENT_WORDS.test(t)) return 'event';
+  return '';
+}
+async function postFlyer(client, uid, mid, subject, text, who, whoName, opts, log, hint) {
   const site = (opts && opts.site) || SITE, key = opts && opts.ingestKey; if (!key) return '';
   let full; try { const msg = await client.fetchOne(uid, { source: true }, { uid: true }); if (!msg || !msg.source || msg.source.length > 12e6) return ''; const { simpleParser } = require('mailparser'); full = await simpleParser(msg.source); } catch (e) { return ''; }
   const pics = (full.attachments || []).filter((a) => /^image\/(?:jpeg|jpg|png|webp|gif)$/i.test(String(a.contentType || '')) && a.size >= 15000 && a.size <= 2.9e6).slice(0, 3);
   if (!pics.length) return '';
+  // the flyer's own words, read on the droplet for free (the site's AI reads it properly afterwards and replaces them)
+  let rough = ''; try { if (global._OS && global._OS.ocrBuffer) rough = await Promise.race([global._OS.ocrBuffer(Buffer.from(pics[0].content)), new Promise((r) => setTimeout(() => r(''), 25000))]) || ''; } catch (e) {}
+  const kind = hint === 'business' ? 'business' : flyerKind(subject + ' ' + text + ' ' + rough);
+  if (!kind) { log('📬 jerusaguide: a picture from ' + who + ' reads as neither an event nor a business — not posted'); return null; }
   const id = 'jg_' + require('crypto').createHash('sha1').update(mid).digest('hex').slice(0, 14);
   const H = { 'Content-Type': 'application/json', 'x-ingest-key': key, 'User-Agent': 'chutznik-bridge' };
   const attachments = [];
@@ -402,16 +424,16 @@ async function postFlyer(client, uid, mid, subject, text, who, whoName, opts, lo
   const body = lines.join('\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500);
   const phone = (body.match(/(?:\+?972[\s-]?|0)(?:5\d|[2-9])[\s-]?\d{3}[\s-]?\d{4}/) || [''])[0];
   const area = areaOf(subject + ' ' + body);
-  const item = { id, source: 'jerusaguide', group: 'jerusaguide', title: String(subject || 'Local business').slice(0, 90), memo: body || subject, types: ['Company / Organization / Store / Group'],
+  const item = { id, source: 'jerusaguide', group: 'jerusaguide', title: String(subject || 'Local business').slice(0, 90), memo: body || subject, types: [kind === 'event' ? 'Events' : 'Company / Organization / Store / Group'],
     area: 'Jerusalem & Surrounding', communities: area ? [area] : [], author: String(whoName || '').slice(0, 60) || 'Jerusaguide', contactPhone: phone.replace(/[\s-]/g, ''), contactWebsite: '',
-    claimEmail: who, created: Date.now(), status: 'public', attachments, dedupeKey: 'jg|' + id };
+    claimEmail: who, created: Date.now(), status: 'public', attachments, dedupeKey: 'jg|' + id, ...(rough ? { picText: rough, picVia: 'ocr' } : {}) };
   try {
     const r = await fetch(site + '/api/ingest-whatsapp?file=updates', { method: 'POST', headers: H, body: JSON.stringify({ file: 'updates', items: [item] }), signal: AbortSignal.timeout(120000) });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok || !j || !(j.added > 0)) { log('📬 jerusaguide: flyer from ' + who + ' not posted (' + (r.status) + (j && j.added === 0 ? ', the site already has this business' : '') + ')'); return ''; }
-  } catch (e) { return ''; }
-  log('📬 jerusaguide: posted the flyer "' + item.title.slice(0, 50) + '" as up_' + id);
-  return site + '/israel/post/up_' + id;
+    if (!r.ok || !j || !(j.added > 0)) { log('📬 jerusaguide: flyer from ' + who + ' not posted (' + (r.status) + (j && j.added === 0 ? ', the site already has it' : '') + ')'); return null; }
+  } catch (e) { return null; }
+  log('📬 jerusaguide: posted the ' + (kind === 'event' ? 'event' : 'business') + ' flyer "' + item.title.slice(0, 50) + '" as up_' + id);
+  return { url: site + '/israel/post/up_' + id, kind };
 }
 
 function noteFor(c, ctx) {
@@ -543,8 +565,8 @@ async function run(log, opts) {
     // they are read again (nothing was sent from them, and nothing went to memory or the leads)
     // once more (28 Oct 2026 19:30): the replies naming a business were left alone before; judged again now — notes only, since
     // memory and the leads have them already
-    const REJUDGE = path.join(__dirname, '..', 'jg-rejudge-1028.txt'); let rejudgeOk = false;
-    const REJ_LIST = path.join(__dirname, '..', 'jg-rejudge-list.json');
+    const REJUDGE = path.join(__dirname, '..', 'jg-rejudge-1028b.txt');   // b: again for the event and business flyers (28 Oct 2026 20:00) let rejudgeOk = false;
+    const REJ_LIST = path.join(__dirname, '..', 'jg-rejudge-list-b.json');
     if (!fs.existsSync(REJUDGE)) {
       try {
         let list = null; try { list = JSON.parse(fs.readFileSync(REJ_LIST, 'utf8')); } catch (e) {}
@@ -605,7 +627,8 @@ async function run(log, opts) {
       if (MODE !== 'suggest' && !notesOff && sentToday >= DAILY) { log('📬 jerusaguide: daily cap of ' + DAILY + ' reached'); complete = false; break; }
       let parsed;
       // the top of the message only: the posting is in its first lines, the rest is quoted thread and footers
-      try { const msg = await client.fetchOne(uid, { source: { maxLength: 48000 } }, { uid: true }); if (!msg || !msg.source) continue; parsed = await simpleParser(msg.source); } catch (e) { continue; }
+      let hasPic = false;
+      try { const msg = await client.fetchOne(uid, { source: { maxLength: 48000 } }, { uid: true }); if (!msg || !msg.source) continue; hasPic = /Content-Type:\s*image\/(?:jpe?g|png|webp|gif)/i.test(msg.source.toString('latin1')); parsed = await simpleParser(msg.source); } catch (e) { continue; }
       if (SEEN.has(mid)) continue;
       SEEN.add(mid); rep.fresh++;
       // (28 Oct 2026: with 16 KB the long Google headers were cut before List-ID and every message looked foreign)
@@ -628,17 +651,20 @@ async function run(log, opts) {
       if (!NOPUSH.has(mid) && looksLikeQuestion(subject, text, c)) { leads.push({ id: mid, group: 'jerusaguide', text: (subject + '\n' + text).trim().slice(0, 700), name: whoName, email: who, at: when }); rep.leads = (rep.leads || 0) + 1; }
       if (notesOff) { skipped++; why('notes are off'); continue; }
       // only people posting or seeking a rental are written to — not jobs, not other questions (Miriam, 23 Oct 2026)
+      // a first post with a picture that is not a question: a flyer (an event or a business), read and posted for them
+      if ((!c || c.kind === 'ask') && !isReply && hasPic && !looksLikeQuestion(subject, text, null)) c = { kind: 'flyer', seek: false };
       if (!c) { skipped++; why('not a rental, job or request'); continue; }   // (26 Oct 2026: this check came after the rental one and a null threw, ending the round)
       // a rental post or question, a job on offer, a business advert (Miriam, 28 Oct 2026); not someone looking for work, not other questions
       if (c.kind === 'business' && !c.type) c.type = bizTypeOf(subject, text);
-      if (!(c.kind === 'rental' || (c.kind === 'job' && !c.seek) || c.kind === 'business' || c.kind === 'recommend')) { skipped++; why(c.kind === 'job' ? 'looking for work — no note' : 'not a rental, job post or business advert'); continue; }
+      if (!(c.kind === 'rental' || (c.kind === 'job' && !c.seek) || c.kind === 'business' || c.kind === 'recommend' || c.kind === 'flyer')) { skipped++; why(c.kind === 'job' ? 'looking for work — no note' : 'not a rental, job post or business advert'); continue; }
       if (neverWrite(who, whoName)) { skipped++; why('the group\'s admins and the never-write list'); continue; }
       if (TOLD[who]) { skipped++; why('already written to'); continue; }                         // never twice — whatever they post
       let note = null;
-      if (c.kind === 'business' && MODE === 'live') {   // a flyer: posted for them first, then the note says where
-        let url = ''; try { url = await postFlyer(client, uid, mid, subject, text, who, whoName, opts, log); } catch (e) {}
-        if (url) { note = flyerNote(url); rep.flyers = (rep.flyers || 0) + 1; }
+      if ((c.kind === 'business' || c.kind === 'flyer') && MODE === 'live') {   // a flyer: posted for them first, then the note says where
+        let got = null; try { got = await postFlyer(client, uid, mid, subject, text, who, whoName, opts, log, c.kind === 'business' ? 'business' : ''); } catch (e) {}
+        if (got && got.url) { note = flyerNote(got.url, got.kind); rep.flyers = (rep.flyers || 0) + 1; }
       }
+      if (!note && c.kind === 'flyer') { skipped++; why('a picture that is not an event or business flyer'); continue; }
       if (!note) note = noteFor(c, { name: whoName, text: subject + ' ' + text });
       if (!note) { skipped++; why('every wording already used'); continue; }
       if (MODE === 'suggest') { suggestions.push({ mid, token: require('crypto').randomBytes(16).toString('hex'), who, kind: c.kind, topic: c.topic || '', seek: c.seek, subject: subject.slice(0, 120), snippet: text.replace(/\s+/g, ' ').trim().slice(0, 280), note }); sent++; continue; }
@@ -698,7 +724,7 @@ const pendingCount = () => Object.values(PENDING).filter((p) => p && !p.sent).le
 // JG_RESUGGEST {stamp} in the site settings: the suggested-but-unsent notes are forgotten and the
 // last two days are read again under the current rules (once per stamp)
 const RESUG_FILE = path.join(__dirname, '..', 'jg-resuggest.txt');
-const RULES = 10;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
+const RULES = 11;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
 function resuggest(stamp, log) {
   let done = ''; try { done = fs.readFileSync(RESUG_FILE, 'utf8').trim(); } catch (e) {}
   if (!stamp || done === String(stamp)) return false;
@@ -712,7 +738,7 @@ function resuggest(stamp, log) {
   return true;
 }
 
-module.exports = { run, approve, neverWrite, flyerNote, recommendationIn, bizTypeOf, pendingCount, resuggest, askTopic, classify, classifyReply, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
+module.exports = { run, approve, neverWrite, flyerNote, flyerKind, recommendationIn, bizTypeOf, pendingCount, resuggest, askTopic, classify, classifyReply, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
 
 if (require.main === module) {
   // a quick look at the classifier: node scripts/jerusaguide-mail.js
