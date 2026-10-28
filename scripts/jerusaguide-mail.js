@@ -421,6 +421,21 @@ async function run(log, opts) {
         for (const u of found) if (!uids.includes(u)) uids.push(u);
       }
     }
+    // once: the messages since 15:46 UTC on 28 Oct were cut short before their group headers and taken for "not from the group";
+    // they are read again (nothing was sent from them, and nothing went to memory or the leads)
+    const REREAD = path.join(__dirname, '..', 'jg-reread-1028.txt'); let rereadOk = false;
+    if (!fs.existsSync(REREAD)) {
+      try {
+        const cut = Date.parse('2026-10-28T15:46:00Z'); const more = [];
+        for (const base of [{ to: GROUP }, { cc: GROUP }, { from: GROUP }, { header: { 'List-ID': GROUP_KEY } }]) { let f = []; try { f = await client.search(Object.assign({ since: new Date('2026-10-28T00:00:00Z') }, base), { uid: true }) || []; } catch (e) {} for (const u of f) if (!more.includes(u)) more.push(u); }
+        if (more.length) for await (const m of client.fetch(more.join(','), { uid: true, envelope: true, internalDate: true }, { uid: true })) {
+          const t = m.internalDate ? new Date(m.internalDate).getTime() : 0; if (t < cut) continue;
+          SEEN.delete('jg_' + String((m.envelope && m.envelope.messageId) || m.uid).replace(/[<>\s]/g, '').slice(0, 80));
+          if (!uids.includes(m.uid)) uids.push(m.uid);
+        }
+        rereadOk = true; log('📬 jerusaguide: reading again the messages since 15:46 UTC (cut short before)');
+      } catch (e) {}
+    }
     uids.sort((a, b) => a - b);
     rep.found = uids.length; step('searching: ' + uids.length + ' group message(s) ' + (hw ? 'after UID ' + hw : 'in the window'));
     // the headers of all of them in one go: a message already seen, or a reply in a thread, is never downloaded
@@ -433,25 +448,26 @@ async function run(log, opts) {
       const env = h.envelope || {};
       const mid = 'jg_' + String(env.messageId || h.uid).replace(/[<>\s]/g, '').slice(0, 80);
       if (SEEN.has(mid)) continue;
-      if (hw) {   // the headers say whether this is the group's mail at all; anything else is skipped unread
-        const addrs = ['from', 'to', 'cc', 'sender', 'replyTo'].flatMap((k) => (env[k] || []).map((a) => String(a.address || '').toLowerCase()));
-        if (!addrs.some((a) => a === GROUP || a.indexOf(GROUP_KEY) > -1)) { SEEN.add(mid); continue; }
-      }
-      toRead.push({ uid: h.uid, mid });
+      // the envelope says whether this is the group's mail at all; anything else is skipped unread
+      const addrs = ['from', 'to', 'cc', 'sender', 'replyTo'].flatMap((k) => (env[k] || []).map((a) => String(a.address || '').toLowerCase()));
+      const grp = addrs.some((a) => a === GROUP || a.indexOf(GROUP_KEY) > -1);
+      if (hw && !grp) { SEEN.add(mid); continue; }
+      toRead.push({ uid: h.uid, mid, grp });
     }
     step('reading ' + toRead.length + ' new message(s)');
     let n = 0, complete = true;
-    for (const { uid, mid } of toRead) {
+    for (const { uid, mid, grp } of toRead) {
       if (++n % 10 === 0) step('reading message ' + n + ' of ' + toRead.length);
       // the daily cap guards against spamming posters: it counts notes actually SENT. Suggestions to Miriam are
       // not capped (14 Oct 2026: "daily cap of 25 reached" and nothing was suggested for the rest of the day)
       if (MODE !== 'suggest' && !notesOff && sentToday >= DAILY) { log('📬 jerusaguide: daily cap of ' + DAILY + ' reached'); complete = false; break; }
       let parsed;
       // the top of the message only: the posting is in its first lines, the rest is quoted thread and footers
-      try { const msg = await client.fetchOne(uid, { source: { maxLength: 16000 } }, { uid: true }); if (!msg || !msg.source) continue; parsed = await simpleParser(msg.source); } catch (e) { continue; }
+      try { const msg = await client.fetchOne(uid, { source: { maxLength: 48000 } }, { uid: true }); if (!msg || !msg.source) continue; parsed = await simpleParser(msg.source); } catch (e) { continue; }
       if (SEEN.has(mid)) continue;
       SEEN.add(mid); rep.fresh++;
-      if (!fromTheGroup(parsed)) { why('not from the group'); continue; }
+      // (28 Oct 2026: with 16 KB the long Google headers were cut before List-ID and every message looked foreign)
+      if (!grp && !fromTheGroup(parsed)) { why('not from the group'); continue; }
       const who = posterAddress(parsed);
       if (!who || ours.has(who)) { skipped++; why('our own address'); continue; }
       const subject = String(parsed.subject || '').replace(/^\s*(?:(?:re|fw|fwd)\s*:\s*)+/i, '').replace(/\[[^\]]*\]\s*/g, '').trim();
@@ -498,6 +514,7 @@ async function run(log, opts) {
     if (leads.length) { const link = (opts && opts.link) || LINK; try { if (link) await link.leadsPush(leads); } catch (e) {} }
     // the high-water mark moves only when every new message was read: a round cut short reads the rest next time
     if (complete && uv && maxUid > hw) { HIGH[uv] = maxUid; saveHigh(); }
+    if (rereadOk) { try { fs.writeFileSync(REREAD, new Date().toISOString()); } catch (e) {} }
     saveSeen(); saveTold();
   } catch (e) { const inner = e && e.errors && e.errors[0] && e.errors[0].message; rep.error = (e && e.message ? e.message.slice(0, 160) : String(e)) + (inner ? ' (' + String(inner).slice(0, 120) + ')' : ''); log('📬 jerusaguide: ' + rep.error); }
   finally { clearTimeout(killer); try { await client.logout(); } catch (e) {} busy = false; }
@@ -531,7 +548,7 @@ const pendingCount = () => Object.values(PENDING).filter((p) => p && !p.sent).le
 // JG_RESUGGEST {stamp} in the site settings: the suggested-but-unsent notes are forgotten and the
 // last two days are read again under the current rules (once per stamp)
 const RESUG_FILE = path.join(__dirname, '..', 'jg-resuggest.txt');
-const RULES = 7;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
+const RULES = 8;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
 function resuggest(stamp, log) {
   let done = ''; try { done = fs.readFileSync(RESUG_FILE, 'utf8').trim(); } catch (e) {}
   if (!stamp || done === String(stamp)) return false;
