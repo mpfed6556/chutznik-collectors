@@ -421,11 +421,14 @@ async function postFlyer(client, uid, mid, subject, text, who, whoName, opts, lo
   if (!attachments.length) return '';   // every picture was turned away (the dress check) or failed: no post
   // the ad as written, without the quoted thread or the group's footer
   const lines = []; for (const l of cleanText(full.text || '').split('\n')) { if (QUOTE_START.test(l)) break; lines.push(l); }
-  const body = lines.join('\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500);
+  const body = lines.join('\n').replace(/\s*\[image:[^\]]*\]/gi, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500);   // no "[image: flyer.png]" placeholders
   const phone = (body.match(/(?:\+?972[\s-]?|0)(?:5\d|[2-9])[\s-]?\d{3}[\s-]?\d{4}/) || [''])[0];
   const area = areaOf(subject + ' ' + body);
-  const item = { id, source: 'jerusaguide', group: 'jerusaguide', title: String(subject || 'Local business').slice(0, 90), memo: body || subject, types: [kind === 'event' ? 'Events' : 'Company / Organization / Store / Group'],
-    area: 'Jerusalem & Surrounding', communities: area ? [area] : [], author: String(whoName || '').slice(0, 60) || 'Jerusaguide', contactPhone: phone.replace(/[\s-]/g, ''), contactWebsite: '',
+  // never mention jerusaguide on the post (Miriam, 28 Oct 2026): no greeting to the group, no group, source or author by that name
+  const noJg = (v) => String(v || '').replace(/^\s*(?:hello|hi|hey|dear|shalom|good (?:morning|evening))[\s,]+(?:dear\s+|all\s+)?jerusa?guide(?:rs|\s+(?:team|members|friends|group|family))?\s*[,!.:;-]*[ \t]*\n*/i, '')
+    .replace(/\s+(?:on|in|to|from|via|at|through)\s+(?:the\s+)?jerusa?guide(?:\s+group)?\b/gi, '').replace(/\bjerusa?guide(?:\s+group)?\b[\s:,-]*/gi, '').replace(/[ \t]{2,}/g, ' ').trim().replace(/^[a-z]/, (c) => c.toUpperCase());
+  const item = { id, source: 'email', group: '', title: (noJg(subject) || 'Local business').slice(0, 90), memo: noJg(body || subject), types: [kind === 'event' ? 'Events' : 'Company / Organization / Store / Group'],
+    area: 'Jerusalem & Surrounding', communities: area ? [area] : [], author: /jerusa?guide/i.test(String(whoName || '')) ? '' : String(whoName || '').slice(0, 60), contactPhone: phone.replace(/[\s-]/g, ''), contactWebsite: '',
     claimEmail: who, created: Date.now(), status: 'public', attachments, dedupeKey: 'jg|' + id, ...(rough ? { picText: rough, picVia: 'ocr' } : {}) };
   try {
     const r = await fetch(site + '/api/ingest-whatsapp?file=updates', { method: 'POST', headers: H, body: JSON.stringify({ file: 'updates', items: [item] }), signal: AbortSignal.timeout(120000) });
