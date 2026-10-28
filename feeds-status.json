@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-28T11:44:14.555Z",
+  "lastRun": "2026-10-28T21:55:44.842Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,19 +61,19 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-28T11:44:14.553Z",
-      "sent": 1,
+      "lastRun": "2026-10-28T21:55:44.840Z",
+      "sent": 3,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
-        "iTravelJerusalem hints": "17 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId bzU9g9b0fjlmFlQFUavk1",
+        "iTravelJerusalem hints": "17 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
         "iTravelJerusalem": "17 cards, nothing new (17 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (2 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
-        "Pardes": "ok via https://www.pardes.org.il/events/?ical=1 (9 upcoming)",
+        "Pardes": "ok via https://www.pardes.org.il/events/?ical=1 (10 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
@@ -202,10 +202,10 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "5th Jerusalem Business Conference – Monday, October 26th",
-            "date": "2026-10-26",
+            "title": "High Tea & Torah in the Garden",
+            "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/5th-jerusalem-business-conference-monday-october-26th/"
+            "link": "https://www.nbn.org.il/events/high-tea-torah-in-the-garden/"
           },
           {
             "title": "Nishmat Online Beit Midrash",
@@ -220,27 +220,21 @@
             "link": "https://israelwriterstudio.com/classes/"
           },
           {
-            "title": "Salsa classes in Spanish",
-            "date": null,
-            "time": "19:30",
-            "link": "https://www.nbn.org.il/events/salsa-classes-in-spanish/"
-          },
-          {
-            "title": "Cafe Oleh | Fall 2026",
+            "title": "Art Wednesday",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/cafe-oleh-fall-2026/"
+            "link": "https://www.nbn.org.il/events/art-wednesday/"
+          },
+          {
+            "title": "HER PLUS ONE: RED AND BLACK HALLOWEEN SINGLES NIGHT!",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/her-plus-one-red-and-black-halloween-singles-night/"
           }
         ],
         "Pardes": [
           {
-            "title": "Professional Development for Educators: Inviting God and God-talk into Your Classroom",
-            "date": "2026-10-27",
-            "time": "12:00",
-            "link": "https://pardes.org.il/calendar/professional-development-for-educators-inviting-god-and-god-talk-into-your-classroom/"
-          },
-          {
-            "title": "Author Series: Judaism - A Living Theology of Love",
+            "title": "Author Series: Rabbi Avi Weiss",
             "date": "2026-11-04",
             "time": "19:45",
             "link": "https://pardes.org.il/calendar/judaism-a-living-theology-of-love/"
@@ -262,6 +256,12 @@
             "date": "2026-11-08",
             "time": "18:30",
             "link": "https://pardes.org.il/calendar/crs-and-pardes-event-jewish-wisdom-for-american-jews-in-divided-democracy/"
+          },
+          {
+            "title": "Author Series: Rabbi Yitz Greenberg",
+            "date": "2026-11-11",
+            "time": "19:45",
+            "link": "https://pardes.org.il/calendar/life-against-death-book-launch/"
           }
         ],
         "Beit Avi Chai": [
