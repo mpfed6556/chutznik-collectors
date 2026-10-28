@@ -110,7 +110,7 @@ async function run({ SITE, KEY, log, limit }) {
       if (!page || page.text.length < 350) { skipped++; continue; }
       const r = await fetch(SITE + '/api/live-data?type=summarize', { method: 'POST', headers: H, body: JSON.stringify({ org: ORG, title: page.title, url: page.url, text: page.text.slice(0, 9000) }), signal: AbortSignal.timeout(120000) });
       const j = await r.json().catch(() => ({}));
-      if (!j || !j.ok) { failed++; say('   ✍️ ' + (j && j.error || 'HTTP ' + r.status) + ' — ' + url); if (/No reader key|429/.test(String(j && j.error))) break; await sleep(8000); continue; }
+      if (!j || !j.ok) { failed++; say('   ✍️ ' + (j && j.error || 'HTTP ' + r.status) + ' — ' + url); if (/No reader key|429|switched off/.test(String(j && j.error))) break; await sleep(8000); continue; }
       if (j.skip) { skipped++; await sleep(2000); continue; }
       const item = { id: 'cvc_' + fp(url), source: 'cvc', group: ORG, title: j.title, memo: j.summary + '\n\n📖 ' + (page.pdf ? 'Read the full document (PDF) on ' : 'Read the full article on ') + ORG + '’s site:\n' + page.url,
         picText: page.pdf ? page.text.replace(/\s+/g, ' ').slice(0, 1500) : '',   // the PDF's own words, so the search finds them
