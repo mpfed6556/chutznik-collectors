@@ -514,6 +514,7 @@ async function sendSuggestions(list, opts, log) {
   return true;
 }
 async function run(log, opts) {
+  if (typeof log === 'function') OG_LOG = log;
   log = log || ((s) => console.log(s));
   MODE = modeNow();
   const early = (why) => { global._jgReport = Object.assign({}, global._jgReport || {}, { mode: MODE, skippedAt: new Date().toISOString(), skippedWhy: why }); if (global._jgLastWhy !== why) { global._jgLastWhy = why; log('📬 jerusaguide: ' + why); } };
@@ -740,6 +741,49 @@ function resuggest(stamp, log) {
   (log || console.log)('📬 jerusaguide: re-suggesting — ' + n + ' unsent suggestion(s) forgotten, the last ' + HOURS + 'h are read again');
   return true;
 }
+
+// ── the business outreach through Miriam's Gmail (28 Oct 2026: "can we just send it through my gmail right now?") ──
+// The site picks the next business and writes the email (?outreach=next); this sends it from GMAIL_USER with the
+// post's picture inside, one every 45 seconds so Gmail never takes it for a blast, and reports back (?outreach=sent).
+// The site marks each one as handed out first, so nobody is written to twice. Held on Shabbos.
+let OG_BUSY = false, OG_FAILS = 0, OG_PAUSE = 0, OG_SAID = '';
+let OG_LOG = (m) => console.log(m);
+async function outreachTick() {
+  if (OG_BUSY || Date.now() < OG_PAUSE) return;
+  const key = process.env.INGEST_KEY, user = process.env.GMAIL_USER, pass = String(process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
+  if (!key || !user || !pass) return;
+  let nodemailer; try { nodemailer = require('nodemailer'); } catch (e) { if (OG_SAID !== 'nm') { OG_SAID = 'nm'; OG_LOG('✉️  outreach: waiting for nodemailer (npm install)'); } return; }
+  try { if (require('./shabbos.js').isShabbos()) return; } catch (e) {}
+  OG_BUSY = true;
+  try {
+    const H = { 'x-ingest-key': key, 'User-Agent': 'chutznik-bridge' };
+    const r = await fetch(SITE + '/api/send-email?outreach=next', { headers: H, signal: AbortSignal.timeout(60000) });
+    const j = await r.json().catch(() => ({}));
+    const it = j && Array.isArray(j.items) && j.items[0];
+    if (!it) { OG_PAUSE = Date.now() + (j && j.done ? 6 * 3600e3 : 3 * 60e3); if (j && j.done && OG_SAID !== 'done') { OG_SAID = 'done'; OG_LOG('✉️  outreach: every business has had the email'); } return; }
+    let ok = false, error = '';
+    try {
+      global._ogT = global._ogT || nodemailer.createTransport({ host: 'smtp.gmail.com', port: 465, secure: true, auth: { user, pass } });
+      let html = String(it.html || ''); const attachments = [];
+      if (it.pic) {
+        try {
+          const pr = await fetch(it.pic, { signal: AbortSignal.timeout(20000) });
+          if (pr.ok) { const buf = Buffer.from(await pr.arrayBuffer()); if (buf.length > 2000 && buf.length < 8e6) { attachments.push({ filename: 'chutznik-post.jpg', content: buf, cid: 'chutznik-post' }); html = html.split('src="' + it.picSrc + '"').join('src="cid:chutznik-post"'); } }
+        } catch (e) {}
+      }
+      await global._ogT.sendMail({ from: { name: 'Miriam', address: user }, to: it.to, subject: it.subject, text: it.text, html, attachments });
+      ok = true; OG_FAILS = 0;
+    } catch (e) {
+      error = String((e && e.message) || e).slice(0, 200); OG_FAILS++;
+      if (/limit|quota|rate|too many|5\.4\.5|421|454/i.test(error)) OG_PAUSE = Date.now() + 6 * 3600e3;   // Gmail's sending limit: hold for hours
+      else if (OG_FAILS >= 3) OG_PAUSE = Date.now() + 3600e3;
+      if (/auth|login|credentials|535/i.test(error)) { try { global._ogT.close(); } catch (e2) {} global._ogT = null; }
+    }
+    await fetch(SITE + '/api/send-email?outreach=sent', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, H), body: JSON.stringify({ id: it.id, to: it.to, ok, error, from: user, subject: it.subject }), signal: AbortSignal.timeout(60000) }).catch(() => {});
+    OG_LOG('✉️  outreach: ' + (ok ? 'emailed ' : 'could not email ') + it.to + ' from ' + user + (ok ? '' : ' — ' + error) + (j.left != null ? ' (' + Math.max(0, j.left - 1) + ' to go)' : ''));
+  } catch (e) {} finally { OG_BUSY = false; }
+}
+if (require.main !== module) { const t = setInterval(outreachTick, 45 * 1000); if (t.unref) t.unref(); }
 
 module.exports = { run, approve, neverWrite, flyerNote, flyerKind, recommendationIn, bizTypeOf, pendingCount, resuggest, askTopic, classify, classifyReply, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
 
