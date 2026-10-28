@@ -137,27 +137,6 @@ function classify(subject, text) {
   return { kind, seek };
 }
 
-// ── the note ────────────────────────────────────────────────────────────────
-function noteFor(c, matchText) {
-  const rental = c.kind === 'rental';
-  // a personal subject from a named person, not a generic one: it reads like a letter, and Gmail treats it as one (14 Oct 2026)
-  const subject = rental ? (c.seek ? "About the rental you're looking for" : 'About your rental post')
-    : c.kind === 'ask' ? ('About the ' + c.topic + " you're looking for")
-    : (c.seek ? "About the work you're looking for" : 'About your job post');
-  let text;
-  if (matchText) text = matchText;   // her matches, in Miriam's words (rental-match.js)
-  // "hi, I'm Miriam. I saw you're asking about… it's on chutznik…" — Chutznik named once (Miriam, 14 Oct 2026)
-  else if (c.kind === 'ask') text = 'hi, I\'m Miriam. I saw you\'re asking about a ' + c.topic + '. there are a few recommended on chutznik 👉 ' + SITE + '/israel/search/' + encodeURIComponent(c.topic).replace(/%20/g, '+') + '\nhatzlachah!';
-  else if (rental && !c.seek) text = 'hi, I\'m Miriam. I saw you\'re renting out an apartment. there are people looking to rent on chutznik 👉 ' + SITE + '/israel/rental\nhatzlachah!';
-  else if (rental && c.seek) text = 'hi, I\'m Miriam. I saw you\'re looking for a rental. there are tons listed on chutznik 👉 ' + SITE + '/israel/rental\nhatzlachah!';
-  else if (!rental && !c.seek) text = 'hi, I\'m Miriam. I saw you\'re hiring. there are people looking for work on chutznik 👉 ' + SITE + '/israel/jobs\nhatzlachah!';
-  else text = 'hi, I\'m Miriam. I saw you\'re looking for work. there are tons of jobs on chutznik 👉 ' + SITE + '/israel/jobs\nhatzlachah!';
-  const html = '<div style="font-family:Georgia,serif;font-size:16px;line-height:1.55;color:#3a2f27">'
-    + text.split('\n').map(l => l.replace(/(https?:\/\/\S+)/g, '<a href="$1" style="color:#a8483f">$1</a>')).join('<br>')
-    + '</div>';
-  return { subject, text, html };
-}
-
 // ── sending: Resend (the site's own way) or Gmail SMTP as a fallback ────────
 async function sendMail(to, note, log, opts) {
   // the site's own mail function first: every note leaves as Chutznik <info@chutznik.org>, logged like every other email (Miriam, 13 Oct 2026)
@@ -211,6 +190,98 @@ function cleanText(t) {
   x = x.replace(/\n(?:You received this message because|To unsubscribe from this group|To view this discussion|Visit this group at)[\s\S]*$/i, '');
   x = x.replace(/\n>.*$/gm, '').replace(/\n{3,}/g, '\n\n').trim();
   return x;
+}
+
+// only what the person just wrote (Miriam, 28 Oct 2026: "the bot should only read the new message content and nothing after
+// the fresh content … after four or five sentences it should stop, whether or not the person is finished writing")
+const QUOTE_START = /^\s*(?:on .{4,120}wrote:?\s*$|-{2,}\s*original message|-{2,}\s*forwarded message|_{5,}|from:\s|sent:\s|sent from my |get outlook for|בתאריך .{4,120}כתב|you received this message because|to unsubscribe from this group|to view this discussion|visit this group at|>)/i;
+function freshText(t) {
+  const lines = String(t || '').replace(/\r/g, '').split('\n');
+  const keep = [];
+  for (const l of lines) { if (QUOTE_START.test(l)) break; keep.push(l); if (keep.length >= 12) break; }
+  const flat = keep.join('\n').replace(/[ \t]+/g, ' ').replace(/\n{2,}/g, '\n').trim();
+  // five sentences at most: a full stop, ! or ? followed by a space, or a line break, ends one
+  const parts = flat.match(/[^.!?\n]+(?:[.!?]+|\n|$)/g) || [];
+  return parts.slice(0, 5).join(' ').replace(/\s+/g, ' ').trim().slice(0, 700);
+}
+
+// a business advertising itself: a service or product on offer, how to order or book, a price (28 Oct 2026)
+const BIZ_HINT = /\b(?:we offer|i offer|offering|now offering|taking orders|place your orders?|order (?:now|today|by)|orders? (?:open|for shabb?(?:os|at))|book (?:now|today|your|a)|call (?:or|\/) (?:whatsapp|text)|whatsapp (?:me|us)|contact (?:me|us) (?:for|to)|prices? (?:start|from)|starting (?:at|from)|discount|\d+ ?% off|on sale|special offer|services?|lessons?|catering|caterer|delivery|deliveries|free (?:consultation|delivery|estimate|trial)|licensed|certified|years of experience|my business|our (?:store|shop|business|company|clinic|studio)|appointments?|now open|grand opening)\b/gi;
+function isBusinessAd(subject, text) {
+  const s = String(subject || '') + '\n' + String(text || '');
+  if (/\?/.test(String(subject || '')) || SEEK_RE.test(String(subject || ''))) return false;
+  const hits = new Set((s.match(BIZ_HINT) || []).map((x) => x.toLowerCase())).size;
+  const phone = /(?:\+?972|0)[\s-]?(?:[2-9]|5\d)[\s-]?\d{3}[\s-]?\d{4}\b|\b05\d[\s-]?\d{7}\b/.test(s);
+  return hits >= 2 || (hits >= 1 && phone);
+}
+
+// ── the reply: one sentence, in Miriam's own voice, no emojis, never the same words twice (Miriam, 28 Oct 2026:
+//    "always worded in a different way so they see you're a real human … not more than one sentence") ──────────
+const TEXTS_FILE = path.join(__dirname, '..', 'jg-texts.json');
+let TEXTS = new Set(); try { TEXTS = new Set(JSON.parse(fs.readFileSync(TEXTS_FILE, 'utf8'))); } catch (e) {}
+const saveTexts = () => { try { fs.writeFileSync(TEXTS_FILE, JSON.stringify([...TEXTS].slice(-20000))); } catch (e) {} };
+const textKey = (t) => require('crypto').createHash('sha256').update(String(t).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()).digest('hex').slice(0, 20);
+const AREAS = ['Katamon', 'Old Katamon', 'Rechavia', 'Baka', 'German Colony', 'Talpiot', 'Arnona', 'Nachlaot', 'Ramat Eshkol', 'Maalot Dafna', 'Sanhedria', 'Geula', 'Romema', 'Har Nof', 'Bayit Vegan', 'Givat Shaul', 'Kiryat Moshe', 'Ramot', 'Ramat Shlomo', 'French Hill', 'Arzei Habira', 'Shmuel Hanavi', 'Mekor Baruch', 'Kiryat Shmuel', 'Talbiyeh', 'Musrara', 'Old City', 'Rova', 'Givat Mordechai', 'Beit Hakerem', 'Gilo', 'Pisgat Zeev', 'Neve Yaakov', 'Ramat Beit Shemesh', 'Beit Shemesh', 'Efrat', 'Givat Zeev', 'Maale Adumim', 'Telz Stone', 'Kiryat Yovel', 'Malcha', 'Ir Ganim', 'Armon Hanatziv', 'Baka', 'Emek Refaim'];
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+function areaOf(s) { const t = String(s || ''); for (const a of AREAS) if (new RegExp('\\b' + a.replace(/ /g, '\\s+') + '\\b', 'i').test(t)) return a; return ''; }
+function firstName(n) { const f = String(n || '').trim().split(/\s+/)[0] || ''; return /^[A-Z][a-z]{1,14}$/.test(f) && !/^(?:the|info|office|admin|jerusalem|realty|team|mr|mrs|ms)$/i.test(f) ? f : ''; }
+const LINKS = { rentals: ['chutznik.org/israel/rentals', 'https://chutznik.org/israel/rentals', 'chutznik.org'], jobs: ['chutznik.org/israel/jobs', 'https://chutznik.org/israel/jobs', 'chutznik.org'], site: ['chutznik.org', 'https://chutznik.org', 'www.chutznik.org'] };
+const OPEN = ['Hi{n},', 'Hey{n},', 'Hi there{n},', 'Hello{n},', ''];
+const BODY = {
+  rental_seek: [
+    "I saw you're looking for an apartment{a} and thought you'd want to know there are a lot of rentals listed on {L}",
+    "I noticed your post about finding a place{a}, and I keep the rentals from all the groups in one spot at {L}",
+    "saw you're searching for a rental{a}, you might find something on {L} since it's updated all day",
+    "I came across your post looking for an apartment{a} and wanted to share {L}, where I put the rentals for English speakers in one place",
+    "I read that you need a place{a}, so I wanted to point you to {L}, which has new rentals every day",
+  ],
+  rental_offer: [
+    "I saw you're renting out an apartment{a}, you can post it free on {L} where a lot of English speakers look for rentals",
+    "I noticed your rental post{a} and wanted to mention that people looking to rent check {L} every day, so it's worth adding there for free",
+    "saw your apartment listing{a}, if you want more eyes on it you can put it on {L} at no cost",
+    "I came across your rental{a} and thought you might want to list it on {L} too, it's free and people search there daily",
+    "I read your apartment post{a} and wanted to let you know that {L} is free to post on and full of people looking to rent",
+  ],
+  job: [
+    "I saw you're hiring and wanted to let you know you can post the job free on {L} where English speakers in Jerusalem look for work",
+    "I noticed your job post, a lot of people looking for work check {L}, so it might be worth adding it there for free",
+    "saw you're looking to hire, you can reach more people by posting it on {L} at no cost",
+    "I came across your job opening and thought you'd want to know about {L}, where English speakers find work in Jerusalem and posting is free",
+    "I read that you're looking for someone, and you're welcome to post the job on {L} for free",
+  ],
+  business: [
+    "I saw your post{a}, you can add your business free on {L} so English speakers in Jerusalem can find you",
+    "I noticed your ad and wanted to mention that you can list your business on {L} for free, a lot of people search there for local services",
+    "saw your advertisement{a}, if you'd like more customers you can put it up on {L} at no cost",
+    "I came across your business post and thought you might like to list it on {L} too, it's free and people use it to find local services",
+    "I read your ad{a} and wanted to let you know that {L} lists local businesses for English speakers, and adding yours is free",
+  ],
+};
+const CLOSE = { rental_seek: ['.', ', hope it helps.', ', hatzlacha!', ', good luck with the search!', ', I hope you find something soon.'], rental_offer: ['.', ', hatzlacha!', ', all the best.', ', hope it rents quickly.'], job: ['.', ', hatzlacha!', ', all the best.', ', hope you find the right person soon.'], business: ['.', ', hatzlacha!', ', all the best.', ', wishing you lots of success.'] };
+const SUBJ = {
+  rental_seek: ['Your apartment search', 'About the place you are looking for', 'Saw your post', 'Rentals in Jerusalem', 'Re your apartment post'],
+  rental_offer: ['Your rental post', 'About your apartment', 'Saw your listing', 'Re your apartment', 'Your apartment post'],
+  job: ['Your job post', 'About the position', 'Saw your post', 'Re your job opening', 'Hiring'],
+  business: ['Your ad', 'Saw your post', 'About your business', 'Re your post', 'Your business'],
+};
+function oneSentence(kind, ctx) {
+  const L = LINKS[kind === 'job' ? 'jobs' : kind === 'business' ? 'site' : 'rentals'];
+  const name = firstName(ctx && ctx.name), area = areaOf(ctx && ctx.text);
+  const areaWord = kind === 'job' ? '' : area ? (kind === 'business' ? ' in ' + area : ' in ' + area) : '';
+  for (let tries = 0; tries < 80; tries++) {
+    const op = pick(OPEN).replace('{n}', name && Math.random() < 0.75 ? ' ' + name : '');
+    let body = pick(BODY[kind]).replace('{a}', Math.random() < 0.8 ? areaWord : '').replace('{L}', pick(L));
+    if (!op) body = body.charAt(0).toUpperCase() + body.slice(1);
+    const text = ((op ? op + ' ' : '') + body + pick(CLOSE[kind])).replace(/\s+/g, ' ').replace(/ ,/g, ',').trim();
+    if (!TEXTS.has(textKey(text))) return { text, subject: pick(SUBJ[kind]) };
+  }
+  return null;   // every wording was used already: nothing goes rather than the same words again
+}
+function noteFor(c, ctx) {
+  const kind = c.kind === 'business' ? 'business' : c.kind === 'job' ? 'job' : c.seek ? 'rental_seek' : 'rental_offer';
+  const one = oneSentence(kind, ctx); if (!one) return null;
+  const html = '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#222">' + esc(one.text).replace(/((?:https?:\/\/|www\.)?chutznik\.org[^\s,]*)/g, (m) => '<a href="' + (/^http/.test(m) ? m : 'https://' + m.replace(/^www\./, '')) + '">' + m + '</a>') + '</div>';
+  return { subject: one.subject, text: one.text, html, kind };
 }
 
 let busy = false, sentToday = 0, dayKey = '', firstRound = true;
@@ -358,7 +429,7 @@ async function run(log, opts) {
       if (MODE !== 'suggest' && !notesOff && sentToday >= DAILY) { log('📬 jerusaguide: daily cap of ' + DAILY + ' reached'); complete = false; break; }
       let parsed;
       // the top of the message only: the posting is in its first lines, the rest is quoted thread and footers
-      try { const msg = await client.fetchOne(uid, { source: { maxLength: 24000 } }, { uid: true }); if (!msg || !msg.source) continue; parsed = await simpleParser(msg.source); } catch (e) { continue; }
+      try { const msg = await client.fetchOne(uid, { source: { maxLength: 16000 } }, { uid: true }); if (!msg || !msg.source) continue; parsed = await simpleParser(msg.source); } catch (e) { continue; }
       if (SEEN.has(mid)) continue;
       SEEN.add(mid); rep.fresh++;
       if (!fromTheGroup(parsed)) { why('not from the group'); continue; }
@@ -367,8 +438,9 @@ async function run(log, opts) {
       const subject = String(parsed.subject || '').replace(/^\s*(?:(?:re|fw|fwd)\s*:\s*)+/i, '').replace(/\[[^\]]*\]\s*/g, '').trim();
       if (/^\s*re\s*:/i.test(parsed.subject || '')) { skipped++; why('a reply in a thread'); continue; }   // a reply in a thread is not a posting
       // the first lines are the posting; the long quoted thread underneath is never read (Miriam, 14 Oct 2026)
-      const text = cleanText(parsed.text || (parsed.html ? String(parsed.html).replace(/<[^>]+>/g, ' ') : '')).split('\n').slice(0, 14).join('\n').slice(0, 1500);
-      const c = classify(subject, text);
+      const text = freshText(cleanText(parsed.text || (parsed.html ? String(parsed.html).replace(/<[^>]+>/g, ' ') : '')));
+      let c = classify(subject, text);
+      if ((!c || c.kind === 'ask') && isBusinessAd(subject, text)) c = { kind: 'business', seek: false };
       // every posting goes to Chutznik memory, and a question goes to the admin's leads — told before or not (23 Oct 2026)
       const link = (opts && opts.link) || LINK;
       const when = (parsed.date && new Date(parsed.date).getTime()) || Date.now();
@@ -378,23 +450,17 @@ async function run(log, opts) {
       if (notesOff) { skipped++; why('notes are off'); continue; }
       // only people posting or seeking a rental are written to — not jobs, not other questions (Miriam, 23 Oct 2026)
       if (!c) { skipped++; why('not a rental, job or request'); continue; }   // (26 Oct 2026: this check came after the rental one and a null threw, ending the round)
-      if (c.kind !== 'rental') { skipped++; why('not a rental — only rental posters and seekers get the note'); continue; }
+      // a rental post or question, a job on offer, a business advert (Miriam, 28 Oct 2026); not someone looking for work, not other questions
+      if (!(c.kind === 'rental' || (c.kind === 'job' && !c.seek) || c.kind === 'business')) { skipped++; why(c.kind === 'job' ? 'looking for work — no note' : 'not a rental, job post or business advert'); continue; }
       if (TOLD[who]) { skipped++; why('already written to'); continue; }                         // never twice — whatever they post
-      if (c.kind === 'ask') {
-        let n = 0; try { n = await siteHas(c.topic, (opts && opts.site) || SITE, opts && opts.ingestKey, siteCache); } catch (e) {}
-        if (n < 2) { skipped++; why('asked for something the site has under 2 of'); log('📬 jerusaguide: ' + who + ' asked for a ' + c.topic + ' — the site has ' + n + ' post(s) on it, left alone'); continue; }
-      }
-      // a rental poster hears about her matches on the site instead of the plain note (Miriam, 22 Sep 2026)
-      let matchText = '';
-      if (c.kind === 'rental' || c.kind === 'job') {
-        try { const RM = require('./rental-match.js'); const it = RM.itemFromText(subject, text, c.seek); if (!recent) recent = await RM.fetchRecent(SITE); const m = RM.findMatches(it, recent); if (m.length) matchText = RM.message(it, m, SITE); } catch (e) { log('🤝 matches: ' + (e && e.message)); }
-      }
-      const note = noteFor(c, matchText);
+      const note = noteFor(c, { name: whoName, text: subject + ' ' + text });
+      if (!note) { skipped++; why('every wording already used'); continue; }
       if (MODE === 'suggest') { suggestions.push({ mid, token: require('crypto').randomBytes(16).toString('hex'), who, kind: c.kind, topic: c.topic || '', seek: c.seek, subject: subject.slice(0, 120), snippet: text.replace(/\s+/g, ' ').trim().slice(0, 280), note }); sent++; continue; }
       if (MODE === 'dry') { log('📬 jerusaguide (dry): would email ' + who + ' — ' + note.subject + ' — ' + (c.seek ? 'asking' : 'posting') + ' · "' + subject.slice(0, 60) + '"'); TOLD[who] = { ts: Date.now(), kind: c.kind, seek: c.seek, dry: true, subject: subject.slice(0, 80) }; sent++; sentToday++; continue; }
       try {
         const via = await sendMail(who, note, log, opts);
         TOLD[who] = { ts: Date.now(), kind: c.kind, seek: c.seek, via, subject: subject.slice(0, 80) };
+        TEXTS.add(textKey(note.text)); saveTexts();
         sent++; sentToday++;
         log('📬 jerusaguide: emailed ' + who + ' — ' + note.subject + ' (' + (c.seek ? 'asking' : 'posting') + ')');
         await new Promise((r) => setTimeout(r, 4000));
@@ -432,7 +498,7 @@ async function approve(token, opts, log, text) {
   }
   try {
     const via = await sendMail(p.who, note, log, opts);
-    p.sent = Date.now(); p.via = via; if (note !== p.note) p.edited = true; TOLD[p.who] = { ts: Date.now(), kind: p.kind, seek: p.seek, via, approved: true, subject: String(p.subject || '').slice(0, 80) };
+    p.sent = Date.now(); p.via = via; TEXTS.add(textKey(note.text)); saveTexts(); if (note !== p.note) p.edited = true; TOLD[p.who] = { ts: Date.now(), kind: p.kind, seek: p.seek, via, approved: true, subject: String(p.subject || '').slice(0, 80) };
     log('📬 jerusaguide: emailed ' + p.who + ' — ' + p.note.subject + ' (approved by Miriam)');
   } catch (e) { p.tries = (p.tries || 0) + 1; log('📬 jerusaguide: note to ' + p.who + ' failed: ' + (e && e.message)); if (p.tries < 3) { savePending(); return false; } p.sent = Date.now(); p.failed = true; }
   savePending(); saveTold();
@@ -442,7 +508,7 @@ const pendingCount = () => Object.values(PENDING).filter((p) => p && !p.sent).le
 // JG_RESUGGEST {stamp} in the site settings: the suggested-but-unsent notes are forgotten and the
 // last two days are read again under the current rules (once per stamp)
 const RESUG_FILE = path.join(__dirname, '..', 'jg-resuggest.txt');
-const RULES = 5;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
+const RULES = 6;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
 function resuggest(stamp, log) {
   let done = ''; try { done = fs.readFileSync(RESUG_FILE, 'utf8').trim(); } catch (e) {}
   if (!stamp || done === String(stamp)) return false;
@@ -456,7 +522,7 @@ function resuggest(stamp, log) {
   return true;
 }
 
-module.exports = { run, approve, pendingCount, resuggest, askTopic, classify, noteFor, posterAddress, modeNow, get MODE() { return modeNow(); } };
+module.exports = { run, approve, pendingCount, resuggest, askTopic, classify, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
 
 if (require.main === module) {
   // a quick look at the classifier: node scripts/jerusaguide-mail.js
@@ -487,6 +553,10 @@ if (require.main === module) {
     ['Advice', 'Anyone know of something good for a toddler who will not sleep?'],
     ['Desperately looking for good, steady cleaning lady', 'For twice a week if possible. Please send me any leads Thank you so much!'],
     ['Help', 'Looking for what I need for a bris, where do people buy?'],
+    ['Homecooked Suppers and Shabbos Meals', 'Place your orders! Full menu, delivery in Ramat Eshkol, call or whatsapp 052-555-1234'],
+    ['Sheitels washed and set', 'Professional wig styling, 15 years of experience, prices start at 150 NIS, appointments 054-1234567'],
+    ['Apartment for rent in Katamon', '3 rooms, furnished, 7500 NIS a month, available from December.\nOn Mon, Oct 27, 2026 at 9:12 PM Someone <x@y.com> wrote:\n> Looking for a 2 bedroom in Baka, budget 6000'],
   ];
-  for (const [s, t0] of tests) { const t = cleanText(t0); const c = classify(s, t); console.log(JSON.stringify(c), '←', s, c ? '→ ' + noteFor(c).text.split('\n')[0] : ''); }
+  for (const [s, t0] of tests) { const t = freshText(cleanText(t0)); let c = classify(s, t); if ((!c || c.kind === 'ask') && isBusinessAd(s, t)) c = { kind: 'business', seek: false };
+    const ok = c && (c.kind === 'rental' || (c.kind === 'job' && !c.seek) || c.kind === 'business'); console.log((ok ? '✉ ' : '  ') + (c ? c.kind + (c.seek ? '/seek' : '') : '-').padEnd(13), s.slice(0, 50).padEnd(52), ok ? '→ ' + noteFor(c, { name: 'Sarah Levy', text: s + ' ' + t }).text : ''); }
 }
