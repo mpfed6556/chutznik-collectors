@@ -1955,6 +1955,8 @@ async function pullSettings() {
     if (j.JG_MINUTES !== undefined) global._jgMinutes = Number(j.JG_MINUTES) || 0;
     if (j.JG_NIGHT_MINUTES !== undefined) global._jgNightMinutes = Number(j.JG_NIGHT_MINUTES) || 0;
     if (Array.isArray(j.JG_WA)) { const list = j.JG_WA.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8); if (JSON.stringify(list) !== JSON.stringify(global._jgWa || [])) { global._jgWa = list; log('\u2699\ufe0f  jerusaguide suggestions go on WhatsApp to: ' + (list.join(', ') || '(nobody)')); } }
+    // JG_SKIP: addresses, or words of a sender's name, that never get a jerusaguide note (Miriam, 28 Oct 2026: the group's admins, Bee Dushinsky)
+    if (Array.isArray(j.JG_SKIP)) { global._jgSkip = j.JG_SKIP.map((x) => String(x || '').trim().toLowerCase()).filter(Boolean).slice(0, 200); }
     if (Array.isArray(j.JG_TO)) { const list = j.JG_TO.map((x) => String(x || '').trim().toLowerCase()).filter((x) => x.includes('@')); if (JSON.stringify(list) !== JSON.stringify(global._jgTo || [])) { global._jgTo = list; log('\u2699\ufe0f  jerusaguide suggestions go to: ' + (list.join(', ') || '(Miriam)')); } }
     if (j.DIGEST !== undefined) { const v = String(j.DIGEST || 'off').toLowerCase(); if (v !== (global._digest || 'off')) { global._digest = v; log('\u2699\ufe0f  WhatsApp digest email: ' + v); } }
     if (Array.isArray(j.DIGEST_TO)) { const list = j.DIGEST_TO.map((x) => String(x || '').trim().toLowerCase()).filter((x) => x.includes('@')); if (JSON.stringify(list) !== JSON.stringify(global._digestTo || [])) { global._digestTo = list; log('\u2699\ufe0f  WhatsApp digest goes to: ' + (list.join(', ') || '(admin)')); } }

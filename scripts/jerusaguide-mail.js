@@ -205,6 +205,18 @@ function freshText(t) {
   return parts.slice(0, 5).join(' ').replace(/\s+/g, ' ').trim().slice(0, 700);
 }
 
+// never written to (Miriam, 28 Oct 2026: "ensure that no email is sent to the admins of the Google group, and Bee Dushinsky"):
+// the group's own accounts, anyone signing as its admin or moderator, and whatever JG_SKIP in the site settings adds
+const NEVER = ['jerusaguideteam@gmail.com', 'jerusaguideauto@gmail.com', 'dushinsky'];
+const ADMIN_NAME = /\b(?:admin|admins|administrator|moderator|moderators|mod team|jg auto|jguide admin|jerusaguide (?:ads|team|admin)|do not reply|no-?reply)\b/i;
+function neverWrite(addr, name) {
+  const a = String(addr || '').toLowerCase(), n = String(name || '').toLowerCase();
+  const list = NEVER.concat(Array.isArray(global._jgSkip) ? global._jgSkip : []);
+  if (list.some((x) => x && (x.includes('@') ? a === x : (a.includes(x) || n.includes(x))))) return true;
+  if (ADMIN_NAME.test(n) || /^(?:admin|moderator|team|noreply|no-reply)[._-]?|jerusaguide(?:team|auto|admin)@/i.test(a)) return true;
+  return false;
+}
+
 // a business advertising itself: a service or product on offer, how to order or book, a price (28 Oct 2026)
 const BIZ_HINT = /\b(?:we offer|i offer|offering|now offering|taking orders|place your orders?|order (?:now|today|by)|orders? (?:open|for shabb?(?:os|at))|book (?:now|today|your|a)|call (?:or|\/) (?:whatsapp|text)|whatsapp (?:me|us)|contact (?:me|us) (?:for|to)|prices? (?:start|from)|starting (?:at|from)|discount|\d+ ?% off|on sale|special offer|services?|lessons?|catering|caterer|delivery|deliveries|free (?:consultation|delivery|estimate|trial)|licensed|certified|years of experience|my business|our (?:store|shop|business|company|clinic|studio)|appointments?|now open|grand opening)\b/gi;
 // a reply offers something when its own words do: a rental (or, under a rental question, a price or a phone number), a job, a business
@@ -461,6 +473,7 @@ async function run(log, opts) {
       if (!c) { skipped++; why('not a rental, job or request'); continue; }   // (26 Oct 2026: this check came after the rental one and a null threw, ending the round)
       // a rental post or question, a job on offer, a business advert (Miriam, 28 Oct 2026); not someone looking for work, not other questions
       if (!(c.kind === 'rental' || (c.kind === 'job' && !c.seek) || c.kind === 'business')) { skipped++; why(c.kind === 'job' ? 'looking for work — no note' : 'not a rental, job post or business advert'); continue; }
+      if (neverWrite(who, whoName)) { skipped++; why('the group\'s admins and the never-write list'); continue; }
       if (TOLD[who]) { skipped++; why('already written to'); continue; }                         // never twice — whatever they post
       const note = noteFor(c, { name: whoName, text: subject + ' ' + text });
       if (!note) { skipped++; why('every wording already used'); continue; }
@@ -498,6 +511,7 @@ async function run(log, opts) {
 // Miriam pressed "Send it from Chutznik" on a suggested note (the approve token came back from the site)
 async function approve(token, opts, log, text) {
   const p = PENDING[token]; if (!p) return false;
+  if (neverWrite(p.who, '')) { p.sent = Date.now(); p.failed = true; savePending(); return true; }
   if (p.sent) return true;
   // Miriam edited the note on the site before pressing Send: her words go, not the suggestion
   let note = p.note;
@@ -531,7 +545,7 @@ function resuggest(stamp, log) {
   return true;
 }
 
-module.exports = { run, approve, pendingCount, resuggest, askTopic, classify, classifyReply, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
+module.exports = { run, approve, neverWrite, pendingCount, resuggest, askTopic, classify, classifyReply, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
 
 if (require.main === module) {
   // a quick look at the classifier: node scripts/jerusaguide-mail.js
