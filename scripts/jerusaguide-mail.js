@@ -250,34 +250,43 @@ function areaOf(s) { const t = String(s || ''); for (const a of AREAS) if (new R
 function firstName(n) { const f = String(n || '').trim().split(/\s+/)[0] || ''; return /^[A-Z][a-z]{1,14}$/.test(f) && !/^(?:the|info|office|admin|jerusalem|realty|team|mr|mrs|ms)$/i.test(f) ? f : ''; }
 const LINKS = { rentals: ['chutznik.org/israel/rentals', 'https://chutznik.org/israel/rentals', 'chutznik.org'], jobs: ['chutznik.org/israel/jobs', 'https://chutznik.org/israel/jobs', 'chutznik.org'], site: ['chutznik.org', 'https://chutznik.org', 'www.chutznik.org'] };
 // "Hi! feel free to post your question about … on chutznik.org/…" (Miriam, 28 Oct 2026: no "I saw your…")
-const OPEN = ['Hi{n}!', 'Hi{n}!', 'Hey{n}!', 'Hello{n}!', 'Hi there{n}!'];
+// no name and no "too" (Miriam, 28 Oct 2026, on "Hello Mir! Feel free to post your apartment on … too")
+const OPEN = ['Hi!', 'Hey!', 'Hello!', 'Hi there!', 'Hey there!', 'Hello there!'];
 const BODY = {
   rental_seek: [
+    "you can post what you need on {L}, landlords and agents check it every day",
+    "feel free to put up a post about {t} on {L}, new listings come in all day",
     "feel free to post your question about {t} on {L}, a lot of rentals are listed there",
     "feel free to post what you're looking for on {L}, there are new rentals there every day",
-    "you're welcome to post your question about {t} on {L} too, people check it all day",
-    "feel free to ask about {t} on {L} as well, the rentals from all the groups are there",
+    "you're welcome to post your question about {t} on {L}, people check it all day",
+    "feel free to ask about {t} on {L}, the rentals from all the groups are there",
   ],
   rental_offer: [
-    "feel free to post your apartment on {L} too, it's free and lots of people are looking",
-    "you're welcome to list your rental on {L} as well, it's free",
-    "feel free to put your apartment up on {L} too, people search there every day",
+    "you can list your apartment on {L} for free, people looking to rent check it daily",
+    "feel free to add your apartment{a} to {L}, it costs nothing",
+    "feel free to post your apartment on {L}, it's free and lots of people are looking",
+    "you're welcome to list your rental on {L}, it's free",
+    "feel free to put your apartment up on {L}, people search there every day",
     "feel free to post your rental{a} on {L}, it's free and English speakers look there",
   ],
   job: [
-    "feel free to post your job on {L} too, it's free and lots of people are looking for work",
-    "you're welcome to list the position on {L} as well, it's free",
-    "feel free to put the job up on {L} too, English speakers look for work there",
+    "you can post the job on {L} for free, people looking for work check it daily",
+    "feel free to add the position to {L}, it costs nothing",
+    "feel free to post your job on {L}, it's free and lots of people are looking for work",
+    "you're welcome to list the position on {L}, it's free",
+    "feel free to put the job up on {L}, English speakers look for work there",
     "feel free to post the opening on {L}, it's free",
   ],
   business: [
-    "feel free to post your business on {L} too, it's free",
-    "you're welcome to list your business on {L} as well, people look for local services there",
-    "feel free to add your ad to {L} too, it's free",
+    "you can list your business on {L} for free, people search there for local services",
+    "feel free to add your business{a} to {L}, it costs nothing",
+    "feel free to post your business on {L}, it's free",
+    "you're welcome to list your business on {L}, people look for local services there",
+    "feel free to add your ad to {L}, it's free",
     "feel free to post your business{a} on {L}, English speakers look for local services there",
   ],
 };
-const CLOSE = { rental_seek: ['.', '!', ', hatzlacha!'], rental_offer: ['.', '!', ', hatzlacha!'], job: ['.', '!', ', hatzlacha!'], business: ['.', '!', ', hatzlacha!'] };
+const CLOSE = { rental_seek: ['.', '!', ', hatzlacha!', ', good luck!', ', good luck with the search!'], rental_offer: ['.', '!', ', hatzlacha!', ', all the best!', ', good luck!'], job: ['.', '!', ', hatzlacha!', ', all the best!', ', good luck!'], business: ['.', '!', ', hatzlacha!', ', all the best!', ', wishing you lots of success!'] };
 const SUBJ = {
   rental_seek: ['Your apartment search', 'About the place you are looking for', 'Rentals in Jerusalem', 'Re your apartment post', 'Your rental question'],
   rental_offer: ['Your rental post', 'About your apartment', 'Your listing', 'Re your apartment', 'Your apartment post'],
@@ -289,7 +298,7 @@ function oneSentence(kind, ctx) {
   const name = firstName(ctx && ctx.name), area = areaOf(ctx && ctx.text);
   const topics = area ? ['apartments in ' + area, 'a rental in ' + area, 'a place in ' + area] : ['apartments', 'a rental', 'the apartment you need'];
   for (let tries = 0; tries < 80; tries++) {
-    const op = pick(OPEN).replace('{n}', name && Math.random() < 0.6 ? ' ' + name : '');
+    const op = pick(OPEN);
     let body = pick(BODY[kind]).replace('{t}', pick(topics)).replace('{a}', area && Math.random() < 0.7 ? ' in ' + area : '').replace('{L}', pick(L));
     body = body.charAt(0).toUpperCase() + body.slice(1);
     const text = (op + ' ' + body + pick(CLOSE[kind])).replace(/\s+/g, ' ').trim();
