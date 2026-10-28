@@ -32,7 +32,7 @@ const GROUP_KEY = GROUP.split('@')[0];                       // "jerusaguide"
 const FROM = process.env.JG_FROM || 'Chutznik <info@chutznik.org>';
 const REPLY_TO = process.env.JG_REPLY_TO || 'info@chutznik.org';
 const HOURS = Number(process.env.JG_HOURS || 48);   // the first look back; later rounds look at the last few hours only
-const DAILY = Number(process.env.JG_DAILY || 25);
+const DAILY = Number(process.env.JG_DAILY || 50);   // 50 a day: the replies in threads are written to as well (28 Oct 2026)
 const SITE = (process.env.JG_SITE || 'https://chutznik.org').replace(/\/$/, '');
 const TOLD_FILE = path.join(__dirname, '..', 'jg-told.json');
 const PENDING_FILE = path.join(__dirname, '..', 'jg-pending.json');   // suggested notes waiting for Miriam's one-tap "Send it from Chutznik"
@@ -142,7 +142,7 @@ async function sendMail(to, note, log, opts) {
   // the site's own mail function first: every note leaves as Chutznik <info@chutznik.org>, logged like every other email (Miriam, 13 Oct 2026)
   if (opts && opts.ingestKey) {
     const r = await fetch(((opts && opts.site) || SITE) + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': opts.ingestKey, 'User-Agent': 'chutznik-bridge' },
-      body: JSON.stringify({ type: 'custom', to: [to], subject: note.subject, body: note.text, html: note.html, plain: true, fromName: 'Miriam' }) });
+      body: JSON.stringify({ type: 'custom', to: [to], subject: note.subject, body: note.text, html: note.html, plain: true, fromName: 'Miriam', tag: 'jerusaguide' }) });
     if (!r.ok) throw new Error('site mail ' + r.status + ' ' + (await r.text().catch(() => '')).slice(0, 120));
     return 'site';
   }
@@ -207,6 +207,17 @@ function freshText(t) {
 
 // a business advertising itself: a service or product on offer, how to order or book, a price (28 Oct 2026)
 const BIZ_HINT = /\b(?:we offer|i offer|offering|now offering|taking orders|place your orders?|order (?:now|today|by)|orders? (?:open|for shabb?(?:os|at))|book (?:now|today|your|a)|call (?:or|\/) (?:whatsapp|text)|whatsapp (?:me|us)|contact (?:me|us) (?:for|to)|prices? (?:start|from)|starting (?:at|from)|discount|\d+ ?% off|on sale|special offer|services?|lessons?|catering|caterer|delivery|deliveries|free (?:consultation|delivery|estimate|trial)|licensed|certified|years of experience|my business|our (?:store|shop|business|company|clinic|studio)|appointments?|now open|grand opening)\b/gi;
+// a reply offers something when its own words do: a rental (or, under a rental question, a price or a phone number), a job, a business
+function classifyReply(subject, text) {
+  const t = String(text || '');
+  if (t.replace(/\s+/g, ' ').trim().length < 15) return null;
+  let c = classify('', t);
+  if (c && c.kind === 'rental') return c;
+  if (c && c.kind === 'job' && !c.seek) return c;
+  const offer = /(?:\b\d[\d,.]*\s*(?:nis|₪|shekels?|ils)\b|\b(?:available|for rent|i have|we have|my (?:apartment|flat|unit)|call|whatsapp)\b|(?:\+?972|0)5\d[\s-]?\d{3}[\s-]?\d{4})/i;
+  if (!/\?\s*$/.test(t.trim()) && RENTAL_RE.test(subject) && DWELLING.test(String(subject) + ' ' + t) && offer.test(t)) return { kind: 'rental', seek: false };
+  return null;
+}
 function isBusinessAd(subject, text) {
   const s = String(subject || '') + '\n' + String(text || '');
   if (/\?/.test(String(subject || '')) || SEEK_RE.test(String(subject || ''))) return false;
@@ -226,53 +237,50 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 function areaOf(s) { const t = String(s || ''); for (const a of AREAS) if (new RegExp('\\b' + a.replace(/ /g, '\\s+') + '\\b', 'i').test(t)) return a; return ''; }
 function firstName(n) { const f = String(n || '').trim().split(/\s+/)[0] || ''; return /^[A-Z][a-z]{1,14}$/.test(f) && !/^(?:the|info|office|admin|jerusalem|realty|team|mr|mrs|ms)$/i.test(f) ? f : ''; }
 const LINKS = { rentals: ['chutznik.org/israel/rentals', 'https://chutznik.org/israel/rentals', 'chutznik.org'], jobs: ['chutznik.org/israel/jobs', 'https://chutznik.org/israel/jobs', 'chutznik.org'], site: ['chutznik.org', 'https://chutznik.org', 'www.chutznik.org'] };
-const OPEN = ['Hi{n},', 'Hey{n},', 'Hi there{n},', 'Hello{n},', ''];
+// "Hi! feel free to post your question about … on chutznik.org/…" (Miriam, 28 Oct 2026: no "I saw your…")
+const OPEN = ['Hi{n}!', 'Hi{n}!', 'Hey{n}!', 'Hello{n}!', 'Hi there{n}!'];
 const BODY = {
   rental_seek: [
-    "I saw you're looking for an apartment{a} and thought you'd want to know there are a lot of rentals listed on {L}",
-    "I noticed your post about finding a place{a}, and I keep the rentals from all the groups in one spot at {L}",
-    "saw you're searching for a rental{a}, you might find something on {L} since it's updated all day",
-    "I came across your post looking for an apartment{a} and wanted to share {L}, where I put the rentals for English speakers in one place",
-    "I read that you need a place{a}, so I wanted to point you to {L}, which has new rentals every day",
+    "feel free to post your question about {t} on {L}, a lot of rentals are listed there",
+    "feel free to post what you're looking for on {L}, there are new rentals there every day",
+    "you're welcome to post your question about {t} on {L} too, people check it all day",
+    "feel free to ask about {t} on {L} as well, the rentals from all the groups are there",
   ],
   rental_offer: [
-    "I saw you're renting out an apartment{a}, you can post it free on {L} where a lot of English speakers look for rentals",
-    "I noticed your rental post{a} and wanted to mention that people looking to rent check {L} every day, so it's worth adding there for free",
-    "saw your apartment listing{a}, if you want more eyes on it you can put it on {L} at no cost",
-    "I came across your rental{a} and thought you might want to list it on {L} too, it's free and people search there daily",
-    "I read your apartment post{a} and wanted to let you know that {L} is free to post on and full of people looking to rent",
+    "feel free to post your apartment on {L} too, it's free and lots of people are looking",
+    "you're welcome to list your rental on {L} as well, it's free",
+    "feel free to put your apartment up on {L} too, people search there every day",
+    "feel free to post your rental{a} on {L}, it's free and English speakers look there",
   ],
   job: [
-    "I saw you're hiring and wanted to let you know you can post the job free on {L} where English speakers in Jerusalem look for work",
-    "I noticed your job post, a lot of people looking for work check {L}, so it might be worth adding it there for free",
-    "saw you're looking to hire, you can reach more people by posting it on {L} at no cost",
-    "I came across your job opening and thought you'd want to know about {L}, where English speakers find work in Jerusalem and posting is free",
-    "I read that you're looking for someone, and you're welcome to post the job on {L} for free",
+    "feel free to post your job on {L} too, it's free and lots of people are looking for work",
+    "you're welcome to list the position on {L} as well, it's free",
+    "feel free to put the job up on {L} too, English speakers look for work there",
+    "feel free to post the opening on {L}, it's free",
   ],
   business: [
-    "I saw your post{a}, you can add your business free on {L} so English speakers in Jerusalem can find you",
-    "I noticed your ad and wanted to mention that you can list your business on {L} for free, a lot of people search there for local services",
-    "saw your advertisement{a}, if you'd like more customers you can put it up on {L} at no cost",
-    "I came across your business post and thought you might like to list it on {L} too, it's free and people use it to find local services",
-    "I read your ad{a} and wanted to let you know that {L} lists local businesses for English speakers, and adding yours is free",
+    "feel free to post your business on {L} too, it's free",
+    "you're welcome to list your business on {L} as well, people look for local services there",
+    "feel free to add your ad to {L} too, it's free",
+    "feel free to post your business{a} on {L}, English speakers look for local services there",
   ],
 };
-const CLOSE = { rental_seek: ['.', ', hope it helps.', ', hatzlacha!', ', good luck with the search!', ', I hope you find something soon.'], rental_offer: ['.', ', hatzlacha!', ', all the best.', ', hope it rents quickly.'], job: ['.', ', hatzlacha!', ', all the best.', ', hope you find the right person soon.'], business: ['.', ', hatzlacha!', ', all the best.', ', wishing you lots of success.'] };
+const CLOSE = { rental_seek: ['.', '!', ', hatzlacha!'], rental_offer: ['.', '!', ', hatzlacha!'], job: ['.', '!', ', hatzlacha!'], business: ['.', '!', ', hatzlacha!'] };
 const SUBJ = {
-  rental_seek: ['Your apartment search', 'About the place you are looking for', 'Saw your post', 'Rentals in Jerusalem', 'Re your apartment post'],
-  rental_offer: ['Your rental post', 'About your apartment', 'Saw your listing', 'Re your apartment', 'Your apartment post'],
-  job: ['Your job post', 'About the position', 'Saw your post', 'Re your job opening', 'Hiring'],
-  business: ['Your ad', 'Saw your post', 'About your business', 'Re your post', 'Your business'],
+  rental_seek: ['Your apartment search', 'About the place you are looking for', 'Rentals in Jerusalem', 'Re your apartment post', 'Your rental question'],
+  rental_offer: ['Your rental post', 'About your apartment', 'Your listing', 'Re your apartment', 'Your apartment post'],
+  job: ['Your job post', 'About the position', 'Re your job opening', 'Your opening', 'The job you posted'],
+  business: ['Your ad', 'About your business', 'Re your post', 'Your business', 'Your post'],
 };
 function oneSentence(kind, ctx) {
   const L = LINKS[kind === 'job' ? 'jobs' : kind === 'business' ? 'site' : 'rentals'];
   const name = firstName(ctx && ctx.name), area = areaOf(ctx && ctx.text);
-  const areaWord = kind === 'job' ? '' : area ? (kind === 'business' ? ' in ' + area : ' in ' + area) : '';
+  const topics = area ? ['apartments in ' + area, 'a rental in ' + area, 'a place in ' + area] : ['apartments', 'a rental', 'the apartment you need'];
   for (let tries = 0; tries < 80; tries++) {
-    const op = pick(OPEN).replace('{n}', name && Math.random() < 0.75 ? ' ' + name : '');
-    let body = pick(BODY[kind]).replace('{a}', Math.random() < 0.8 ? areaWord : '').replace('{L}', pick(L));
-    if (!op) body = body.charAt(0).toUpperCase() + body.slice(1);
-    const text = ((op ? op + ' ' : '') + body + pick(CLOSE[kind])).replace(/\s+/g, ' ').replace(/ ,/g, ',').trim();
+    const op = pick(OPEN).replace('{n}', name && Math.random() < 0.6 ? ' ' + name : '');
+    let body = pick(BODY[kind]).replace('{t}', pick(topics)).replace('{a}', area && Math.random() < 0.7 ? ' in ' + area : '').replace('{L}', pick(L));
+    body = body.charAt(0).toUpperCase() + body.slice(1);
+    const text = (op + ' ' + body + pick(CLOSE[kind])).replace(/\s+/g, ' ').trim();
     if (!TEXTS.has(textKey(text))) return { text, subject: pick(SUBJ[kind]) };
   }
   return null;   // every wording was used already: nothing goes rather than the same words again
@@ -417,7 +425,6 @@ async function run(log, opts) {
         const addrs = ['from', 'to', 'cc', 'sender', 'replyTo'].flatMap((k) => (env[k] || []).map((a) => String(a.address || '').toLowerCase()));
         if (!addrs.some((a) => a === GROUP || a.indexOf(GROUP_KEY) > -1)) { SEEN.add(mid); continue; }
       }
-      if (/^\s*re\s*:/i.test(env.subject || '')) { SEEN.add(mid); skipped++; why('a reply in a thread'); continue; }
       toRead.push({ uid: h.uid, mid });
     }
     step('reading ' + toRead.length + ' new message(s)');
@@ -436,11 +443,13 @@ async function run(log, opts) {
       const who = posterAddress(parsed);
       if (!who || ours.has(who)) { skipped++; why('our own address'); continue; }
       const subject = String(parsed.subject || '').replace(/^\s*(?:(?:re|fw|fwd)\s*:\s*)+/i, '').replace(/\[[^\]]*\]\s*/g, '').trim();
-      if (/^\s*re\s*:/i.test(parsed.subject || '')) { skipped++; why('a reply in a thread'); continue; }   // a reply in a thread is not a posting
+      // a reply in a thread (Miriam, 28 Oct 2026: "people ask a question as a first email and then others reply with rentals or business
+      // info … ensure they get emails too"): judged by its own fresh words, the thread's subject only as a hint
+      const isReply = /^\s*re\s*:/i.test(parsed.subject || '');
       // the first lines are the posting; the long quoted thread underneath is never read (Miriam, 14 Oct 2026)
       const text = freshText(cleanText(parsed.text || (parsed.html ? String(parsed.html).replace(/<[^>]+>/g, ' ') : '')));
-      let c = classify(subject, text);
-      if ((!c || c.kind === 'ask') && isBusinessAd(subject, text)) c = { kind: 'business', seek: false };
+      let c = isReply ? classifyReply(subject, text) : classify(subject, text);
+      if ((!c || c.kind === 'ask') && isBusinessAd(isReply ? '' : subject, text)) c = { kind: 'business', seek: false };
       // every posting goes to Chutznik memory, and a question goes to the admin's leads — told before or not (23 Oct 2026)
       const link = (opts && opts.link) || LINK;
       const when = (parsed.date && new Date(parsed.date).getTime()) || Date.now();
@@ -508,7 +517,7 @@ const pendingCount = () => Object.values(PENDING).filter((p) => p && !p.sent).le
 // JG_RESUGGEST {stamp} in the site settings: the suggested-but-unsent notes are forgotten and the
 // last two days are read again under the current rules (once per stamp)
 const RESUG_FILE = path.join(__dirname, '..', 'jg-resuggest.txt');
-const RULES = 6;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
+const RULES = 7;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
 function resuggest(stamp, log) {
   let done = ''; try { done = fs.readFileSync(RESUG_FILE, 'utf8').trim(); } catch (e) {}
   if (!stamp || done === String(stamp)) return false;
@@ -522,7 +531,7 @@ function resuggest(stamp, log) {
   return true;
 }
 
-module.exports = { run, approve, pendingCount, resuggest, askTopic, classify, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
+module.exports = { run, approve, pendingCount, resuggest, askTopic, classify, classifyReply, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
 
 if (require.main === module) {
   // a quick look at the classifier: node scripts/jerusaguide-mail.js
