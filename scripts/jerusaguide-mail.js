@@ -399,10 +399,35 @@ function flyerKind(words) {
   if (EVENT_WORDS.test(t)) return 'event';
   return '';
 }
+// every picture of the flyer email (Miriam, 28 Oct 2026: "still doesn't have the other flier"): attached ones and ones the
+// email shows from a link, the biggest first, a big one shrunk to fit the site's 3 MB instead of being dropped
+async function shrinkPic(buf, mime) {
+  if (buf.length < 2.9e6) return { content: buf, mime };
+  try { const { Jimp } = require('jimp'); const im = await Jimp.read(buf); im.resize({ w: Math.min(im.width, 1600) }); let out = await im.getBuffer('image/jpeg', { quality: 78 }); if (out.length >= 2.9e6) { im.resize({ w: 1100 }); out = await im.getBuffer('image/jpeg', { quality: 70 }); } return out.length < 2.9e6 ? { content: out, mime: 'image/jpeg' } : null; } catch (e) { return null; }
+}
+const mimeOf = (t) => /png/i.test(t) ? 'image/png' : /webp/i.test(t) ? 'image/webp' : /gif/i.test(t) ? 'image/gif' : 'image/jpeg';
+async function flyerPics(full) {
+  const out = [];
+  const att = (full.attachments || []).filter((a) => /^image\/(?:jpeg|jpg|png|webp|gif)$/i.test(String(a.contentType || '')) && a.size >= 15000).sort((a, b) => b.size - a.size);
+  for (const a of att) { if (out.length >= 3) break; const p = await shrinkPic(Buffer.from(a.content), mimeOf(a.contentType)); if (p) out.push(p); }
+  const html = typeof full.html === 'string' ? full.html : '';
+  const seen = new Set();
+  for (const m of html.matchAll(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/gi)) {
+    if (out.length >= 3) break;
+    const u = m[1].replace(/&amp;/g, '&'); if (seen.has(u) || /\/(?:pixel|track|open|spacer|beacon)\b|\.gif(?:\?|$)/i.test(u)) continue; seen.add(u);
+    try {
+      const r = await fetch(u, { signal: AbortSignal.timeout(15000) }); const ct = String(r.headers.get('content-type') || '');
+      if (!r.ok || !/^image\/(?:jpeg|jpg|png|webp)/i.test(ct)) continue;
+      const buf = Buffer.from(await r.arrayBuffer()); if (buf.length < 30000) continue;   // icons, signatures, logos in a footer
+      const p = await shrinkPic(buf, mimeOf(ct)); if (p) out.push(p);
+    } catch (e) {}
+  }
+  return out;
+}
 async function postFlyer(client, uid, mid, subject, text, who, whoName, opts, log, hint) {
   const site = (opts && opts.site) || SITE, key = opts && opts.ingestKey; if (!key) return '';
   let full; try { const msg = await client.fetchOne(uid, { source: true }, { uid: true }); if (!msg || !msg.source || msg.source.length > 12e6) return ''; const { simpleParser } = require('mailparser'); full = await simpleParser(msg.source); } catch (e) { return ''; }
-  const pics = (full.attachments || []).filter((a) => /^image\/(?:jpeg|jpg|png|webp|gif)$/i.test(String(a.contentType || '')) && a.size >= 15000 && a.size <= 2.9e6).slice(0, 3);
+  const pics = await flyerPics(full);
   if (!pics.length) return '';
   // the flyer's own words, read on the droplet for free (the site's AI reads it properly afterwards and replaces them)
   let rough = ''; try { if (global._OS && global._OS.ocrBuffer) rough = await Promise.race([global._OS.ocrBuffer(Buffer.from(pics[0].content)), new Promise((r) => setTimeout(() => r(''), 25000))]) || ''; } catch (e) {}
@@ -413,8 +438,7 @@ async function postFlyer(client, uid, mid, subject, text, who, whoName, opts, lo
   const attachments = [];
   for (let i = 0; i < pics.length; i++) {
     try {
-      const mime = /png/i.test(pics[i].contentType) ? 'image/png' : /webp/i.test(pics[i].contentType) ? 'image/webp' : /gif/i.test(pics[i].contentType) ? 'image/gif' : 'image/jpeg';
-      const r = await fetch(site + '/api/save-attachment', { method: 'POST', headers: H, body: JSON.stringify({ postId: id, index: i, mime, base64: Buffer.from(pics[i].content).toString('base64') }), signal: AbortSignal.timeout(60000) });
+      const r = await fetch(site + '/api/save-attachment', { method: 'POST', headers: H, body: JSON.stringify({ postId: id, index: i, mime: pics[i].mime, base64: pics[i].content.toString('base64') }), signal: AbortSignal.timeout(60000) });
       const j = await r.json().catch(() => ({})); if (r.ok && j && j.url) attachments.push({ url: j.url, name: 'flyer.jpg' });
     } catch (e) {}
   }
@@ -602,6 +626,32 @@ async function run(log, opts) {
         }
         rereadOk = true; log('📬 jerusaguide: reading again the messages since 15:46 UTC (cut short before)');
       } catch (e) {}
+    }
+    // once (28 Oct 2026, Miriam: "still doesn't have the other flier"): the RCCS flyer post gets every picture of its email
+    const REPIC = path.join(__dirname, '..', 'jg-repic-rccs.txt');
+    if (!fs.existsSync(REPIC) && opts && opts.ingestKey) {
+      try {
+        step('adding the missing pictures to the RCCS flyer post');
+        const POST = 'jg_10c50bd09a0bf6'; let f = [];
+        try { f = await client.search({ since: new Date('2026-10-27T00:00:00Z'), from: 'rccsjerusaguide@gmail.com' }, { uid: true }) || []; } catch (e) {}
+        let done = 'not found';
+        for (const u of f) {
+          const msg = await client.fetchOne(u, { source: true, envelope: true }, { uid: true }); if (!msg || !msg.source) continue;
+          const m0 = 'jg_' + String((msg.envelope && msg.envelope.messageId) || u).replace(/[<>\s]/g, '').slice(0, 80);
+          if ('jg_' + require('crypto').createHash('sha1').update(m0).digest('hex').slice(0, 14) !== POST) continue;
+          const { simpleParser } = require('mailparser'); const full = await simpleParser(msg.source);
+          const pics = await flyerPics(full); const site = opts.site || SITE;
+          const H = { 'Content-Type': 'application/json', 'x-ingest-key': opts.ingestKey, 'User-Agent': 'chutznik-bridge' };
+          const atts = [];
+          for (let i = 0; i < pics.length; i++) {
+            try { const r = await fetch(site + '/api/save-attachment', { method: 'POST', headers: H, body: JSON.stringify({ postId: POST, index: i, mime: pics[i].mime, base64: pics[i].content.toString('base64') }), signal: AbortSignal.timeout(60000) }); const j = await r.json().catch(() => ({})); if (r.ok && j && j.url) atts.push({ url: j.url, name: 'flyer.jpg' }); } catch (e) {}
+          }
+          if (atts.length) { const r = await fetch(site + '/api/ingest-whatsapp?file=updates', { method: 'PATCH', headers: H, body: JSON.stringify({ file: 'updates', id: POST, patch: { attachments: atts } }), signal: AbortSignal.timeout(60000) }); done = r.ok ? atts.length + ' picture(s)' : 'patch ' + r.status; }
+          else done = 'no pictures';
+          break;
+        }
+        fs.writeFileSync(REPIC, new Date().toISOString() + ' ' + done); log('📬 jerusaguide: the RCCS flyer post — ' + done);
+      } catch (e) { log('📬 jerusaguide: RCCS pictures: ' + (e && e.message)); }
     }
     uids.sort((a, b) => a - b);
     rep.found = uids.length; step('searching: ' + uids.length + ' group message(s) ' + (hw ? 'after UID ' + hw : 'in the window'));
