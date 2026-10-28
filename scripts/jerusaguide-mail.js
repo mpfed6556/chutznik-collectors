@@ -432,14 +432,15 @@ async function run(log, opts) {
     }
     // once: the messages since 15:46 UTC on 28 Oct were cut short before their group headers and taken for "not from the group";
     // they are read again (nothing was sent from them, and nothing went to memory or the leads)
-    const REREAD = path.join(__dirname, '..', 'jg-reread-1028.txt'); let rereadOk = false;
+    // (a second pass, 28 Oct 2026 19:10: the first was cut off by the 4-minute limit; only what is still unread is fetched now)
+    const REREAD = path.join(__dirname, '..', 'jg-reread-1028b.txt'); let rereadOk = false;
     if (!fs.existsSync(REREAD)) {
       try {
         const cut = Date.parse('2026-10-28T15:46:00Z'); const more = [];
         for (const base of [{ to: GROUP }, { cc: GROUP }, { from: GROUP }, { header: { 'List-ID': GROUP_KEY } }]) { let f = []; try { f = await client.search(Object.assign({ since: new Date('2026-10-28T00:00:00Z') }, base), { uid: true }) || []; } catch (e) {} for (const u of f) if (!more.includes(u)) more.push(u); }
         if (more.length) for await (const m of client.fetch(more.join(','), { uid: true, envelope: true, internalDate: true }, { uid: true })) {
           const t = m.internalDate ? new Date(m.internalDate).getTime() : 0; if (t < cut) continue;
-          SEEN.delete('jg_' + String((m.envelope && m.envelope.messageId) || m.uid).replace(/[<>\s]/g, '').slice(0, 80));
+          if (SEEN.has('jg_' + String((m.envelope && m.envelope.messageId) || m.uid).replace(/[<>\s]/g, '').slice(0, 80))) continue;   // read already
           if (!uids.includes(m.uid)) uids.push(m.uid);
         }
         rereadOk = true; log('📬 jerusaguide: reading again the messages since 15:46 UTC (cut short before)');
@@ -464,8 +465,9 @@ async function run(log, opts) {
       toRead.push({ uid: h.uid, mid, grp });
     }
     step('reading ' + toRead.length + ' new message(s)');
-    let n = 0, complete = true;
+    let n = 0, complete = true; const roundStart = Date.parse(rep.startedAt) || Date.now();
     for (const { uid, mid, grp } of toRead) {
+      if (Date.now() - roundStart > 190 * 1000) { complete = false; log('📬 jerusaguide: out of time this round — the rest next round'); break; }   // the 4-minute limit must never cut a round mid-way
       if (++n % 10 === 0) step('reading message ' + n + ' of ' + toRead.length);
       // the daily cap guards against spamming posters: it counts notes actually SENT. Suggestions to Miriam are
       // not capped (14 Oct 2026: "daily cap of 25 reached" and nothing was suggested for the rest of the day)
@@ -523,7 +525,7 @@ async function run(log, opts) {
     if (leads.length) { const link = (opts && opts.link) || LINK; try { if (link) await link.leadsPush(leads); } catch (e) {} }
     // the high-water mark moves only when every new message was read: a round cut short reads the rest next time
     if (complete && uv && maxUid > hw) { HIGH[uv] = maxUid; saveHigh(); }
-    if (rereadOk) { try { fs.writeFileSync(REREAD, new Date().toISOString()); } catch (e) {} }
+    if (rereadOk && complete) { try { fs.writeFileSync(REREAD, new Date().toISOString()); } catch (e) {} }
     saveSeen(); saveTold();
   } catch (e) { const inner = e && e.errors && e.errors[0] && e.errors[0].message; rep.error = (e && e.message ? e.message.slice(0, 160) : String(e)) + (inner ? ' (' + String(inner).slice(0, 120) + ')' : ''); log('📬 jerusaguide: ' + rep.error); }
   finally { clearTimeout(killer); try { await client.logout(); } catch (e) {} busy = false; }
