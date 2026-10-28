@@ -220,15 +220,48 @@ function neverWrite(addr, name) {
 // a business advertising itself: a service or product on offer, how to order or book, a price (28 Oct 2026)
 const BIZ_HINT = /\b(?:we offer|i offer|offering|now offering|taking orders|place your orders?|order (?:now|today|by)|orders? (?:open|for shabb?(?:os|at))|book (?:now|today|your|a)|call (?:or|\/) (?:whatsapp|text)|whatsapp (?:me|us)|contact (?:me|us) (?:for|to)|prices? (?:start|from)|starting (?:at|from)|discount|\d+ ?% off|on sale|special offer|services?|lessons?|catering|caterer|delivery|deliveries|free (?:consultation|delivery|estimate|trial)|licensed|certified|years of experience|my business|our (?:store|shop|business|company|clinic|studio)|appointments?|now open|grand opening)\b/gi;
 // a reply offers something when its own words do: a rental (or, under a rental question, a price or a phone number), a job, a business
+// what kind of business a message is about, for the note (Miriam, 28 Oct 2026: "all mention the business type in the message")
+const BIZ_TYPES = [[/\bbrunch|breakfast (?:package|tray|box)/i, 'brunch place'], [/\bcater/i, 'caterer'], [/\bbak(?:ery|er|es|ed)\b|\bcakes?\b|\bchallah/i, 'bakery'],
+  [/\bnails?\b|manicure|pedicure/i, 'nail salon'], [/\bsh[ae]it[el]{1,3}\b|\bwigs?\b/i, 'sheitel macher'], [/\bmake-?up\b/i, 'makeup artist'], [/\bhair\s*(?:cut|dresser|stylist|salon)|\bbarber/i, 'hair salon'],
+  [/\bclean(?:er|ing)\b/i, 'cleaning service'], [/\bplumb/i, 'plumber'], [/\belectrician/i, 'electrician'], [/\bhandyman/i, 'handyman'], [/\bmov(?:ers?|ing company)\b/i, 'moving company'],
+  [/\bphotograph/i, 'photographer'], [/\btutor/i, 'tutor'], [/\btherap/i, 'therapist'], [/\bdentist/i, 'dentist'], [/\bpediatrician|\bdoctor\b/i, 'doctor'],
+  [/\bseamstress|\btailor|\balterations?\b/i, 'seamstress'], [/\bflorist|\bflowers\b/i, 'florist'], [/\bdriver\b|\btaxi\b/i, 'driver'], [/\bbabysit/i, 'babysitter'],
+  [/\bgan\b|\bdaycare\b|\bplaygroup\b/i, 'gan'], [/\brestaurant|\bpizza|\bsushi|\bcaf[eé]\b/i, 'restaurant'], [/\bsupper|\bmeals?\b|\bfood\b|\bmenu\b|\btakeout\b/i, 'food business'],
+  [/\bgift (?:baskets?|packages?|boxes?)|\bgift\b/i, 'gift business'], [/\blessons?\b|\bclass(?:es)?\b/i, 'class']];
+function bizTypeOf(...texts) { const t = texts.join(' '); for (const [re, name] of BIZ_TYPES) if (re.test(t)) return name; return ''; }
+// the business a reply names: the first words before a dash, a full stop or a comma, when they read like a name ("Morning Bites", "Bon Bon", "Chalav Udvash")
+function bizNameOf(text) {
+  let first = String(text || '').trim().split(/\s+[-–—]\s+|[.,!:\n(]/)[0].replace(/^(?:try|use|call|i recommend|i'd recommend|recommend|definitely|def|go to|check out|order from)\s+/i, '').trim();
+  first = first.replace(/[^\p{L}\p{N}'&\s]/gu, '').replace(/\s+/g, ' ').trim();
+  const words = first.split(' ').filter(Boolean);
+  if (!words.length || words.length > 4 || first.length > 32 || first.length < 3) return '';
+  if (/^(?:i|we|my|she|he|they|you|it|this|that|the|a|an|so|yes|no|me|following|thanks|thank|good|great|same|also|hi|hey|maybe|not|please)$/i.test(words[0])) return '';
+  if (!words.some((w) => /^[A-Z\u0590-\u05FF]/.test(w))) return '';
+  return first;
+}
+// a reply under a request that names a business: the replier is told it can go on Chutznik (Miriam, 28 Oct 2026: "this thread has
+// some business listings that should have gotten emails")
+const CHAT_REPLY = /^\s*(?:following|me too|same|same here|good luck|hatzlacha|thanks|thank you|bump|interested|\+1|i also|also looking|following!|subscribing|watching|ditto)\b/i;
+function recommendationIn(subject, text) {
+  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  if (t.length < 3 || t.length > 450 || /\?/.test(t) || CHAT_REPLY.test(t)) return null;
+  const asks = /\?|\b(?:looking for|anyone|recommend|need(?:ed)?|want to (?:order|buy|find|get)|where (?:can|to|is)|does anyone|who (?:does|has|knows)|suggestions?|any (?:good|ideas)|iso)\b/i.test(String(subject || ''));
+  if (!asks) return null;
+  const phone = /(?:\+?972[\s-]?|\b0)(?:5\d|[2-9])[\s-]?\d{3}[\s-]?\d{4}\b/.test(t);
+  const name = bizNameOf(t);
+  if (!phone && !name) return null;
+  return { kind: 'recommend', seek: false, name, type: bizTypeOf(subject, t) };
+}
 function classifyReply(subject, text) {
   const t = String(text || '');
-  if (t.replace(/\s+/g, ' ').trim().length < 15) return null;
+  const rec = recommendationIn(subject, t);
+  if (t.replace(/\s+/g, ' ').trim().length < 15) return rec;
   let c = classify('', t);
   if (c && c.kind === 'rental') return c;
   if (c && c.kind === 'job' && !c.seek) return c;
   const offer = /(?:\b\d[\d,.]*\s*(?:nis|₪|shekels?|ils)\b|\b(?:available|for rent|i have|we have|my (?:apartment|flat|unit)|call|whatsapp)\b|(?:\+?972|0)5\d[\s-]?\d{3}[\s-]?\d{4})/i;
   if (!/\?\s*$/.test(t.trim()) && RENTAL_RE.test(subject) && DWELLING.test(String(subject) + ' ' + t) && offer.test(t)) return { kind: 'rental', seek: false };
-  return null;
+  return rec;
 }
 function isBusinessAd(subject, text) {
   const s = String(subject || '') + '\n' + String(text || '');
@@ -278,28 +311,39 @@ const BODY = {
     "feel free to post the opening on {L}, it's free",
   ],
   business: [
-    "you can list your business on {L} for free, people search there for local services",
-    "feel free to add your business{a} to {L}, it costs nothing",
-    "feel free to post your business on {L}, it's free",
-    "you're welcome to list your business on {L}, people look for local services there",
-    "feel free to add your ad to {L}, it's free",
-    "feel free to post your business{a} on {L}, English speakers look for local services there",
+    "you can list {Y} on {L} for free, people search there for local services",
+    "feel free to add {Y}{a} to {L}, it costs nothing",
+    "feel free to post {Y} on {L}, it's free",
+    "you're welcome to list {Y} on {L}, people look for local services there",
+    "feel free to add your ad for {Y} to {L}, it's free",
+    "feel free to post {Y}{a} on {L}, English speakers look for local services there",
+  ],
+  recommend: [
+    "feel free to post {B} on {L}, people look for {T} there every day",
+    "you're welcome to list {B} on {L} for free, it's where English speakers in Jerusalem find {T}",
+    "feel free to add {B} to {L}, it's free and people search there for {T}",
+    "you can put {B} up on {L} at no cost, so more people find it when they need {T}",
+    "feel free to share {B} on {L}, people there are always asking for {T}",
+    "you're welcome to post {B} on {L}, it's free and lots of people look for {T} there",
   ],
 };
-const CLOSE = { rental_seek: ['.', '!', ', hatzlacha!', ', good luck!', ', good luck with the search!'], rental_offer: ['.', '!', ', hatzlacha!', ', all the best!', ', good luck!'], job: ['.', '!', ', hatzlacha!', ', all the best!', ', good luck!'], business: ['.', '!', ', hatzlacha!', ', all the best!', ', wishing you lots of success!'] };
+const CLOSE = { recommend: ['.', '!', ', hatzlacha!', ', thanks for sharing!', ', all the best!'], rental_seek: ['.', '!', ', hatzlacha!', ', good luck!', ', good luck with the search!'], rental_offer: ['.', '!', ', hatzlacha!', ', all the best!', ', good luck!'], job: ['.', '!', ', hatzlacha!', ', all the best!', ', good luck!'], business: ['.', '!', ', hatzlacha!', ', all the best!', ', wishing you lots of success!'] };
 const SUBJ = {
+  recommend: ['About your recommendation', 'Re your reply', 'Your recommendation', 'Re your post', 'The business you mentioned'],
   rental_seek: ['Your apartment search', 'About the place you are looking for', 'Rentals in Jerusalem', 'Re your apartment post', 'Your rental question'],
   rental_offer: ['Your rental post', 'About your apartment', 'Your listing', 'Re your apartment', 'Your apartment post'],
   job: ['Your job post', 'About the position', 'Re your job opening', 'Your opening', 'The job you posted'],
   business: ['Your ad', 'About your business', 'Re your post', 'Your business', 'Your post'],
 };
 function oneSentence(kind, ctx) {
-  const L = LINKS[kind === 'job' ? 'jobs' : kind === 'business' ? 'site' : 'rentals'];
+  const L = LINKS[kind === 'job' ? 'jobs' : (kind === 'business' || kind === 'recommend') ? 'site' : 'rentals'];
   const name = firstName(ctx && ctx.name), area = areaOf(ctx && ctx.text);
   const topics = area ? ['apartments in ' + area, 'a rental in ' + area, 'a place in ' + area] : ['apartments', 'a rental', 'the apartment you need'];
   for (let tries = 0; tries < 80; tries++) {
     const op = pick(OPEN);
-    let body = pick(BODY[kind]).replace('{t}', pick(topics)).replace('{a}', area && Math.random() < 0.7 ? ' in ' + area : '').replace('{L}', pick(L));
+    const T = (ctx && ctx.type) || '', an = (w) => (/^[aeiou]/i.test(w) ? 'an ' : 'a ') + w;
+    const B = (ctx && ctx.bname) || (T ? 'the ' + T : 'the business');
+    let body = pick(BODY[kind]).replace('{Y}', T ? 'your ' + T : 'your business').replace('{B}', B).replace('{T}', T ? an(T) : 'a good local business').replace('{t}', pick(topics)).replace('{a}', area && Math.random() < 0.7 ? ' in ' + area : '').replace('{L}', pick(L));
     body = body.charAt(0).toUpperCase() + body.slice(1);
     const text = (op + ' ' + body + pick(CLOSE[kind])).replace(/\s+/g, ' ').trim();
     if (!TEXTS.has(textKey(text))) return { text, subject: pick(SUBJ[kind]) };
@@ -367,12 +411,13 @@ async function postFlyer(client, uid, mid, subject, text, who, whoName, opts, lo
 }
 
 function noteFor(c, ctx) {
-  const kind = c.kind === 'business' ? 'business' : c.kind === 'job' ? 'job' : c.seek ? 'rental_seek' : 'rental_offer';
-  const one = oneSentence(kind, ctx); if (!one) return null;
+  const kind = c.kind === 'recommend' ? 'recommend' : c.kind === 'business' ? 'business' : c.kind === 'job' ? 'job' : c.seek ? 'rental_seek' : 'rental_offer';
+  const one = oneSentence(kind, Object.assign({}, ctx, { bname: c.name || '', type: c.type || (ctx && ctx.type) || '' })); if (!one) return null;
   const html = '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#222">' + esc(one.text).replace(/((?:https?:\/\/|www\.)?chutznik\.org[^\s,]*)/g, (m) => '<a href="' + (/^http/.test(m) ? m : 'https://' + m.replace(/^www\./, '')) + '">' + m + '</a>') + '</div>';
   return { subject: one.subject, text: one.text, html, kind };
 }
 
+const NOPUSH = new Set();   // messages judged again: no second memory or leads entry
 let busy = false, sentToday = 0, dayKey = '', firstRound = true;
 let LINK = null; try { LINK = require('./site-link.js'); } catch (e) {}
 // a lead is anyone asking the group for something: a question mark up top, "looking for", "anyone know"… or the classifier's ask / seek
@@ -492,6 +537,22 @@ async function run(log, opts) {
     }
     // once: the messages since 15:46 UTC on 28 Oct were cut short before their group headers and taken for "not from the group";
     // they are read again (nothing was sent from them, and nothing went to memory or the leads)
+    // once more (28 Oct 2026 19:30): the replies naming a business were left alone before; judged again now — notes only, since
+    // memory and the leads have them already
+    const REJUDGE = path.join(__dirname, '..', 'jg-rejudge-1028.txt'); let rejudgeOk = false;
+    if (!fs.existsSync(REJUDGE)) {
+      try {
+        const cut = Date.parse('2026-10-28T15:46:00Z'); const more = [];
+        for (const base of [{ to: GROUP }, { cc: GROUP }, { from: GROUP }]) { let f = []; try { f = await client.search(Object.assign({ since: new Date('2026-10-28T00:00:00Z') }, base), { uid: true }) || []; } catch (e) {} for (const u of f) if (!more.includes(u)) more.push(u); }
+        if (more.length) for await (const m of client.fetch(more.join(','), { uid: true, envelope: true, internalDate: true }, { uid: true })) {
+          const t = m.internalDate ? new Date(m.internalDate).getTime() : 0; if (t < cut) continue;
+          const mk = 'jg_' + String((m.envelope && m.envelope.messageId) || m.uid).replace(/[<>\s]/g, '').slice(0, 80);
+          if (SEEN.has(mk)) { SEEN.delete(mk); NOPUSH.add(mk); }
+          if (!uids.includes(m.uid)) uids.push(m.uid);
+        }
+        rejudgeOk = true; log('📬 jerusaguide: judging again the messages since 15:46 UTC under the new reply rules');
+      } catch (e) {}
+    }
     // (a second pass, 28 Oct 2026 19:10: the first was cut off by the 4-minute limit; only what is still unread is fetched now)
     const REREAD = path.join(__dirname, '..', 'jg-reread-1028b.txt'); let rereadOk = false;
     if (!fs.existsSync(REREAD)) {
@@ -553,13 +614,14 @@ async function run(log, opts) {
       const link = (opts && opts.link) || LINK;
       const when = (parsed.date && new Date(parsed.date).getTime()) || Date.now();
       const whoName = String(parsed.from && parsed.from.value && parsed.from.value[0] && parsed.from.value[0].name || '').replace(/\s*via\s+.*$/i, '').trim();
-      try { if (link) link.memoryPush({ src: 'jerusaguide', group: 'jerusaguide', ts: when, author: whoName || who, title: subject, text }); } catch (e) {}
-      if (looksLikeQuestion(subject, text, c)) { leads.push({ id: mid, group: 'jerusaguide', text: (subject + '\n' + text).trim().slice(0, 700), name: whoName, email: who, at: when }); rep.leads = (rep.leads || 0) + 1; }
+      if (!NOPUSH.has(mid)) try { if (link) link.memoryPush({ src: 'jerusaguide', group: 'jerusaguide', ts: when, author: whoName || who, title: subject, text }); } catch (e) {}
+      if (!NOPUSH.has(mid) && looksLikeQuestion(subject, text, c)) { leads.push({ id: mid, group: 'jerusaguide', text: (subject + '\n' + text).trim().slice(0, 700), name: whoName, email: who, at: when }); rep.leads = (rep.leads || 0) + 1; }
       if (notesOff) { skipped++; why('notes are off'); continue; }
       // only people posting or seeking a rental are written to — not jobs, not other questions (Miriam, 23 Oct 2026)
       if (!c) { skipped++; why('not a rental, job or request'); continue; }   // (26 Oct 2026: this check came after the rental one and a null threw, ending the round)
       // a rental post or question, a job on offer, a business advert (Miriam, 28 Oct 2026); not someone looking for work, not other questions
-      if (!(c.kind === 'rental' || (c.kind === 'job' && !c.seek) || c.kind === 'business')) { skipped++; why(c.kind === 'job' ? 'looking for work — no note' : 'not a rental, job post or business advert'); continue; }
+      if (c.kind === 'business' && !c.type) c.type = bizTypeOf(subject, text);
+      if (!(c.kind === 'rental' || (c.kind === 'job' && !c.seek) || c.kind === 'business' || c.kind === 'recommend')) { skipped++; why(c.kind === 'job' ? 'looking for work — no note' : 'not a rental, job post or business advert'); continue; }
       if (neverWrite(who, whoName)) { skipped++; why('the group\'s admins and the never-write list'); continue; }
       if (TOLD[who]) { skipped++; why('already written to'); continue; }                         // never twice — whatever they post
       let note = null;
@@ -590,6 +652,7 @@ async function run(log, opts) {
     if (leads.length) { const link = (opts && opts.link) || LINK; try { if (link) await link.leadsPush(leads); } catch (e) {} }
     // the high-water mark moves only when every new message was read: a round cut short reads the rest next time
     if (complete && uv && maxUid > hw) { HIGH[uv] = maxUid; saveHigh(); }
+    if (rejudgeOk && complete) { try { fs.writeFileSync(REJUDGE, new Date().toISOString()); } catch (e) {} NOPUSH.clear(); }
     if (rereadOk && complete) { try { fs.writeFileSync(REREAD, new Date().toISOString()); } catch (e) {} }
     saveSeen(); saveTold();
   } catch (e) { const inner = e && e.errors && e.errors[0] && e.errors[0].message; rep.error = (e && e.message ? e.message.slice(0, 160) : String(e)) + (inner ? ' (' + String(inner).slice(0, 120) + ')' : ''); log('📬 jerusaguide: ' + rep.error); }
@@ -624,7 +687,7 @@ const pendingCount = () => Object.values(PENDING).filter((p) => p && !p.sent).le
 // JG_RESUGGEST {stamp} in the site settings: the suggested-but-unsent notes are forgotten and the
 // last two days are read again under the current rules (once per stamp)
 const RESUG_FILE = path.join(__dirname, '..', 'jg-resuggest.txt');
-const RULES = 8;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
+const RULES = 9;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
 function resuggest(stamp, log) {
   let done = ''; try { done = fs.readFileSync(RESUG_FILE, 'utf8').trim(); } catch (e) {}
   if (!stamp || done === String(stamp)) return false;
@@ -638,7 +701,7 @@ function resuggest(stamp, log) {
   return true;
 }
 
-module.exports = { run, approve, neverWrite, flyerNote, pendingCount, resuggest, askTopic, classify, classifyReply, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
+module.exports = { run, approve, neverWrite, flyerNote, recommendationIn, bizTypeOf, pendingCount, resuggest, askTopic, classify, classifyReply, noteFor, freshText, isBusinessAd, posterAddress, modeNow, get MODE() { return modeNow(); } };
 
 if (require.main === module) {
   // a quick look at the classifier: node scripts/jerusaguide-mail.js
