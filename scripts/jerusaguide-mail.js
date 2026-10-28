@@ -233,7 +233,11 @@ function bizTypeOf(...texts) { const t = texts.join(' '); for (const [re, name] 
 function bizNameOf(text) {
   let first = String(text || '').trim().split(/\s+[-–—]\s+|[.,!:\n(]/)[0].replace(/^(?:try|use|call|i recommend|i'd recommend|recommend|definitely|def|go to|check out|order from)\s+/i, '').trim();
   first = first.replace(/[^\p{L}\p{N}'&\s]/gu, '').replace(/\s+/g, ' ').trim();
-  const words = first.split(' ').filter(Boolean);
+  let words = first.split(' ').filter(Boolean);
+  // the name ends where the sentence goes on ("Say cheese On Wed" → "Say cheese")
+  const cut = words.findIndex((w, i) => i > 0 && /^(?:on|at|in|for|is|are|was|were|has|have|had|they|she|he|it|from|with|and|but|if|when|who|which|that|this|was|very|so|really|amazing|great|best|sun(?:day)?|mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:rs|rsday)?|fri(?:day)?|motzei|tonight|today|tomorrow)$/i.test(w));
+  if (cut > 0) words = words.slice(0, cut);
+  first = words.join(' ');
   if (!words.length || words.length > 4 || first.length > 32 || first.length < 3) return '';
   if (/^(?:i|we|my|she|he|they|you|it|this|that|the|a|an|so|yes|no|me|following|thanks|thank|good|great|same|also|hi|hey|maybe|not|please)$/i.test(words[0])) return '';
   if (!words.some((w) => /^[A-Z\u0590-\u05FF]/.test(w))) return '';
@@ -540,17 +544,23 @@ async function run(log, opts) {
     // once more (28 Oct 2026 19:30): the replies naming a business were left alone before; judged again now — notes only, since
     // memory and the leads have them already
     const REJUDGE = path.join(__dirname, '..', 'jg-rejudge-1028.txt'); let rejudgeOk = false;
+    const REJ_LIST = path.join(__dirname, '..', 'jg-rejudge-list.json');
     if (!fs.existsSync(REJUDGE)) {
       try {
-        const cut = Date.parse('2026-10-28T15:46:00Z'); const more = [];
-        for (const base of [{ to: GROUP }, { cc: GROUP }, { from: GROUP }]) { let f = []; try { f = await client.search(Object.assign({ since: new Date('2026-10-28T00:00:00Z') }, base), { uid: true }) || []; } catch (e) {} for (const u of f) if (!more.includes(u)) more.push(u); }
-        if (more.length) for await (const m of client.fetch(more.join(','), { uid: true, envelope: true, internalDate: true }, { uid: true })) {
-          const t = m.internalDate ? new Date(m.internalDate).getTime() : 0; if (t < cut) continue;
-          const mk = 'jg_' + String((m.envelope && m.envelope.messageId) || m.uid).replace(/[<>\s]/g, '').slice(0, 80);
-          if (SEEN.has(mk)) { SEEN.delete(mk); NOPUSH.add(mk); }
-          if (!uids.includes(m.uid)) uids.push(m.uid);
+        let list = null; try { list = JSON.parse(fs.readFileSync(REJ_LIST, 'utf8')); } catch (e) {}
+        if (!Array.isArray(list)) {   // made once: the group's messages since 15:46 UTC
+          list = []; const cut = Date.parse('2026-10-28T15:46:00Z'); const more = [];
+          for (const base of [{ to: GROUP }, { cc: GROUP }, { from: GROUP }]) { let f = []; try { f = await client.search(Object.assign({ since: new Date('2026-10-28T00:00:00Z') }, base), { uid: true }) || []; } catch (e) {} for (const u of f) if (!more.includes(u)) more.push(u); }
+          if (more.length) for await (const m of client.fetch(more.join(','), { uid: true, envelope: true, internalDate: true }, { uid: true })) {
+            const t = m.internalDate ? new Date(m.internalDate).getTime() : 0; if (t < cut) continue;
+            list.push({ uid: m.uid, mid: 'jg_' + String((m.envelope && m.envelope.messageId) || m.uid).replace(/[<>\s]/g, '').slice(0, 80) });
+          }
+          fs.writeFileSync(REJ_LIST, JSON.stringify(list)); log('📬 jerusaguide: judging again ' + list.length + ' message(s) since 15:46 UTC under the new reply rules');
         }
-        rejudgeOk = true; log('📬 jerusaguide: judging again the messages since 15:46 UTC under the new reply rules');
+        const todo = list.filter((x) => !x.done).slice(0, 8);   // a few each round, so a round never runs out of time on them
+        for (const x of todo) { SEEN.delete(x.mid); NOPUSH.add(x.mid); if (!uids.includes(x.uid)) uids.push(x.uid); }
+        global._jgRejudge = { list, todo: new Set(todo.map((x) => x.mid)) };
+        rejudgeOk = true;
       } catch (e) {}
     }
     // (a second pass, 28 Oct 2026 19:10: the first was cut off by the 4-minute limit; only what is still unread is fetched now)
@@ -652,7 +662,8 @@ async function run(log, opts) {
     if (leads.length) { const link = (opts && opts.link) || LINK; try { if (link) await link.leadsPush(leads); } catch (e) {} }
     // the high-water mark moves only when every new message was read: a round cut short reads the rest next time
     if (complete && uv && maxUid > hw) { HIGH[uv] = maxUid; saveHigh(); }
-    if (rejudgeOk && complete) { try { fs.writeFileSync(REJUDGE, new Date().toISOString()); } catch (e) {} NOPUSH.clear(); }
+    if (rejudgeOk && global._jgRejudge) { try { const R = global._jgRejudge; for (const x of R.list) if (R.todo.has(x.mid) && SEEN.has(x.mid)) x.done = true;
+      if (R.list.every((x) => x.done)) { fs.writeFileSync(REJUDGE, new Date().toISOString()); log('📬 jerusaguide: judging again — done'); } else fs.writeFileSync(REJ_LIST, JSON.stringify(R.list)); } catch (e) {} NOPUSH.clear(); }
     if (rereadOk && complete) { try { fs.writeFileSync(REREAD, new Date().toISOString()); } catch (e) {} }
     saveSeen(); saveTold();
   } catch (e) { const inner = e && e.errors && e.errors[0] && e.errors[0].message; rep.error = (e && e.message ? e.message.slice(0, 160) : String(e)) + (inner ? ' (' + String(inner).slice(0, 120) + ')' : ''); log('📬 jerusaguide: ' + rep.error); }
@@ -687,7 +698,7 @@ const pendingCount = () => Object.values(PENDING).filter((p) => p && !p.sent).le
 // JG_RESUGGEST {stamp} in the site settings: the suggested-but-unsent notes are forgotten and the
 // last two days are read again under the current rules (once per stamp)
 const RESUG_FILE = path.join(__dirname, '..', 'jg-resuggest.txt');
-const RULES = 9;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
+const RULES = 10;   // bumped with each change of the rules; a stamp ending in -rules-N waits for code at least N
 function resuggest(stamp, log) {
   let done = ''; try { done = fs.readFileSync(RESUG_FILE, 'utf8').trim(); } catch (e) {}
   if (!stamp || done === String(stamp)) return false;
