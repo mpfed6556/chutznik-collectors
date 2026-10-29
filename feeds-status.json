@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-29T14:45:43.040Z",
+  "lastRun": "2026-10-29T19:59:07.442Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-29T14:45:43.038Z",
-      "sent": 2,
+      "lastRun": "2026-10-29T19:59:07.441Z",
+      "sent": 1,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -72,7 +72,7 @@
         "iTravelJerusalem hints": "17 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
         "iTravelJerusalem": "17 cards, nothing new (17 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (3 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (20 upcoming)",
         "Pardes": "ok via https://www.pardes.org.il/events/?ical=1 (10 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
