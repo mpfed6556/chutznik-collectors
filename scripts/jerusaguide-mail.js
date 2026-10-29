@@ -710,7 +710,10 @@ async function run(log, opts) {
       if (!c) { skipped++; why('not a rental, job or request'); continue; }   // (26 Oct 2026: this check came after the rental one and a null threw, ending the round)
       // a rental post or question, a job on offer, a business advert (Miriam, 28 Oct 2026); not someone looking for work, not other questions
       if (c.kind === 'business' && !c.type) c.type = bizTypeOf(subject, text);
-      if (!(c.kind === 'rental' || (c.kind === 'job' && !c.seek) || c.kind === 'business' || c.kind === 'recommend' || c.kind === 'flyer')) { skipped++; why(c.kind === 'job' ? 'looking for work — no note' : 'not a rental, job post or business advert'); continue; }
+      // no note to someone who recommended a business: they are not its owner, and the name came from their subject line
+      // (Miriam, 29 Oct 2026: "What did you do!" — "Feel free to share Magia latachana Chaim Klein…" to someone with no idea)
+      if (c.kind === 'recommend') { skipped++; why('recommendation notes are off'); continue; }
+      if (!(c.kind === 'rental' || (c.kind === 'job' && !c.seek) || c.kind === 'business' || c.kind === 'flyer')) { skipped++; why(c.kind === 'job' ? 'looking for work — no note' : 'not a rental, job post or business advert'); continue; }
       if (neverWrite(who, whoName)) { skipped++; why('the group\'s admins and the never-write list'); continue; }
       if (TOLD[who]) { skipped++; why('already written to'); continue; }                         // never twice — whatever they post
       let note = null;
@@ -725,7 +728,7 @@ async function run(log, opts) {
       if (MODE === 'dry') { log('📬 jerusaguide (dry): would email ' + who + ' — ' + note.subject + ' — ' + (c.seek ? 'asking' : 'posting') + ' · "' + subject.slice(0, 60) + '"'); TOLD[who] = { ts: Date.now(), kind: c.kind, seek: c.seek, dry: true, subject: subject.slice(0, 80) }; sent++; sentToday++; continue; }
       try {
         const via = await sendMail(who, note, log, opts);
-        TOLD[who] = { ts: Date.now(), kind: c.kind, seek: c.seek, via, subject: subject.slice(0, 80) };
+        TOLD[who] = { ts: Date.now(), kind: c.kind, seek: c.seek, via, subject: subject.slice(0, 80) }; saveTold();   // at once: a restart mid-round lost these and two people were written to twice (29 Oct 2026)
         TEXTS.add(textKey(note.text)); saveTexts();
         sent++; sentToday++;
         log('📬 jerusaguide: emailed ' + who + ' — ' + note.subject + ' (' + (c.seek ? 'asking' : 'posting') + ')');
@@ -768,7 +771,7 @@ async function approve(token, opts, log, text) {
   }
   try {
     const via = await sendMail(p.who, note, log, opts);
-    p.sent = Date.now(); p.via = via; TEXTS.add(textKey(note.text)); saveTexts(); if (note !== p.note) p.edited = true; TOLD[p.who] = { ts: Date.now(), kind: p.kind, seek: p.seek, via, approved: true, subject: String(p.subject || '').slice(0, 80) };
+    p.sent = Date.now(); p.via = via; TEXTS.add(textKey(note.text)); saveTexts(); if (note !== p.note) p.edited = true; TOLD[p.who] = { ts: Date.now(), kind: p.kind, seek: p.seek, via, approved: true, subject: String(p.subject || '').slice(0, 80) }; saveTold();
     log('📬 jerusaguide: emailed ' + p.who + ' — ' + p.note.subject + ' (approved by Miriam)');
   } catch (e) { p.tries = (p.tries || 0) + 1; log('📬 jerusaguide: note to ' + p.who + ' failed: ' + (e && e.message)); if (p.tries < 3) { savePending(); return false; } p.sent = Date.now(); p.failed = true; }
   savePending(); saveTold();
