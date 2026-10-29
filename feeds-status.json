@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-28T21:55:44.842Z",
+  "lastRun": "2026-10-29T01:47:38.167Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "no feed, no scannable items, nothing in the news last 48h",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "ok via RSS (6 items)",
+    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-28T21:55:44.840Z",
-      "sent": 3,
+      "lastRun": "2026-10-29T01:47:38.165Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -73,7 +73,7 @@
         "iTravelJerusalem": "17 cards, nothing new (17 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (2 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
-        "Pardes": "ok via https://www.pardes.org.il/events/?ical=1 (10 upcoming)",
+        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · fetch failed",
@@ -232,38 +232,7 @@
             "link": "https://www.nbn.org.il/events/her-plus-one-red-and-black-halloween-singles-night/"
           }
         ],
-        "Pardes": [
-          {
-            "title": "Author Series: Rabbi Avi Weiss",
-            "date": "2026-11-04",
-            "time": "19:45",
-            "link": "https://pardes.org.il/calendar/judaism-a-living-theology-of-love/"
-          },
-          {
-            "title": "Online Beit Midrash: Torah for Our Lives",
-            "date": "2026-11-05",
-            "time": "19:00",
-            "link": "https://pardes.org.il/calendar/torah-for-our-lives/"
-          },
-          {
-            "title": "Alumni book clubs",
-            "date": "2026-11-08",
-            "time": "",
-            "link": "https://pardes.org.il/calendar/alumni-book-clubs/"
-          },
-          {
-            "title": "CRS and Pardes Event: Jewish Wisdom for American Jews in Divided Democracy",
-            "date": "2026-11-08",
-            "time": "18:30",
-            "link": "https://pardes.org.il/calendar/crs-and-pardes-event-jewish-wisdom-for-american-jews-in-divided-democracy/"
-          },
-          {
-            "title": "Author Series: Rabbi Yitz Greenberg",
-            "date": "2026-11-11",
-            "time": "19:45",
-            "link": "https://pardes.org.il/calendar/life-against-death-book-launch/"
-          }
-        ],
+        "Pardes": [],
         "Beit Avi Chai": [
           {
             "title": "Searching for Biblical Jerusalem Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 01, 2026 Sun | ",
