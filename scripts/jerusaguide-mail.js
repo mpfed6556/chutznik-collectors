@@ -464,6 +464,7 @@ async function postFlyer(client, uid, mid, subject, text, who, whoName, opts, lo
 }
 
 function noteFor(c, ctx) {
+  if (c && c.kind === 'recommend') return null;   // never: "Feel free to share Reply all…" (Miriam, 29 Oct 2026: "This is embarrassing")
   const kind = c.kind === 'recommend' ? 'recommend' : c.kind === 'business' ? 'business' : c.kind === 'job' ? 'job' : c.seek ? 'rental_seek' : 'rental_offer';
   const one = oneSentence(kind, Object.assign({}, ctx, { bname: c.name || '', type: c.type || (ctx && ctx.type) || '' })); if (!one) return null;
   const html = '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#222">' + esc(one.text).replace(/((?:https?:\/\/|www\.)?chutznik\.org[^\s,]*)/g, (m) => '<a href="' + (/^http/.test(m) ? m : 'https://' + m.replace(/^www\./, '')) + '">' + m + '</a>') + '</div>';
