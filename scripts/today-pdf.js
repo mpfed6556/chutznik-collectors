@@ -217,11 +217,26 @@ function buildTodayPdf({ site, today, events }) {
   return done;
 }
 
+// the sheet itself comes from the site (29 Oct 2026: Miriam's new design — the calendar page's look, WhatsApp-status size,
+// with each event's picture), so the morning copy and the one she pulls from the calendar page are always the same;
+// the drawing here is only the fallback for when the site cannot make it
 async function makeTodaySheet(site) {
   const { today, events } = await fetchTodayEvents(site);
   if (!events.length) return { today, events, pdf: null };
+  try {
+    const r = await fetch(site + '/api/live-data?type=today-pdf&t=' + Date.now(), { signal: AbortSignal.timeout(90000) });
+    if (r.ok && /pdf/i.test(String(r.headers.get('content-type') || ''))) { const pdf = Buffer.from(await r.arrayBuffer()); if (pdf.length > 5000) return { today, events, pdf, png: toPng(pdf) }; }
+  } catch (e) {}
   const pdf = await buildTodayPdf({ site, today, events });
   return { today, events, pdf };
+}
+// a picture of the sheet for a WhatsApp status (a status takes pictures, not PDFs), when poppler is on the droplet
+function toPng(pdf) {
+  try {
+    const os = require('os'); const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'today-')); const f = path.join(dir, 'sheet.pdf'); fs.writeFileSync(f, pdf);
+    require('child_process').execFileSync('pdftoppm', ['-png', '-r', '72', '-singlefile', f, path.join(dir, 'sheet')], { timeout: 60000, stdio: 'ignore' });
+    const png = fs.readFileSync(path.join(dir, 'sheet.png')); fs.rmSync(dir, { recursive: true, force: true }); return png;
+  } catch (e) { return null; }
 }
 
 module.exports = { makeTodaySheet, buildTodayPdf, fetchTodayEvents, israelToday, hebrewDate };

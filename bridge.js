@@ -2521,7 +2521,7 @@ async function todaySheet() {
     if (SH.quiet('the TODAY sheet')) return;
     const sock = global._sock; if (!sock || !sock.user) return;
     const T = require('./scripts/today-pdf.js');
-    const { events, pdf } = await T.makeTodaySheet(SITE);
+    const { events, pdf, png } = await T.makeTodaySheet(SITE);
     if (events.length < TODAY_MIN_EVENTS) { if (!sent['_checked_' + day]) { log('📅 today: ' + events.length + ' event(s) — under ' + TODAY_MIN_EVENTS + ', no sheet'); sent['_checked_' + day] = true; fs.writeFileSync(TODAY_FILE, JSON.stringify(sent)); } return; }
     if (!pdf) return;
     const me = String(sock.user.id || '').split(':')[0].split('@')[0];
@@ -2536,6 +2536,8 @@ async function todaySheet() {
             caption: '📅 *TODAY in Jerusalem* — ' + nice + '\n' + events.length + ' events, each with a Read-more button to its post. Ready for your status — powered by chutznik.org' }),
           new Promise((_, rej) => setTimeout(() => rej(new Error('send timed out')), 90000)),
         ]);
+        // the picture too, ready to post as a status (29 Oct 2026: the new status-size design)
+        if (png) { try { await sock.sendMessage(jid, { image: png, mimetype: 'image/png', caption: '📅 Today in Jerusalem — for your status' }); } catch (e) {} }
         okTo.push(num);
       } catch (e) { log('📅 today sheet to ' + num + ' failed: ' + (e && e.message)); }
       await new Promise((r) => setTimeout(r, 4000));
