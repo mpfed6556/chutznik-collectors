@@ -146,6 +146,7 @@ function tidyTitle(raw) {
   if (t.length > 80) { const cut = t.search(/\s[–—|]\s|: /); if (cut > 20) { tail = (t.slice(cut + 1).trim() + (tail ? '. ' + tail : '')); t = t.slice(0, cut); } }
   if (t.length > 110) t = t.slice(0, 108).replace(/\s+\S*$/, '') + '…';
   t = t.replace(/[\s:;,–—-]+$/, '').trim();
+  tail = tail.replace(/,\s*\d{1,2}$/, '').replace(/\s*(?:\|\s*)?(?:sun|mon|tue|wed|thu|fri|sat)\s*\|?\s*$/i, '').trim();   // a cut-off date at the end ("November 01, 20") read as another day
   tail = tail.replace(/^(with|featuring|presented by|hosted by)\s+/i, (x) => x.charAt(0).toUpperCase() + x.slice(1)).replace(/^(Prof\.?|Professor|Rabbi|Rav|Dr\.?|Rebbetzin|Mrs\.?|Mr\.?|Ms\.?)\b/, 'With $1').trim();
   return { title: t || String(raw || '').slice(0, 110), tail };
 }
@@ -204,7 +205,9 @@ function parseJsonLd($, base) {
 function parseEventLinks($, base) {
   const out = []; const seen = new Set();
   $('a[href*="/event"], a[href*="/events/"], a[href*="/show"], a[href*="/whats-on"], a[href*="/calendar/"]').each((i, el) => { const $a = $(el); const href = $a.attr('href') || ''; const link = absUrl(href, base); if (!link || link === base || seen.has(link)) return;
-    const block = $a.closest('article, li, .card, .event, .item, div'); const text = strip(block.text() || $a.text()); const title = strip($a.attr('title') || block.find('h1,h2,h3,h4').first().text() || $a.text()).slice(0, 120);
+    const block = $a.closest('article, li, .card, .event, .item, div'); const text = strip(block.text() || $a.text());
+    // a listing's "Today" / "Tomorrow" label is not part of the name (31 Oct 2026: the same lecture came in three times as "Searching…", "Tomorrow Searching…", "Today Searching…")
+    const title = strip($a.attr('title') || block.find('h1,h2,h3,h4').first().text() || $a.text()).replace(/^(?:today|tomorrow|tonight|this week|next week)\s*[:\-–—|]?\s*/i, '').slice(0, 120);
     if (!title || title.length < 8) return;
     // a navigation link, a month grid or a whole page is not an event (Miriam, 6 Oct 2026: "Full concerts list" with a calendar grid)
     if (/^(?:full .*list|see all|view all|all events|more|read more|calendar|events?|tickets?|buy tickets?|register|sign up|learn more|details|next|previous|«.*|.*»)$/i.test(title)) return;
