@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-31T13:39:37.141Z",
+  "lastRun": "2026-10-31T17:59:16.824Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-31T13:39:37.139Z",
+      "lastRun": "2026-10-31T17:59:16.822Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -214,28 +214,28 @@
             "link": "https://israelwriterstudio.com/classes/"
           },
           {
-            "title": "The Art of Mourning, The Art of Hope. Israeli Society after October 7.",
-            "date": "2026-10-07",
-            "time": "",
-            "link": "https://www.nbn.org.il/events/the-art-of-mourning-the-art-of-hope-israeli-society-after-october-7/"
-          },
-          {
-            "title": "Night Seder Program!",
+            "title": "Judean Football, Open Practices!",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/night-seder-program/"
+            "link": "https://www.nbn.org.il/events/judean-football-open-practices/"
           },
           {
-            "title": "Pickleball – All Level Open Play in Jaffa",
+            "title": "Desert Retreat for Miluim Couples",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/pickleball-all-level-open-play-in-jaffa-2/"
+            "link": "https://www.nbn.org.il/events/desert-retreat-for-miluim-couples/"
           },
           {
-            "title": "Nice Jewish Runners Weekly Run",
+            "title": "HERizon Quantum",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/nice-jewish-runners-weekly-run/"
+            "link": "https://www.nbn.org.il/events/herizon-quantum/"
+          },
+          {
+            "title": "Personal Finance Help Desk – with Suzy Kahati",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/personal-finance-help-desk-with-suzy-kahati-12/"
           }
         ],
         "Pardes": [],
