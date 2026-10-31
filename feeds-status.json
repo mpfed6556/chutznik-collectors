@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-30T21:41:06.186Z",
+  "lastRun": "2026-10-31T01:07:30.226Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,10 +61,10 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-10-30T21:41:06.185Z",
-      "sent": 0,
+      "lastRun": "2026-10-31T01:07:30.224Z",
+      "sent": 1,
       "sources": {
-        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
+        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · fetch failed"
+        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -208,16 +208,40 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Come paint JLM pink on October 30!",
-            "date": "2026-10-30",
+            "title": "JUST WRITE!",
+            "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/come-paint-jlm-pink-on-october-30/"
+            "link": "https://israelwriterstudio.com/classes/"
+          },
+          {
+            "title": "The Art of Mourning, The Art of Hope. Israeli Society after October 7.",
+            "date": "2026-10-07",
+            "time": "",
+            "link": "https://www.nbn.org.il/events/the-art-of-mourning-the-art-of-hope-israeli-society-after-october-7/"
+          },
+          {
+            "title": "Night Seder Program!",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/night-seder-program/"
+          },
+          {
+            "title": "Pickleball – All Level Open Play in Jaffa",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/pickleball-all-level-open-play-in-jaffa-2/"
+          },
+          {
+            "title": "Nice Jewish Runners Weekly Run",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/nice-jewish-runners-weekly-run/"
           }
         ],
         "Pardes": [],
         "Beit Avi Chai": [
           {
-            "title": "Searching for Biblical Jerusalem Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 01, 2026 Sun | ",
+            "title": "Tomorrow Searching for Biblical Jerusalem Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 01, 20",
             "date": "2026-11-01",
             "time": "7pm",
             "link": "https://www.bac.org.il/en/events/?eventID=26125"
