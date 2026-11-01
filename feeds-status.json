@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-01T06:46:57.210Z",
+  "lastRun": "2026-11-01T13:57:09.921Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-01T06:46:57.208Z",
+      "lastRun": "2026-11-01T13:57:09.919Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -208,34 +208,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "JUST WRITE!",
-            "date": null,
-            "time": "",
-            "link": "https://israelwriterstudio.com/classes/"
-          },
-          {
-            "title": "Judean Football, Open Practices!",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/judean-football-open-practices/"
-          },
-          {
             "title": "Desert Retreat for Miluim Couples",
             "date": null,
             "time": "",
             "link": "https://www.nbn.org.il/events/desert-retreat-for-miluim-couples/"
           },
           {
-            "title": "HERizon Quantum",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/herizon-quantum/"
-          },
-          {
             "title": "Personal Finance Help Desk – with Suzy Kahati",
             "date": null,
             "time": "",
             "link": "https://www.nbn.org.il/events/personal-finance-help-desk-with-suzy-kahati-12/"
+          },
+          {
+            "title": "Nishmat Online Beit Midrash",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
+          },
+          {
+            "title": "JUST WRITE!",
+            "date": null,
+            "time": "",
+            "link": "https://israelwriterstudio.com/classes/"
+          },
+          {
+            "title": "Journey Through the Chakras (in English), Jaffa Port",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/journey-through-the-chakras-in-english-jaffa-port/"
           }
         ],
         "Pardes": [],
