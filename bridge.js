@@ -1416,6 +1416,7 @@ async function sendComment(target, m) {
         comment: { author: m.sender || 'Member', content: content.slice(0, 2000), timestamp: m.ts || Date.now() } }),
     });
     const j = await r.json().catch(() => ({}));
+    if (r.ok && j.ok && /comments are off/i.test(String(j.skipped || ''))) return 'off';   // the site keeps no WhatsApp replies: the caller decides what else to do with it
     if (r.ok && j.ok) { log('   ↳ comment added to "' + (j.title || post.post) + '": ' + content.slice(0, 50).replace(/\n/g, ' ')); THREADS.set(m.id, { post: post.post, dedupeKey: post.dedupeKey, ts: Date.now() }); saveThreads(); return true; }
     log('   ↳ comment not added (' + r.status + ' ' + (j.error || '') + ')');
     return false;
@@ -1474,6 +1475,11 @@ function isCleaner(text, chatName) {
   return false;
 }
 // which shared thread a message belongs to, if any
+// a girl OFFERING ("I'm available", "my name is …, I have experience", "I'm looking for a babysitting job") against a
+// family ASKING ("Looking for a babysitter tonight", "Anyone available to…", "Looking to hire…"): whichever is said first wins
+const HELP_OFFER_RE = /^\s*(?:hi|hey|hello|shalom)?[!,.\s]*(?:i'?m|im|i am)\s+[a-z]|^\s*available\b|\bi'?m \w+,? (?:a |an )?(?:[\w-]+,? ){0,3}(?:nanny|babysitter|sitter|cleaner|sem(?:inary)? girl|student)\b|\b(?:my name is|i(?:'?m| am) (?:a |an )?(?:\w+ ){0,2}(?:available|sem(?:inary)? girl|nanny|babysitter|cleaner|experienced|free)|i (?:can|do|have (?:lots of |a lot of |\d+ years? (?:of )?)?experience|love kids)|(?:i'?m |i am |im )(?:looking|available) (?:for|to do) (?:a |some |any )?(?:\w+ ){0,2}(?:jobs?|work|hours|babysitting|cleaning|laundry|ironing|organizing)|(?:if|in case) (?:anyone|someone|you) needs?)\b/i;
+const HELP_ASK_RE = /\b(?:looking (?:for|to hire)|anyone|any (?:sem(?:inary)? )?girls?|need(?:ed|s)?|in need of|is there (?:a|any)|who can|someone (?:to|who))\b/i;
+function isHelpOffer(text) { const t = String(text || ''); const o = t.search(HELP_OFFER_RE), a = t.search(HELP_ASK_RE); return o >= 0 && (a < 0 || o <= a); }
 function threadFor(text, chatName) {
   if (isBabysit(text, chatName)) return BABYSIT_ID;
   if (isCleaner(text, chatName)) return CLEAN_ID;
@@ -2723,10 +2729,20 @@ async function flush() {
     log('📦 ' + chatName + ': ' + msgs.length + ' msg(s) → ' + nPosts + ' post(s)' + (nCmts ? ' + ' + nCmts + ' comment(s) on earlier posts' : ''));
     for (const cl of clusters) {
       try {
-        if (cl.kind === 'comment') { await sendComment(cl.target, cl.msg); continue; }
+        if (cl.kind === 'comment') {
+          const r = await sendComment(cl.target, cl.msg);
+          // the site takes no WhatsApp replies (22 Oct 2026); in a jobs group a reply that is itself a job — a bump, a job
+          // quoting an old one, "still looking for a babysitter…" — used to vanish here (1 Nov 2026: "why so few jobs")
+          if (r !== 'off' || !isJobChat(chatName) || !(looksLikeJob(cl.msg.body) || threadFor(cl.msg.body, chatName))) continue;
+          cl = { kind: 'single', msgs: [cl.msg] };
+        }
         const firstMsg = cl.kind === 'combined' ? cl.q : (cl.msgs && cl.msgs[0]);
         const tid = firstMsg ? threadFor(firstMsg.body, chatName) : '';
-        if (tid) { await sendBabysit(cl, chatName, tid); continue; }
+        // in a jobs group, someone ASKING for a babysitter, a cleaner or help with the kids and the laundry is offering a
+        // job: her own post, like any other job (1 Nov 2026). The shared threads keep the girls' "I'm available" offers;
+        // a request sent there was turned away by the site (the cleaners thread takes only offers, and no number = no entry)
+        if (tid && isJobChat(chatName) && firstMsg && !isHelpOffer(firstMsg.body)) { /* a job of its own */ }
+        else if (tid) { await sendBabysit(cl, chatName, tid); continue; }
         const post = await buildPost(cl, chatName);
         const msgIds = post._msgIds || []; delete post._msgIds;
         if (SEEN.has(post.dedupeKey)) {
