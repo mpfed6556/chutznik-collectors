@@ -310,6 +310,43 @@ async function approvalsRun() {
 }
 setInterval(approvalsRun, 60 * 1000);
 setTimeout(approvalsRun, 45 * 1000);
+// ── The same photo again (1 Nov 2026) ────────────────────────────────────────
+// photos.json: sha1 of each picture sent → { id, who, ts, n, words }, kept a week
+const PHOTOS_FILE = path.join(__dirname, 'photos.json');
+let PHOTOS = {}; try { PHOTOS = JSON.parse(fs.readFileSync(PHOTOS_FILE, 'utf8')) || {}; } catch (e) {}
+const photoSha = (b64) => { try { return require('crypto').createHash('sha1').update(Buffer.from(String(b64 || ''), 'base64')).digest('hex'); } catch (e) { return ''; } };
+const postWords = (post) => new Set(stripEmoji(String(post.title || '') + ' ' + String(post.memo || '')).toLowerCase().match(/[a-z0-9\u05d0-\u05ea]{3,}/g) || []);
+const wordsJacc = (a, b) => { if (!a.size || !b.size) return 0; let n = 0; for (const w of a) if (b.has(w)) n++; return n / (a.size + b.size - n); };
+function photoTwin(post, cl) {
+  try {
+    const msgs = cl.kind === 'combined' ? [cl.q, ...cl.answers] : (cl.msgs || []);
+    const who = String((msgs[0] && (msgs[0].phone || msgs[0].jid)) || post._senderPhone || post._senderJid || '').replace(/\D/g, '').slice(-9);
+    if (!who) return null;
+    const words = postWords(post); const now = Date.now();
+    for (const m of msgs) {
+      if (!m.media) continue;
+      const h = photoSha(m.media.base64); const p = h && PHOTOS[h]; if (!p || p.who !== who || (p.n || 1) >= 3) continue;
+      if (now - p.ts <= 2 * 3600e3) return { id: p.id, how: 'add' };
+      if (now - p.ts <= 7 * 864e5 && wordsJacc(words, new Set(p.words || [])) >= 0.3) return { id: p.id, how: 'replace' };
+    }
+  } catch (e) {}
+  return null;
+}
+function rememberPhotos(post, id) {
+  try {
+    const now = Date.now(); for (const h of Object.keys(PHOTOS)) if (now - (PHOTOS[h].ts || 0) > 7 * 864e5) delete PHOTOS[h];
+    const who = String(post._senderPhone || post._senderJid || '').replace(/\D/g, '').slice(-9);
+    for (const h of (post._photoHashes || [])) { const p = PHOTOS[h]; PHOTOS[h] = { id, who: who || (p && p.who) || '', ts: now, n: p && p.id === id ? (p.n || 1) : ((p && p.n) || 0) + 1, words: [...postWords(post)].slice(0, 60) }; }
+    fs.writeFileSync(PHOTOS_FILE, JSON.stringify(PHOTOS));
+  } catch (e) {}
+}
+async function mergeInto(id, post, how) {
+  try {
+    const item = { title: post.title, memo: post.memo, attachments: post.attachments || [], created: post.created, contactPhone: post.contactPhone || '', dedupeKey: post.dedupeKey };
+    const r = await fetch(INGEST_URL + '?file=updates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', action: 'merge', target: { id }, how, item }) });
+    const j = await r.json().catch(() => ({})); return !!(r.ok && j.ok);
+  } catch (e) { return false; }
+}
 async function sendToQueue(item) {
   // Same text already came through another group in the last few hours? Skip.
   if (item._contentKey && isRecentDuplicate(item._contentKey, item.created || Date.now())) {
@@ -318,7 +355,7 @@ async function sendToQueue(item) {
   }
   const itemKind = item._kind || ''; const senderD9 = String(item._senderPhone || '').replace(/\D/g, '').slice(-9);
   const senderPhone = String(item._senderPhone || ''), senderJid = String(item._senderJid || ''), senderName = String(item.senderName || '').trim();
-  delete item._contentKey; delete item._kind; delete item._msgIds; delete item._senderPhone; delete item._senderJid;
+  delete item._contentKey; delete item._kind; delete item._msgIds; delete item._senderPhone; delete item._senderJid; delete item._photoHashes;
   // someone asks about something Chutznik already has — a listed business ("does anyone have
   // Frankels' number?"): her question goes onto that page under her own name, and Miriam gets an
   // email with a one-tap WhatsApp telling the asker it is on Chutznik (Miriam, 7 Oct 2026:
@@ -1568,13 +1605,13 @@ async function buildPost(cluster, chatName) {
   const tag = first.id.replace(/[^a-zA-Z0-9]/g, '').slice(-16);
 
   // images: upload + OCR
-  const attachments = []; const ocrTexts = []; const ocrByMsg = new Map();
+  const attachments = []; const ocrTexts = []; const ocrByMsg = new Map(); const photoHashes = [];
   let idx = 0;
   for (const m of msgs) {
     if (m.docText && !ocrTexts.includes(m.docText)) { ocrTexts.push(m.docText); ocrByMsg.set(m.id, m.docText); }
     if (!m.media) continue;
     const url = await uploadImage(m.media.base64, m.media.mime, tag, idx++);
-    if (url) attachments.push({ url, name: 'photo' + idx + '.jpg' });
+    if (url) { attachments.push({ url, name: 'photo' + idx + '.jpg' }); photoHashes.push(photoSha(m.media.base64)); }
     const t = await ocrImage(m.media.base64);
     // two photos of the same flyer read the same: keep the words once
     const tk = t ? t.toLowerCase().replace(/[^a-z0-9\u0590-\u05ff]+/g, '').slice(0, 60) : '';
@@ -1731,6 +1768,7 @@ async function buildPost(cluster, chatName) {
     lastCommentTime: comments.length ? Math.max(...comments.map(c => c.timestamp)) : undefined,
     _msgIds: msgs.map(m => m.id),
     _senderPhone: String(first.phone || ''),   // who wrote it (the business merge below needs the sender, not a number quoted in a reply)
+    _photoHashes: photoHashes,                  // the pictures' fingerprints: the same photo again from the same sender joins its post
     _senderJid: String(first.jid || ''),
     contactPhone: contacts.phones[0] || '',
     contactWebsite: contacts.urls[0] || '',
@@ -2752,9 +2790,17 @@ async function flush() {
           if (prior && cl.kind === 'combined') for (const a of cl.answers) await sendComment(prior, a);
           log('   ≈ similar post already sent — skipped'); continue;
         }
+        // the same photo from the same sender (1 Nov 2026: a desk and two monitors in one picture, each with its own message):
+        // a minute apart, the second message's words join the first post; the same picture again within the week, with the
+        // same sort of words, replaces that post's text instead of making a second one. A logo on many posts never counts.
+        const twin = photoTwin(post, cl);
+        if (twin) {
+          const r = await mergeInto(twin.id, post, twin.how);
+          if (r) { log('   ⇢ ' + (twin.how === 'add' ? 'joined' : 'replaced') + ' the earlier post with the same picture · "' + String(post.title || '').slice(0, 50) + '"'); SEEN.add(post.dedupeKey); saveSeen(); rememberPhotos(post, twin.id); continue; }
+        }
         const ok = await sendToQueue(post);
         if (ok) {
-          SEEN.add(post.dedupeKey); saveSeen();
+          SEEN.add(post.dedupeKey); saveSeen(); rememberPhotos(post, post.id);
           rememberThread(msgIds, post);
           rememberPosted(post, cl.msgs ? cl.msgs[0] : cl.q, cl);
           if (cl.kind === 'combined') {
