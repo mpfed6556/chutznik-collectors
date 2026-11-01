@@ -317,16 +317,29 @@ let PHOTOS = {}; try { PHOTOS = JSON.parse(fs.readFileSync(PHOTOS_FILE, 'utf8'))
 const photoSha = (b64) => { try { return require('crypto').createHash('sha1').update(Buffer.from(String(b64 || ''), 'base64')).digest('hex'); } catch (e) { return ''; } };
 const postWords = (post) => new Set(stripEmoji(String(post.title || '') + ' ' + String(post.memo || '')).toLowerCase().match(/[a-z0-9\u05d0-\u05ea]{3,}/g) || []);
 const wordsJacc = (a, b) => { if (!a.size || !b.size) return 0; let n = 0; for (const w of a) if (b.has(w)) n++; return n / (a.size + b.size - n); };
-function photoTwin(post, cl) {
+// how a picture looks, in 64 bits (a dHash: each pixel against its right-hand neighbour on a 9×8 grey thumbnail), so the same
+// flyer re-sent through another phone — a different file of the same picture — is still recognised (1 Nov 2026: a wig sale
+// came in twice from two groups)
+async function photoLook(b64) {
+  try { const { Jimp } = require('jimp'); const im = await Jimp.read(Buffer.from(String(b64 || ''), 'base64')); im.greyscale().resize({ w: 9, h: 8 });
+    let bits = ''; for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) bits += im.bitmap.data[(y * 9 + x) * 4] < im.bitmap.data[(y * 9 + x + 1) * 4] ? '1' : '0'; return bits; } catch (e) { return ''; }
+}
+const lookDiff = (a, b) => { if (!a || !b || a.length !== b.length) return 99; let n = 0; for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) n++; return n; };
+async function photoTwin(post, cl) {
   try {
     const msgs = cl.kind === 'combined' ? [cl.q, ...cl.answers] : (cl.msgs || []);
     const who = String((msgs[0] && (msgs[0].phone || msgs[0].jid)) || post._senderPhone || post._senderJid || '').replace(/\D/g, '').slice(-9);
-    if (!who) return null;
     const words = postWords(post); const now = Date.now();
     for (const m of msgs) {
       if (!m.media) continue;
-      const h = photoSha(m.media.base64); const p = h && PHOTOS[h]; if (!p || p.who !== who || (p.n || 1) >= 3) continue;
-      if (now - p.ts <= 2 * 3600e3) return { id: p.id, how: 'add' };
+      // the same flyer as one already up this week, sent on by somebody else: not a second post
+      const look = await photoLook(m.media.base64); post._photoLooks = (post._photoLooks || []).concat([look]);
+      if (look) for (const k of Object.keys(PHOTOS)) { const q = PHOTOS[k]; if (q.look && q.who !== who && now - q.ts <= 7 * 864e5 && lookDiff(q.look, look) <= 2 && !/rental/i.test(String((post.types || []).join(' ')))) return { id: q.id, how: 'skip' }; }
+      if (!who) continue;
+      const h = photoSha(m.media.base64); const p = h && PHOTOS[h]; if (!p || p.who !== who) continue;
+      // the same flyer a store posts every day is a repeat however often it comes (its words overlap); a logo on unrelated
+      // messages is not (the words differ), and a second item in the same picture within two hours joins the first
+      if (now - p.ts <= 2 * 3600e3 && (p.n || 1) < 3) return { id: p.id, how: 'add' };
       if (now - p.ts <= 7 * 864e5 && wordsJacc(words, new Set(p.words || [])) >= 0.3) return { id: p.id, how: 'replace' };
     }
   } catch (e) {}
@@ -336,7 +349,7 @@ function rememberPhotos(post, id) {
   try {
     const now = Date.now(); for (const h of Object.keys(PHOTOS)) if (now - (PHOTOS[h].ts || 0) > 7 * 864e5) delete PHOTOS[h];
     const who = String(post._senderPhone || post._senderJid || '').replace(/\D/g, '').slice(-9);
-    for (const h of (post._photoHashes || [])) { const p = PHOTOS[h]; PHOTOS[h] = { id, who: who || (p && p.who) || '', ts: now, n: p && p.id === id ? (p.n || 1) : ((p && p.n) || 0) + 1, words: [...postWords(post)].slice(0, 60) }; }
+    (post._photoHashes || []).forEach(function (h, i) { const p = PHOTOS[h]; PHOTOS[h] = { id, who: who || (p && p.who) || '', ts: now, n: p && p.id === id ? (p.n || 1) : ((p && p.n) || 0) + 1, words: [...postWords(post)].slice(0, 60), look: (post._photoLooks || [])[i] || (p && p.look) || '' }; });
     fs.writeFileSync(PHOTOS_FILE, JSON.stringify(PHOTOS));
   } catch (e) {}
 }
@@ -355,7 +368,7 @@ async function sendToQueue(item) {
   }
   const itemKind = item._kind || ''; const senderD9 = String(item._senderPhone || '').replace(/\D/g, '').slice(-9);
   const senderPhone = String(item._senderPhone || ''), senderJid = String(item._senderJid || ''), senderName = String(item.senderName || '').trim();
-  delete item._contentKey; delete item._kind; delete item._msgIds; delete item._senderPhone; delete item._senderJid; delete item._photoHashes;
+  delete item._contentKey; delete item._kind; delete item._msgIds; delete item._senderPhone; delete item._senderJid; delete item._photoHashes; delete item._photoLooks;
   // someone asks about something Chutznik already has — a listed business ("does anyone have
   // Frankels' number?"): her question goes onto that page under her own name, and Miriam gets an
   // email with a one-tap WhatsApp telling the asker it is on Chutznik (Miriam, 7 Oct 2026:
@@ -2793,7 +2806,8 @@ async function flush() {
         // the same photo from the same sender (1 Nov 2026: a desk and two monitors in one picture, each with its own message):
         // a minute apart, the second message's words join the first post; the same picture again within the week, with the
         // same sort of words, replaces that post's text instead of making a second one. A logo on many posts never counts.
-        const twin = photoTwin(post, cl);
+        const twin = await photoTwin(post, cl);
+        if (twin && twin.how === 'skip') { log('   ≈ the same flyer is already up this week (' + twin.id + ') — skipped · "' + String(post.title || '').slice(0, 50) + '"'); SEEN.add(post.dedupeKey); saveSeen(); continue; }
         if (twin) {
           const r = await mergeInto(twin.id, post, twin.how);
           if (r) { log('   ⇢ ' + (twin.how === 'add' ? 'joined' : 'replaced') + ' the earlier post with the same picture · "' + String(post.title || '').slice(0, 50) + '"'); SEEN.add(post.dedupeKey); saveSeen(); rememberPhotos(post, twin.id); continue; }
