@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-02T01:53:46.081Z",
+  "lastRun": "2026-11-02T08:41:26.889Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-02T01:53:46.079Z",
-      "sent": 0,
+      "lastRun": "2026-11-02T08:41:26.887Z",
+      "sent": 2,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -71,12 +71,12 @@
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "17 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
         "iTravelJerusalem": "17 cards, nothing new (17 distinct)",
-        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (3 upcoming)",
+        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (4 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (20 upcoming)",
         "Pardes": "no events · fetch failed",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (5 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
-        "Israel Museum": "no events · fetch failed",
+        "Israel Museum": "no events · nothing parsed at https://www.imj.org.il/en",
         "Tower of David": "ok via https://www.tod.org.il/en/events/ (1 upcoming)",
         "Bible Lands Museum": "no events · nothing parsed at https://www.blmj.org/en/",
         "Bloomfield Science Museum": "no events · HTTP 404",
@@ -172,6 +172,12 @@
             "date": "2026-11-17",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/winter-lights-festival/"
+          },
+          {
+            "title": "Adventure Tours with Nachshon Speigelman",
+            "date": "2026-12-01",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/adventure-tours-nachshon/"
           }
         ],
         "OU Israel Center": [
@@ -214,12 +220,6 @@
             "link": "https://www.nbn.org.il/events/desert-retreat-for-miluim-couples/"
           },
           {
-            "title": "Personal Finance Help Desk – with Suzy Kahati",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/personal-finance-help-desk-with-suzy-kahati-12/"
-          },
-          {
             "title": "Nishmat Online Beit Midrash",
             "date": null,
             "time": "",
@@ -232,10 +232,16 @@
             "link": "https://israelwriterstudio.com/classes/"
           },
           {
-            "title": "Journey Through the Chakras (in English), Jaffa Port",
+            "title": "Salsa classes in Spanish",
+            "date": null,
+            "time": "19:30",
+            "link": "https://www.nbn.org.il/events/salsa-classes-in-spanish/"
+          },
+          {
+            "title": "Cafe Oleh | Fall 2026",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/journey-through-the-chakras-in-english-jaffa-port/"
+            "link": "https://www.nbn.org.il/events/cafe-oleh-fall-2026/"
           }
         ],
         "Pardes": [],
