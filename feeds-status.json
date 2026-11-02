@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-02T08:41:26.889Z",
+  "lastRun": "2026-11-02T18:55:51.884Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-02T08:41:26.887Z",
-      "sent": 2,
+      "lastRun": "2026-11-02T18:55:51.882Z",
+      "sent": 6,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -71,7 +71,7 @@
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "17 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
         "iTravelJerusalem": "17 cards, nothing new (17 distinct)",
-        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (4 upcoming)",
+        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (10 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (20 upcoming)",
         "Pardes": "no events · fetch failed",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (5 upcoming)",
@@ -122,6 +122,12 @@
         ],
         "The Kotel": [
           {
+            "title": "The Healing Power of Speech – Parashat Chayei Sarah",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/158040/"
+          },
+          {
             "title": "Bridging Heaven and Earth",
             "date": null,
             "time": "",
@@ -144,12 +150,6 @@
             "date": null,
             "time": "",
             "link": "https://thekotel.org/en/157856/"
-          },
-          {
-            "title": "Paraguay’s Vice President Visits the Western Wall",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157823/"
           }
         ],
         "Jerusalem Municipality": [],
@@ -162,22 +162,28 @@
             "link": "https://www.funinjerusalem.com/events/fall-photoshoots-nili-auerbach/"
           },
           {
+            "title": "Musical Storytime at Beit Avi Chai",
+            "date": "2026-11-03",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/musical-storytime-beit-avi-chai/"
+          },
+          {
             "title": "The Inbal Soup Festival",
             "date": "2026-11-03",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/the-inbal-soup-festival/"
           },
           {
-            "title": "Winter Dreams - Lights Festival at Botanical Gardens",
-            "date": "2026-11-17",
+            "title": "Children's Tours of the National Library of Israel",
+            "date": "2026-11-05",
             "time": "",
-            "link": "https://www.funinjerusalem.com/events/winter-lights-festival/"
+            "link": "https://www.funinjerusalem.com/events/kids-tours-national-library-of-israel/"
           },
           {
-            "title": "Adventure Tours with Nachshon Speigelman",
-            "date": "2026-12-01",
+            "title": "Moonlight Stories - Kislev",
+            "date": "2026-11-10",
             "time": "",
-            "link": "https://www.funinjerusalem.com/events/adventure-tours-nachshon/"
+            "link": "https://www.funinjerusalem.com/events/moonlight-stories-kislev/"
           }
         ],
         "OU Israel Center": [
