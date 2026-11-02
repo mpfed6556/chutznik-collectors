@@ -334,12 +334,17 @@ async function photoTwin(post, cl) {
       if (!m.media) continue;
       // the same flyer as one already up this week, sent on by somebody else: not a second post
       const look = await photoLook(m.media.base64); post._photoLooks = (post._photoLooks || []).concat([look]);
-      if (look) for (const k of Object.keys(PHOTOS)) { const q = PHOTOS[k]; if (q.look && q.who !== who && now - q.ts <= 7 * 864e5 && lookDiff(q.look, look) <= 2 && !/rental/i.test(String((post.types || []).join(' ')))) return { id: q.id, how: 'skip' }; }
+      // (2 Nov 2026, Miriam: "tons of duplicates — they should go to the same thread, each of the sets": the same picture again,
+      // whoever sends it and for two months, belongs to the thread it is already on — a forward is skipped, a sender's own
+      // repeat joins the thread as an update)
+      if (look) for (const k of Object.keys(PHOTOS)) { const q = PHOTOS[k]; if (q.look && q.who !== who && now - q.ts <= 60 * 864e5 && lookDiff(q.look, look) <= 2 && !/rental/i.test(String((post.types || []).join(' ')))) return { id: q.id, how: 'skip' }; }
       if (!who) continue;
       const h = photoSha(m.media.base64); const p = h && PHOTOS[h]; if (!p || p.who !== who) continue;
+      if (/rental/i.test(String((post.types || []).join(' ')))) continue;
       // the same flyer a store posts every day is a repeat however often it comes (its words overlap); a logo on unrelated
       // messages is not (the words differ), and a second item in the same picture within two hours joins the first
       if (now - p.ts <= 2 * 3600e3 && (p.n || 1) < 3) return { id: p.id, how: 'add' };
+      if (now - p.ts <= 60 * 864e5) return { id: p.id, how: wordsJacc(words, new Set(p.words || [])) >= 0.15 ? 'replace' : 'add' };
       // (2 Nov 2026, Miriam: "duplicate" — Yahel's workshop flyer, byte for byte the same, six days apart, "early bird" then
       // "last chance": the words overlapped by 0.27 and it went up twice. The very same picture from the same sender is the
       // same thing being advertised again unless the words are nearly unrelated, as with a logo on different messages.)
@@ -350,7 +355,7 @@ async function photoTwin(post, cl) {
 }
 function rememberPhotos(post, id) {
   try {
-    const now = Date.now(); for (const h of Object.keys(PHOTOS)) if (now - (PHOTOS[h].ts || 0) > 7 * 864e5) delete PHOTOS[h];
+    const now = Date.now(); for (const h of Object.keys(PHOTOS)) if (now - (PHOTOS[h].ts || 0) > 60 * 864e5) delete PHOTOS[h];   // two months (2 Nov 2026)
     const who = String(post._senderPhone || post._senderJid || '').replace(/\D/g, '').slice(-9);
     (post._photoHashes || []).forEach(function (h, i) { const p = PHOTOS[h]; PHOTOS[h] = { id, who: who || (p && p.who) || '', ts: now, n: p && p.id === id ? (p.n || 1) : ((p && p.n) || 0) + 1, words: [...postWords(post)].slice(0, 60), look: (post._photoLooks || [])[i] || (p && p.look) || '' }; });
     fs.writeFileSync(PHOTOS_FILE, JSON.stringify(PHOTOS));
