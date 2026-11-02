@@ -340,7 +340,10 @@ async function photoTwin(post, cl) {
       // the same flyer a store posts every day is a repeat however often it comes (its words overlap); a logo on unrelated
       // messages is not (the words differ), and a second item in the same picture within two hours joins the first
       if (now - p.ts <= 2 * 3600e3 && (p.n || 1) < 3) return { id: p.id, how: 'add' };
-      if (now - p.ts <= 7 * 864e5 && wordsJacc(words, new Set(p.words || [])) >= 0.3) return { id: p.id, how: 'replace' };
+      // (2 Nov 2026, Miriam: "duplicate" — Yahel's workshop flyer, byte for byte the same, six days apart, "early bird" then
+      // "last chance": the words overlapped by 0.27 and it went up twice. The very same picture from the same sender is the
+      // same thing being advertised again unless the words are nearly unrelated, as with a logo on different messages.)
+      if (now - p.ts <= 7 * 864e5 && wordsJacc(words, new Set(p.words || [])) >= 0.15) return { id: p.id, how: 'replace' };
     }
   } catch (e) {}
   return null;
