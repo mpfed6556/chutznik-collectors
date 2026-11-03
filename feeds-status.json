@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-02T18:55:51.884Z",
+  "lastRun": "2026-11-03T01:32:13.677Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-02T18:55:51.882Z",
-      "sent": 6,
+      "lastRun": "2026-11-03T01:32:13.675Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -71,10 +71,10 @@
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "17 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
         "iTravelJerusalem": "17 cards, nothing new (17 distinct)",
-        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (10 upcoming)",
+        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (9 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (20 upcoming)",
         "Pardes": "no events · fetch failed",
-        "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (5 upcoming)",
+        "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (4 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · nothing parsed at https://www.imj.org.il/en",
         "Tower of David": "ok via https://www.tod.org.il/en/events/ (1 upcoming)",
@@ -156,12 +156,6 @@
         "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
-            "title": "Fall Photoshoots with Nili Auerbach",
-            "date": "2026-11-02",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/fall-photoshoots-nili-auerbach/"
-          },
-          {
             "title": "Musical Storytime at Beit Avi Chai",
             "date": "2026-11-03",
             "time": "",
@@ -184,6 +178,12 @@
             "date": "2026-11-10",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/moonlight-stories-kislev/"
+          },
+          {
+            "title": "Winter Dreams - Lights Festival at Botanical Gardens",
+            "date": "2026-11-17",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/winter-lights-festival/"
           }
         ],
         "OU Israel Center": [
@@ -252,12 +252,6 @@
         ],
         "Pardes": [],
         "Beit Avi Chai": [
-          {
-            "title": "Jerusalem, Face to Face: Guided Exhibition Tour November 02, 2026-January 22, 2027",
-            "date": "2026-11-02",
-            "time": "",
-            "link": "https://www.bac.org.il/en/events/?eventID=26003"
-          },
           {
             "title": "From Treasure Hunting to Science Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 08, 2026 Sun | ",
             "date": "2026-11-08",
