@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-03T08:33:27.564Z",
+  "lastRun": "2026-11-03T16:33:23.792Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,23 +61,23 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-03T08:33:27.562Z",
-      "sent": 0,
+      "lastRun": "2026-11-03T16:33:23.791Z",
+      "sent": 3,
       "sources": {
-        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
+        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
-        "iTravelJerusalem hints": "17 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
-        "iTravelJerusalem": "17 cards, nothing new (17 distinct)",
+        "iTravelJerusalem hints": "19 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
+        "iTravelJerusalem": "ok via listing cards (2 new of 19)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (9 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (20 upcoming)",
         "Pardes": "no events · fetch failed",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (4 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · nothing parsed at https://www.imj.org.il/en",
-        "Tower of David": "ok via https://www.tod.org.il/en/events/ (1 upcoming)",
+        "Tower of David": "no events · nothing parsed at https://www.tod.org.il/en/",
         "Bible Lands Museum": "no events · nothing parsed at https://www.blmj.org/en/",
         "Bloomfield Science Museum": "no events · HTTP 404",
         "Jerusalem Botanical Gardens": "no events · nothing parsed at https://www.botanic.co.il/en/",
@@ -153,7 +153,22 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [],
+        "iTravelJerusalem": [
+          {
+            "title": "Ho Ho Ho! Welcome to Santa's House in the Holy Land",
+            "date": "2026-11-05",
+            "time": "17:00",
+            "link": "https://www.itraveljerusalem.com/event/santas-house-experience-the-magic-of-christmas",
+            "raw": "1 dates; first {\"startDate\":\"2026-11-05T15:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"17:00\",\"endTime\":\"20:00\",\"repeats\":\"no\"}"
+          },
+          {
+            "title": "The 13th Piano Festival at the Jerusalem Theatre",
+            "date": "2026-12-22",
+            "time": "17:00",
+            "link": "https://www.itraveljerusalem.com/event/piano-festival-in-jerusalem",
+            "raw": "1 dates; first {\"startDate\":\"2026-12-22T15:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"17:00\",\"endTime\":\"23:45\",\"repeats\":\"no\"}"
+          }
+        ],
         "Fun In Jerusalem": [
           {
             "title": "Musical Storytime at Beit Avi Chai",
@@ -220,34 +235,10 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Desert Retreat for Miluim Couples",
-            "date": null,
+            "title": "TLV Laughs Nov 3rd",
+            "date": "2026-11-03",
             "time": "",
-            "link": "https://www.nbn.org.il/events/desert-retreat-for-miluim-couples/"
-          },
-          {
-            "title": "Nishmat Online Beit Midrash",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
-          },
-          {
-            "title": "JUST WRITE!",
-            "date": null,
-            "time": "",
-            "link": "https://israelwriterstudio.com/classes/"
-          },
-          {
-            "title": "Salsa classes in Spanish",
-            "date": null,
-            "time": "19:30",
-            "link": "https://www.nbn.org.il/events/salsa-classes-in-spanish/"
-          },
-          {
-            "title": "Cafe Oleh | Fall 2026",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/cafe-oleh-fall-2026/"
+            "link": "https://www.nbn.org.il/events/tlv-laughs-nov-3rd/"
           }
         ],
         "Pardes": [],
@@ -279,14 +270,7 @@
         ],
         "Jerusalem Theatre": [],
         "Israel Museum": [],
-        "Tower of David": [
-          {
-            "title": "family activities at the Tower",
-            "date": "2026-10-27",
-            "time": "5:00 pm",
-            "link": "https://www.tod.org.il/en/event/tod-election-day/"
-          }
-        ],
+        "Tower of David": [],
         "Bible Lands Museum": [],
         "Bloomfield Science Museum": [],
         "Jerusalem Botanical Gardens": [],
