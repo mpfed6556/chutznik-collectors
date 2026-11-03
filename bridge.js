@@ -1941,6 +1941,8 @@ let SL = null;
     SL.init({ site: SITE, key: INGEST_KEY, log, sock: () => global._sock, optedOut: (d) => { const k = String(d || '').replace(/\D/g, '').slice(-9); return !!k && OPTOUT.has(k); } });
     setTimeout(() => { try { SL.start(); } catch (e) { log('🔗 site link: ' + (e && e.message)); } }, 20 * 1000);
   } catch (e) { SL = null; log('🔗 site link failed to load: ' + (e && e.message)); }
+  // the droplet watches the site from the outside (3 Nov 2026): if chutznik.org or Vercel stop answering, the owners hear by email
+  try { const wp = path.join(__dirname, 'scripts', 'site-watch.js'); if (fs.existsSync(wp)) require(wp).start(log); } catch (e) { log('🩺 site watch failed to load: ' + (e && e.message)); }
 })();
 // the free picture reader: Tesseract, here on the droplet, reads the words off every public post's picture the site's
 // AI has not reached (Miriam, 25 Oct 2026: "there's got to be a free unlimited tool to convert pic to text")
