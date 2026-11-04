@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-04T02:12:05.208Z",
+  "lastRun": "2026-11-04T09:15:43.608Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-04T02:12:05.206Z",
+      "lastRun": "2026-11-04T09:15:43.607Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -80,7 +80,7 @@
         "Tower of David": "no events · nothing parsed at https://www.tod.org.il/en/",
         "Bible Lands Museum": "no events · nothing parsed at https://www.blmj.org/en/",
         "Bloomfield Science Museum": "no events · HTTP 404",
-        "Jerusalem Botanical Gardens": "no events · HTTP 500",
+        "Jerusalem Botanical Gardens": "no events · nothing parsed at https://www.botanic.co.il/en/",
         "Biblical Zoo": "no events · HTTP 403",
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
@@ -220,34 +220,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Evening Hebrew Club",
+            "title": "High Tea & Torah in the Garden",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/evening-hebrew-club/"
+            "link": "https://www.nbn.org.il/events/high-tea-torah-in-the-garden/"
           },
           {
-            "title": "Achdut Now – Where Conversations Become Connection",
+            "title": "Translation Station TLV",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/achdut-now-where-conversations-become-connection-2/"
+            "link": "https://www.nbn.org.il/events/translation-station-2/"
           },
           {
-            "title": "Practical Investment Workshop for Olim",
+            "title": "Nishmat Online Beit Midrash",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/practical-investment-workshop-for-olim/"
+            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
           },
           {
-            "title": "Jodi’s Famous Cooking Class: Make a Shabbat Meal in One Hour ages 25-42",
+            "title": "Art Wednesday",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/jodis-famous-cooking-class-make-a-shabbat-meal-in-one-hour-ages-25-42/"
+            "link": "https://www.nbn.org.il/events/art-wednesday/"
           },
           {
-            "title": "CONVERSATIONAL HEBREW WORKSHOPS",
+            "title": "Deploy for Founders #6 | Stop Selling. Start Teaching.",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/conversational-hebrew-workshops/"
+            "link": "https://www.nbn.org.il/events/deploy-for-founders-6-stop-selling-start-teaching/"
           }
         ],
         "Pardes": [],
