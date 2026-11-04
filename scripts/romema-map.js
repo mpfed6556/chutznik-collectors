@@ -55,5 +55,5 @@ async function run() {
     LOG('🗺️ romema map: ' + osm.streets.length + ' street segments and ' + osm.places.length + ' named places sent to the site');
   } catch (e) { LOG('🗺️ romema map: could not hand it to the site — ' + (e && e.message)); }
 }
-function start(log) { if (log) LOG = log; setTimeout(() => run().catch((e) => LOG('🗺️ romema map: ' + (e && e.message))), 3 * 60 * 1000); setInterval(() => run().catch(() => {}), 24 * 3600 * 1000); }
+function start(log) { if (log) LOG = log; setTimeout(() => run().catch((e) => LOG('🗺️ romema map: ' + (e && e.message))), 3 * 60 * 1000); setInterval(() => run().catch(() => {}), 30 * 60 * 1000); }   // every half hour until it has been sent once; then once a month (the mark file)
 module.exports = { start, run, fetchOsm, shape };

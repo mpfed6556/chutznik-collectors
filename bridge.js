@@ -2422,7 +2422,7 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/shabbos.js', 'scripts/site-link.js', 'scripts/ocr-sweep.js', 'scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/bizlist.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+const EXTRA_FILES = ['scripts/shabbos.js', 'scripts/site-link.js', 'scripts/site-watch.js', 'scripts/romema-map.js', 'scripts/ocr-sweep.js', 'scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/bizlist.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
