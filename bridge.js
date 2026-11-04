@@ -1942,9 +1942,12 @@ let SL = null;
     setTimeout(() => { try { SL.start(); } catch (e) { log('🔗 site link: ' + (e && e.message)); } }, 20 * 1000);
   } catch (e) { SL = null; log('🔗 site link failed to load: ' + (e && e.message)); }
   // the droplet watches the site from the outside (3 Nov 2026): if chutznik.org or Vercel stop answering, the owners hear by email
-  try { const wp = path.join(__dirname, 'scripts', 'site-watch.js'); if (fs.existsSync(wp)) require(wp).start(log); } catch (e) { log('🩺 site watch failed to load: ' + (e && e.message)); }
-  // the real streets of Romema for the site's Buildings map, fetched here because the site cannot reach OpenStreetMap (4 Nov 2026)
-  try { const mp = path.join(__dirname, 'scripts', 'romema-map.js'); if (fs.existsSync(mp)) require(mp).start(log); } catch (e) { log('🗺️ romema map failed to load: ' + (e && e.message)); }
+  // the site watcher and the Romema map script (4 Nov 2026): they arrive with the self-update a little after a restart, so
+  // each is looked for every two minutes until it is there, then started once
+  const later = (rel, tag) => { let done = false; const tryIt = () => { if (done) return; const fp = path.join(__dirname, 'scripts', rel); if (!fs.existsSync(fp)) return; done = true; try { require(fp).start(log); } catch (e) { log(tag + ' failed to load: ' + (e && e.message)); } }; tryIt(); const iv = setInterval(() => { tryIt(); if (done) clearInterval(iv); }, 2 * 60 * 1000); };
+  later('site-watch.js', '🩺 site watch');
+  // the real streets of Romema for the site's Buildings map, fetched here because the site cannot reach OpenStreetMap
+  later('romema-map.js', '🗺️ romema map');
 })();
 // the free picture reader: Tesseract, here on the droplet, reads the words off every public post's picture the site's
 // AI has not reached (Miriam, 25 Oct 2026: "there's got to be a free unlimited tool to convert pic to text")
