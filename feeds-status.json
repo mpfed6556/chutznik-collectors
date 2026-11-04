@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-03T22:00:08.495Z",
+  "lastRun": "2026-11-04T02:12:05.208Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,17 +61,17 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-03T22:00:08.493Z",
+      "lastRun": "2026-11-04T02:12:05.206Z",
       "sent": 0,
       "sources": {
-        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
+        "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "19 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
         "iTravelJerusalem": "19 cards, nothing new (19 distinct)",
-        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (9 upcoming)",
+        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (7 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (20 upcoming)",
         "Pardes": "no events · fetch failed",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (4 upcoming)",
@@ -80,7 +80,7 @@
         "Tower of David": "no events · nothing parsed at https://www.tod.org.il/en/",
         "Bible Lands Museum": "no events · nothing parsed at https://www.blmj.org/en/",
         "Bloomfield Science Museum": "no events · HTTP 404",
-        "Jerusalem Botanical Gardens": "no events · nothing parsed at https://www.botanic.co.il/en/",
+        "Jerusalem Botanical Gardens": "no events · HTTP 500",
         "Biblical Zoo": "no events · HTTP 403",
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
@@ -156,18 +156,6 @@
         "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
-            "title": "Musical Storytime at Beit Avi Chai",
-            "date": "2026-11-03",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/musical-storytime-beit-avi-chai/"
-          },
-          {
-            "title": "The Inbal Soup Festival",
-            "date": "2026-11-03",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/the-inbal-soup-festival/"
-          },
-          {
             "title": "Children's Tours of the National Library of Israel",
             "date": "2026-11-05",
             "time": "",
@@ -184,6 +172,18 @@
             "date": "2026-11-17",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/winter-lights-festival/"
+          },
+          {
+            "title": "Winter Tours with Debra Tours",
+            "date": "2026-12-01",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/winter-tours-with-debra-tours/"
+          },
+          {
+            "title": "Adventure Tours with Nachshon Speigelman",
+            "date": "2026-12-01",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/adventure-tours-nachshon/"
           }
         ],
         "OU Israel Center": [
@@ -220,10 +220,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "TLV Laughs Nov 3rd",
-            "date": "2026-11-03",
+            "title": "Evening Hebrew Club",
+            "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/tlv-laughs-nov-3rd/"
+            "link": "https://www.nbn.org.il/events/evening-hebrew-club/"
+          },
+          {
+            "title": "Achdut Now – Where Conversations Become Connection",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/achdut-now-where-conversations-become-connection-2/"
+          },
+          {
+            "title": "Practical Investment Workshop for Olim",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/practical-investment-workshop-for-olim/"
+          },
+          {
+            "title": "Jodi’s Famous Cooking Class: Make a Shabbat Meal in One Hour ages 25-42",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/jodis-famous-cooking-class-make-a-shabbat-meal-in-one-hour-ages-25-42/"
+          },
+          {
+            "title": "CONVERSATIONAL HEBREW WORKSHOPS",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/conversational-hebrew-workshops/"
           }
         ],
         "Pardes": [],
