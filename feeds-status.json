@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-04T09:15:43.608Z",
+  "lastRun": "2026-11-04T17:22:38.808Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,14 +20,14 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (4 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
+    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Electric Corporation": "blocked: robots.txt disallows this path",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-04T09:15:43.607Z",
-      "sent": 0,
+      "lastRun": "2026-11-04T17:22:38.807Z",
+      "sent": 3,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -72,9 +72,9 @@
         "iTravelJerusalem hints": "19 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
         "iTravelJerusalem": "19 cards, nothing new (19 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (7 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (20 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
         "Pardes": "no events · fetch failed",
-        "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (4 upcoming)",
+        "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (7 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · nothing parsed at https://www.imj.org.il/en",
         "Tower of David": "no events · nothing parsed at https://www.tod.org.il/en/",
@@ -188,12 +188,6 @@
         ],
         "OU Israel Center": [
           {
-            "title": "Tuesday Learning for Women",
-            "date": "2026-11-03",
-            "time": "09:15",
-            "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-11-03/"
-          },
-          {
             "title": "Chizuk Event for Miluim Wives",
             "date": "2026-11-05",
             "time": "19:30",
@@ -216,27 +210,15 @@
             "date": "2026-11-10",
             "time": "09:15",
             "link": "https://www.ouisrael.org/events/kislev2026/"
+          },
+          {
+            "title": "Rosh Chodesh Kislev BS",
+            "date": "2026-11-11",
+            "time": "09:15",
+            "link": "https://www.ouisrael.org/events/kislev2026bs/"
           }
         ],
         "Nefesh B'Nefesh": [
-          {
-            "title": "High Tea & Torah in the Garden",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/high-tea-torah-in-the-garden/"
-          },
-          {
-            "title": "Translation Station TLV",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/translation-station-2/"
-          },
-          {
-            "title": "Nishmat Online Beit Midrash",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
-          },
           {
             "title": "Art Wednesday",
             "date": null,
@@ -248,6 +230,24 @@
             "date": null,
             "time": "",
             "link": "https://www.nbn.org.il/events/deploy-for-founders-6-stop-selling-start-teaching/"
+          },
+          {
+            "title": "Cafe Oleh | Fall 2026",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/cafe-oleh-fall-2026-2/"
+          },
+          {
+            "title": "After the Vote: Israel’s Political Future and the Global Battle Over Its Image (Tribe Tel Aviv)",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/after-the-vote-israels-political-future-and-the-global-battle-over-its-image-tribe-tel-aviv/"
+          },
+          {
+            "title": "Rabbi Avi Weiss at Pardes",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/rabbi-avi-weiss-at-pardes/"
           }
         ],
         "Pardes": [],
@@ -275,6 +275,12 @@
             "date": "2026-11-29",
             "time": "7pm",
             "link": "https://www.bac.org.il/en/events/?eventID=26129"
+          },
+          {
+            "title": "Shema and Identity Rabbi Dr. Yakov Nagen Series: Prayer and Spirituality in the Mishnah zoom December 13, 2026 Sun | 7pm",
+            "date": "2026-12-13",
+            "time": "7pm",
+            "link": "https://www.bac.org.il/en/events/?eventID=26223"
           }
         ],
         "Jerusalem Theatre": [],
