@@ -1943,6 +1943,8 @@ let SL = null;
   } catch (e) { SL = null; log('🔗 site link failed to load: ' + (e && e.message)); }
   // the droplet watches the site from the outside (3 Nov 2026): if chutznik.org or Vercel stop answering, the owners hear by email
   try { const wp = path.join(__dirname, 'scripts', 'site-watch.js'); if (fs.existsSync(wp)) require(wp).start(log); } catch (e) { log('🩺 site watch failed to load: ' + (e && e.message)); }
+  // the real streets of Romema for the site's Buildings map, fetched here because the site cannot reach OpenStreetMap (4 Nov 2026)
+  try { const mp = path.join(__dirname, 'scripts', 'romema-map.js'); if (fs.existsSync(mp)) require(mp).start(log); } catch (e) { log('🗺️ romema map failed to load: ' + (e && e.message)); }
 })();
 // the free picture reader: Tesseract, here on the droplet, reads the words off every public post's picture the site's
 // AI has not reached (Miriam, 25 Oct 2026: "there's got to be a free unlimited tool to convert pic to text")
