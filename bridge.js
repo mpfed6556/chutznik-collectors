@@ -2431,7 +2431,7 @@ const EXTRA_FILES = ['scripts/shabbos.js', 'scripts/site-link.js', 'scripts/site
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
 // helper modules the bridge holds in memory: a new copy on disk does nothing until a restart
 // (13 Oct 2026: the jerusaguide rules were updated three times on disk and the old ones kept running)
-const LOADED_HELPERS = /shabbos\.js|site-link\.js|ocr-sweep\.js|jerusaguide-mail\.js|rental-match\.js|events-lib\.js|events-sync\.js|milestones(?:-pdf)?\.js|cvc-sync\.js|bizlist\.js|today-pdf\.js|rentals-pdf\.js$/;
+const LOADED_HELPERS = /shabbos\.js|site-link\.js|site-watch\.js|romema-map\.js|ocr-sweep\.js|jerusaguide-mail\.js|rental-match\.js|events-lib\.js|events-sync\.js|milestones(?:-pdf)?\.js|cvc-sync\.js|bizlist\.js|today-pdf\.js|rentals-pdf\.js$/;
 async function syncExtras() {
   let n = 0, reload = [];
   for (const rel of EXTRA_FILES) {

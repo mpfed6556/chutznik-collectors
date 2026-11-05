@@ -594,7 +594,8 @@ async function run(log, opts) {
     // they are read again (nothing was sent from them, and nothing went to memory or the leads)
     // once more (28 Oct 2026 19:30): the replies naming a business were left alone before; judged again now — notes only, since
     // memory and the leads have them already
-    const REJUDGE = path.join(__dirname, '..', 'jg-rejudge-1028b.txt');   // b: again for the event and business flyers (28 Oct 2026 20:00) let rejudgeOk = false;
+    const REJUDGE = path.join(__dirname, '..', 'jg-rejudge-1028b.txt');   // b: again for the event and business flyers (28 Oct 2026 20:00)
+    let rejudgeOk = false;
     const REJ_LIST = path.join(__dirname, '..', 'jg-rejudge-list-b.json');
     if (!fs.existsSync(REJUDGE)) {
       try {
