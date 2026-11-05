@@ -122,12 +122,23 @@ async function fetchTile(r, c) {
   const s = CITY_BBOX[0] + r * GRID, w = CITY_BBOX[1] + c * GRID, n = s + GRID, e = w + GRID, P = 0.0015;
   const bb = [s, w, n, e].map((v) => v.toFixed(4)).join(','), pb = [s - P, w - P, n + P, e + P].map((v) => v.toFixed(4)).join(',');
   const q = '[out:json][timeout:120];(way["building"](' + bb + ');way["name"]["historic"](' + bb + ');way["name"]["tourism"="attraction"](' + bb + '););out geom tags;'
-    + '(node["name"]["shop"](' + pb + ');node["name"]["amenity"](' + pb + ');node["name"]["office"](' + pb + ');node["name"]["craft"](' + pb + ');node["name"]["healthcare"](' + pb + ');node["name"]["tourism"](' + pb + '););out tags;';
+    + '(node["name"]["shop"](' + pb + ');node["name"]["amenity"](' + pb + ');node["name"]["office"](' + pb + ');node["name"]["craft"](' + pb + ');node["name"]["healthcare"](' + pb + ');node["name"]["tourism"](' + pb + ');node["addr:housenumber"](' + pb + '););out;';   // out: the nodes with their places (out tags left them without one)
   const j = await overpass(q); if (!j || !Array.isArray(j.elements)) return null;
-  const ways = [], pois = [];
+  const ways = [], pois = [], addrs = [];
   for (const el of j.elements) {
     if (el.type === 'way' && Array.isArray(el.geometry) && el.geometry.length >= 2) ways.push(el);
-    else if (el.type === 'node' && el.tags && isFinite(el.lat)) pois.push(el);
+    else if (el.type === 'node' && el.tags && isFinite(el.lat)) { if (el.tags.name && !el.tags['addr:housenumber'] || el.tags.name && (el.tags.shop || el.tags.amenity || el.tags.office || el.tags.craft || el.tags.healthcare || el.tags.tourism)) pois.push(el); if (el.tags['addr:housenumber']) addrs.push(el); }
+  }
+  // the house numbers (Miriam, 5 Nov 2026: "add very small numbers to each building with their address number"): in Israel they
+  // are mostly points of their own, inside the building or on its wall at the door — each goes to the building it stands in,
+  // or to the nearest corner within a few metres
+  const polys = ways.filter((el) => el.tags && el.tags.building && el.geometry.length > 3).map((el) => { const pts = el.geometry.map((p) => [p.lat, p.lon]); let y0 = 90, y1 = -90, x0 = 180, x1 = -180; for (const p of pts) { y0 = Math.min(y0, p[0]); y1 = Math.max(y1, p[0]); x0 = Math.min(x0, p[1]); x1 = Math.max(x1, p[1]); } return { id: el.id, pts, box: [y0, x0, y1, x1] }; });
+  const numsOf = new Map();
+  for (const a of addrs) {
+    const t = a.tags; let hit = polys.find((P) => a.lat >= P.box[0] && a.lat <= P.box[2] && a.lon >= P.box[1] && a.lon <= P.box[3] && inPoly(a.lat, a.lon, P.pts));
+    if (!hit) { let bd = 0.00004; for (const P of polys) { if (a.lat < P.box[0] - bd || a.lat > P.box[2] + bd || a.lon < P.box[1] - bd || a.lon > P.box[3] + bd) continue; for (const q of P.pts) { const d = Math.hypot(q[0] - a.lat, q[1] - a.lon); if (d < bd) { bd = d; hit = P; } } } }
+    if (!hit) continue;
+    const L = numsOf.get(hit.id) || []; L.push({ street: String(t['addr:street'] || ''), num: String(t['addr:housenumber']).slice(0, 8) }); numsOf.set(hit.id, L);
   }
   const out = [];
   for (const el of ways) {
@@ -143,7 +154,10 @@ async function fetchTile(r, c) {
     // the shops and offices inside it
     const inside = []; if (t.building && closed) for (const p of pois) { if (NOT_OURS.test((p.tags || {}).religion || '')) continue; if (inPoly(p.lat, p.lon, pts)) inside.push(p); }
     if (inside.length) { if (!kind) kind = 1; if (!name) { name = nameOfTags(inside[0].tags); if (inside.length > 1) name += ' +' + (inside.length - 1); } if (inside.some((p) => landmark(p.tags))) kind = Math.max(kind, 2); }
-    const addr = t['addr:street'] ? String(t['addr:street']).slice(0, 40) + (t['addr:housenumber'] ? '|' + String(t['addr:housenumber']).slice(0, 8) : '') : '';
+    let addr = t['addr:street'] ? String(t['addr:street']).slice(0, 40) + (t['addr:housenumber'] ? '|' + String(t['addr:housenumber']).slice(0, 8) : '') : '';
+    if (!t['addr:housenumber'] && numsOf.has(el.id)) { const L = numsOf.get(el.id); const st = (t['addr:street'] || L[0].street || '').slice(0, 40);
+      const ns = [...new Set(L.filter((x) => !x.street || !st || x.street === st).map((x) => x.num))].sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0));
+      const num = ns.length > 1 ? ns[0] + '–' + ns[ns.length - 1] : (ns[0] || L[0].num); addr = st + '|' + num; }
     const flat = []; let py = 0, px = 0; pts.forEach((p, i) => { const y = Math.round((p[0] - s) * 1e5), x = Math.round((p[1] - w) * 1e5); if (i && y === py && x === px) return; flat.push(i ? y - py : y, i ? x - px : x); py = y; px = x; });
     if (flat.length < (kind === 4 ? 4 : 6)) continue;
     out.push([el.id, kind, name, addr].concat(flat));
@@ -156,6 +170,7 @@ async function runBuildings() {
   try {
     let mark = {}; try { mark = JSON.parse(fs.readFileSync(MARK, 'utf8')); } catch (e) {}
     mark.btiles = mark.btiles || {};
+    if (mark.bver !== 2) { mark.btiles = {}; mark.bver = 2; fs.writeFileSync(MARK, JSON.stringify(mark)); LOG('🏘️ buildings: fetching every square again, now with the house numbers'); }
     // Romema's square first, then outwards
     const r0 = Math.floor((31.7935 - CITY_BBOX[0]) / GRID), c0 = Math.floor((35.2095 - CITY_BBOX[1]) / GRID);
     const order = []; for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) order.push([r, c]);
