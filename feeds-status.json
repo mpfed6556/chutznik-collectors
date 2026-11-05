@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-05T02:57:41.391Z",
+  "lastRun": "2026-11-05T10:43:55.035Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-05T02:57:41.389Z",
+      "lastRun": "2026-11-05T10:43:55.034Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -220,34 +220,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "After the Vote: Israel’s Political Future and the Global Battle Over Its Image (Tribe Tel Aviv)",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/after-the-vote-israels-political-future-and-the-global-battle-over-its-image-tribe-tel-aviv/"
-          },
-          {
-            "title": "Rabbi Avi Weiss at Pardes",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/rabbi-avi-weiss-at-pardes/"
-          },
-          {
-            "title": "Tennis Course Beginner",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/tennis-course-advanced/"
-          },
-          {
-            "title": "Lecture Series",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/lecture-series/"
-          },
-          {
             "title": "Free Conference: Israel, China and the Indo-Pacific. SIGNAL Group’s 10th Annual Conference",
             "date": null,
             "time": "",
             "link": "https://www.nbn.org.il/events/free-conference-israel-china-and-the-indo-pacific-signal-groups-10th-annual-conference/"
+          },
+          {
+            "title": "ESRA Camera Club: Photography at the National Library",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/esra-camera-club-photography-at-the-national-library/"
+          },
+          {
+            "title": "Guided Tour of the Jerusalem Biennale (English)",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/guided-tour-of-the-jerusalem-biennale-english-2/"
+          },
+          {
+            "title": "Chizuk Event for Miluim Wives",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/chizuk-event-for-miluim-wives/"
+          },
+          {
+            "title": "Night Seder Program!",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/night-seder-program/"
           }
         ],
         "Pardes": [],
