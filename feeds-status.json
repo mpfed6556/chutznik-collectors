@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-05T10:43:55.035Z",
+  "lastRun": "2026-11-05T18:21:56.860Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-05T10:43:55.034Z",
+      "lastRun": "2026-11-05T18:21:56.858Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -220,24 +220,6 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Free Conference: Israel, China and the Indo-Pacific. SIGNAL Group’s 10th Annual Conference",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/free-conference-israel-china-and-the-indo-pacific-signal-groups-10th-annual-conference/"
-          },
-          {
-            "title": "ESRA Camera Club: Photography at the National Library",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/esra-camera-club-photography-at-the-national-library/"
-          },
-          {
-            "title": "Guided Tour of the Jerusalem Biennale (English)",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/guided-tour-of-the-jerusalem-biennale-english-2/"
-          },
-          {
             "title": "Chizuk Event for Miluim Wives",
             "date": null,
             "time": "",
@@ -248,6 +230,24 @@
             "date": null,
             "time": "",
             "link": "https://www.nbn.org.il/events/night-seder-program/"
+          },
+          {
+            "title": "Surfing Course",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/surfing-course-6/"
+          },
+          {
+            "title": "Shabbat dinner this week",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/shabbat-dinner-this-wee/"
+          },
+          {
+            "title": "MielureTLV Shabbat Supper Club",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/mieluretlv-shabbat-supper-club/"
           }
         ],
         "Pardes": [],
