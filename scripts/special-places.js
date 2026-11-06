@@ -65,22 +65,31 @@ const centre = (el) => { if (el.type === 'node') return [el.lat, el.lon]; if (el
 const nameOf = (t) => String(t['name:en'] || t.name || t['name:he'] || '').slice(0, 80);
 const addrOf = (t) => t['addr:street'] ? (String(t['addr:street']).slice(0, 40) + (t['addr:housenumber'] ? ' ' + String(t['addr:housenumber']).slice(0, 8) : '')) : '';
 
+const fs = require('fs'), path = require('path');
+const CACHE = path.join(__dirname, '..', 'special-places-cache.json');
+// three smaller questions instead of one big one (6 Nov: the big one timed out); each answer is remembered, so one that fails
+// leaves the others' places on the map
 async function places() {
   const bb = BBOX.join(',');
   const KR = 'מאוחדת|כללית|מכבי|לאומית|[Mm]euhedet|[Mm]euchedet|[Cc]lalit|[Mm]accabi|[Ll]eumit';
-  const q = '[out:json][timeout:200];('
-    + 'nwr["amenity"="hospital"](' + bb + ');'
-    + 'way["railway"="light_rail"](' + bb + ');'
-    + 'nwr["amenity"="bus_station"](' + bb + ');'
-    + 'nwr["name:en"="Western Wall"](' + bb + ');nwr["name"="הכותל המערבי"](' + bb + ');'
-    + 'nwr["amenity"="place_of_worship"]["name"~"בעלז|בויאן|גור|[Bb]elz|[Bb]oyan|[Gg]ur|[Gg]er "](' + bb + ');'
-    + 'nwr["amenity"="place_of_worship"]["name:en"~"[Bb]elz|[Bb]oyan|[Gg]ur|[Gg]er "](' + bb + ');'
-    + 'nwr["name"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|hospital|dentist)$"](' + bb + ');'
-    + 'nwr["name"~"' + KR + '"]["healthcare"](' + bb + ');'
-    + 'nwr["brand"~"' + KR + '"](' + bb + ');nwr["operator"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|dentist)$"](' + bb + ');'
-    + 'nwr["name"~"^קופת חולים"](' + bb + ');'
-    + ');out geom tags;';
-  const j = await overpass(q); if (!j || !Array.isArray(j.elements)) return null;
+  const Q = {
+    city: '[out:json][timeout:180];(nwr["amenity"="hospital"](' + bb + ');way["railway"="light_rail"](' + bb + ');nwr["amenity"="bus_station"](' + bb + ');nwr["name:en"="Western Wall"](' + bb + ');nwr["name"="הכותל המערבי"](' + bb + '););out geom tags;',
+    shuls: '[out:json][timeout:120];(nwr["amenity"="place_of_worship"]["name"~"בעלז|בויאן|גור|[Bb]elz|[Bb]oyan|[Gg]ur|[Gg]er "](' + bb + ');nwr["amenity"="place_of_worship"]["name:en"~"[Bb]elz|[Bb]oyan|[Gg]ur|[Gg]er "](' + bb + '););out geom tags;',
+    kupot: '[out:json][timeout:150];(nwr["name"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|hospital|dentist)$"](' + bb + ');nwr["name"~"' + KR + '"]["healthcare"](' + bb + ');nwr["brand"~"' + KR + '"](' + bb + ');nwr["operator"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|dentist)$"](' + bb + ');nwr["name"~"^קופת חולים"](' + bb + '););out geom tags;',
+  };
+  let cache = {}; try { cache = JSON.parse(fs.readFileSync(CACHE, 'utf8')); } catch (e) {}
+  const missing = [];
+  for (const [g, q] of Object.entries(Q)) {
+    const j = await overpass(q);
+    if (j && Array.isArray(j.elements)) cache[g] = { at: Date.now(), elements: j.elements }; else missing.push(g);
+    await new Promise((ok) => setTimeout(ok, 20 * 1000));
+  }
+  try { fs.writeFileSync(CACHE, JSON.stringify(cache)); } catch (e) {}
+  const elements = [].concat(...Object.keys(Q).map((g) => (cache[g] && cache[g].elements) || []));
+  return { f: elements.length ? parse(elements) : null, missing };
+}
+function parse(elements) {
+  const j = { elements };
   const f = []; const seen = new Set();
   for (const el of j.elements) {
     const t = el.tags || {}; const id = el.type[0] + el.id; if (seen.has(id)) continue;
@@ -113,6 +122,7 @@ async function getImage(url) {
 function abs(base, href) { try { return new URL(href.replace(/&amp;/g, '&'), base).href; } catch (e) { return ''; } }
 async function website(key) {
   const K = KUPOT[key]; const home = await getText(K.site); const out = { home: { url: home.url, status: home.status, error: home.error }, pages: [], logos: [] };
+  await wikipedia(key, out);   // a site that turns the droplet away still has its logo and a few words on Wikipedia
   if (!home.html) return out;
   out.pages.push({ url: home.url, status: home.status, html: home.html });
   const html = home.html; const icons = [];
@@ -127,28 +137,48 @@ async function website(key) {
   for (const m of html.matchAll(/<a\b[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi)) { const u = abs(home.url, m[1]); const txt = m[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     try { if (new URL(u).host !== host) continue; } catch (e) { continue; }
     if (/סניפ|מרפאו?ת|איתור|branch|clinic|find/i.test(txt + ' ' + u) && !links.includes(u)) links.push(u); }
-  for (const u of links.slice(0, 5)) { const p = await getText(u); out.pages.push({ url: p.url, status: p.status, error: p.error, html: p.html }); }
   const sm = await getText(abs(home.url, '/robots.txt')); out.pages.push({ url: sm.url, status: sm.status, html: sm.html.slice(0, 20000) });
+  // the site's own list of its pages (its sitemap, which robots.txt points to): the ones about contact, branches or Jerusalem
+  const maps = [...(sm.html || '').matchAll(/sitemap:\s*(\S+)/gi)].map((m) => m[1]); if (!maps.length) maps.push(abs(home.url, '/sitemap.xml'));
+  const locs = []; const seenM = new Set();
+  for (let i = 0; i < maps.length && i < 6; i++) { const u = maps[i]; if (seenM.has(u)) continue; seenM.add(u); const x = await getText(u); if (!x.html) continue;
+    const L = [...x.html.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)].map((m) => m[1].replace(/&amp;/g, '&'));
+    if (/<sitemapindex/i.test(x.html)) { for (const s2 of L) if (maps.length < 8) maps.push(s2); } else locs.push(...L); }
+  out.sitemapCount = locs.length;
+  const want = (u) => { let d = u; try { d = decodeURIComponent(u); } catch (e) {} return /contact|צור[-_ ]?קשר|branch|snif|סניפ|ירושלים|jerusalem|מוקד|call[-_ ]?cent/i.test(d); };
+  for (const u of [...new Set(links.concat(locs.filter(want)))].slice(0, 6)) { const p = await getText(u); out.pages.push({ url: p.url, status: p.status, error: p.error, html: p.html }); }
   return out;
+}
+// Hebrew Wikipedia's article on the kupah: its picture (the logo) and its opening lines
+const WIKI = { meuhedet: 'מאוחדת קופת חולים', clalit: 'כללית שירותי בריאות', maccabi: 'מכבי שירותי בריאות', leumit: 'לאומית שירותי בריאות' };
+async function wikipedia(key, out) {
+  try {
+    const u = 'https://he.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrlimit=1&gsrsearch=' + encodeURIComponent(WIKI[key]) + '&prop=pageimages|extracts|info&inprop=url&piprop=thumbnail|name&pithumbsize=160&exintro=1&explaintext=1';
+    const r = await fetch(u, { headers: { 'User-Agent': 'chutznik-bridge (info@chutznik.org)' }, signal: AbortSignal.timeout(30000) }); if (!r.ok) return;
+    const j = await r.json(); const pg = j && j.query && j.query.pages && Object.values(j.query.pages)[0]; if (!pg) return;
+    out.pages.push({ url: pg.fullurl || ('wikipedia:' + pg.title), status: 200, html: 'TITLE: ' + pg.title + '\nIMAGE: ' + (pg.pageimage || '') + '\n\n' + String(pg.extract || '').slice(0, 6000) });
+    if (pg.thumbnail && pg.thumbnail.source) { const im = await getImage(pg.thumbnail.source); if (im) out.logos.push(Object.assign({ how: 'wikipedia', sizes: '', file: pg.pageimage || '' }, im)); }
+  } catch (e) {}
 }
 
 async function post(body) {
   const r = await fetch(SITE + '/api/live-data?type=buildings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify(body), signal: AbortSignal.timeout(90000) });
   return r.status;
 }
-let _running = false;
+let _running = false, _retry = null;
 async function run() {
   if (_running) return; _running = true;
   try {
-    const f = await places();
+    const P = await places(); const f = P.f;
     const logos = {}; const web = {};
-    for (const k of Object.keys(KUPOT)) { const w = await website(k); web[k] = w; if (w.logos.length) logos[k] = w.logos.map((l) => ({ how: l.how, sizes: l.sizes, type: l.type, size: l.size, url: l.url, data: l.data })); }
-    if (f) { const st = await post({ special: { at: Date.now(), f, logos } }); const by = {}; for (const x of f) by[x.k] = (by[x.k] || 0) + 1;
-      LOG('⭐ special places: ' + f.length + ' (' + Object.entries(by).map(([k, n]) => k + ' ' + n).join(', ') + '), logos for ' + Object.keys(logos).join(', ') + (st === 200 ? '' : ' — the site answered ' + st)); }
-    else LOG('⭐ special places: OpenStreetMap did not answer — tried again tomorrow');
-    for (const k of Object.keys(web)) { const st = await post({ kupahweb: { key: k, at: Date.now(), home: web[k].home, pages: web[k].pages } }).catch(() => 0);
-      LOG('⭐ ' + k + ' website: ' + (web[k].home.status || web[k].home.error) + ', ' + web[k].pages.length + ' page(s), ' + (web[k].logos.length) + ' logo(s)' + (st === 200 ? '' : ' — the site answered ' + st)); }
+    for (const k of Object.keys(KUPOT)) { const w = await website(k); web[k] = w; if (w.logos.length) logos[k] = w.logos.map((l) => ({ how: l.how, sizes: l.sizes, type: l.type, size: l.size, url: l.url, file: l.file, data: l.data })); }
+    // the logos are handed over even when OpenStreetMap is busy; the site keeps the places it had
+    const st = await post({ special: { at: Date.now(), f: f || [], logos } }); const by = {}; for (const x of f || []) by[x.k] = (by[x.k] || 0) + 1;
+    LOG('⭐ special places: ' + (f ? f.length : 0) + ' (' + Object.entries(by).map(([k, n]) => k + ' ' + n).join(', ') + '), logos for ' + (Object.keys(logos).join(', ') || 'none') + (P.missing.length ? ' — OpenStreetMap did not answer for ' + P.missing.join(', ') + ', asked again in an hour' : '') + (st === 200 ? '' : ' — the site answered ' + st));
+    clearTimeout(_retry); if (P.missing.length) _retry = setTimeout(() => run().catch(() => {}), 60 * 60 * 1000);
+    for (const k of Object.keys(web)) { const st2 = await post({ kupahweb: { key: k, at: Date.now(), home: web[k].home, pages: web[k].pages } }).catch(() => 0);
+      LOG('⭐ ' + k + ' website: ' + (web[k].home.status || web[k].home.error) + ', ' + web[k].pages.length + ' page(s) (' + (web[k].sitemapCount || 0) + ' in its sitemap), ' + web[k].logos.length + ' logo(s)' + (st2 === 200 ? '' : ' — the site answered ' + st2)); }
   } catch (e) { LOG('⭐ special places: ' + (e && e.message)); } finally { _running = false; }
 }
 function start(log) { if (log) LOG = log; setTimeout(() => run().catch(() => {}), 2 * 60 * 1000); setInterval(() => run().catch(() => {}), 24 * 3600 * 1000); }
-module.exports = { start, run, places, website, kupahOf };
+module.exports = { start, run, places, parse, website, kupahOf };
