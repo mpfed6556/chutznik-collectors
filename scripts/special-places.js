@@ -38,7 +38,7 @@ function simplifyRing(pts, tol) {
 }
 const r6 = (v) => +(+v).toFixed(6);
 async function overpass(q) {
-  for (const host of ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']) {
+  for (const host of ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']) {
     try { const r = await fetch(host, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'chutznik-bridge map (info@chutznik.org)' }, body: 'data=' + encodeURIComponent(q), signal: AbortSignal.timeout(240000) });
       if (r.ok) return await r.json(); LOG('⭐ special places: ' + host + ' answered ' + r.status); } catch (e) { LOG('⭐ special places: ' + host + ' — ' + (e && e.message)); }
   }
@@ -73,7 +73,8 @@ async function places() {
   const bb = BBOX.join(',');
   const KR = 'מאוחדת|כללית|מכבי|לאומית|[Mm]euhedet|[Mm]euchedet|[Cc]lalit|[Mm]accabi|[Ll]eumit';
   const Q = {
-    city: '[out:json][timeout:180];(nwr["amenity"="hospital"](' + bb + ');way["railway"="light_rail"](' + bb + ');nwr["amenity"="bus_station"](' + bb + ');nwr["name:en"="Western Wall"](' + bb + ');nwr["name"="הכותל המערבי"](' + bb + '););out geom tags;',
+    rail: '[out:json][timeout:120];(way["railway"="light_rail"](' + bb + ');nwr["amenity"="bus_station"](' + bb + ');nwr["name:en"="Western Wall"](' + bb + ');nwr["name"="הכותל המערבי"](' + bb + '););out geom tags;',
+    hospitals: '[out:json][timeout:150];nwr["amenity"="hospital"](' + bb + ');out geom tags;',
     shuls: '[out:json][timeout:120];(nwr["amenity"="place_of_worship"]["name"~"בעלז|בויאן|גור|[Bb]elz|[Bb]oyan|[Gg]ur|[Gg]er "](' + bb + ');nwr["amenity"="place_of_worship"]["name:en"~"[Bb]elz|[Bb]oyan|[Gg]ur|[Gg]er "](' + bb + '););out geom tags;',
     kupot: '[out:json][timeout:150];(nwr["name"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|hospital|dentist)$"](' + bb + ');nwr["name"~"' + KR + '"]["healthcare"](' + bb + ');nwr["brand"~"' + KR + '"](' + bb + ');nwr["operator"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|dentist)$"](' + bb + ');nwr["name"~"^קופת חולים"](' + bb + '););out geom tags;',
   };
@@ -131,7 +132,7 @@ async function website(key) {
   for (const m of html.matchAll(/<img\b[^>]*>/gi)) { const tag = m[0]; if (!/logo/i.test(tag)) continue; const h = (tag.match(/src=["']([^"']+)["']/i) || [])[1]; if (h) icons.push({ how: 'img logo', url: abs(home.url, h) }); if (icons.length > 14) break; }
   icons.push({ how: 'favicon', url: abs(home.url, '/favicon.ico') });
   const seenI = new Set();
-  for (const ic of icons) { if (!ic.url || seenI.has(ic.url)) continue; seenI.add(ic.url); const im = await getImage(ic.url); if (im) out.logos.push(Object.assign({ how: ic.how, sizes: ic.sizes || '' }, im)); if (out.logos.length >= 5) break; }
+  for (const ic of icons) { if (!ic.url || seenI.has(ic.url)) continue; seenI.add(ic.url); const im = await getImage(ic.url); if (im) out.logos.push(Object.assign({ how: ic.how, sizes: ic.sizes || '' }, im)); if (out.logos.length >= 7) break; }
   // the pages about branches, on the kupah's own site
   const links = []; const host = new URL(home.url).host;
   for (const m of html.matchAll(/<a\b[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi)) { const u = abs(home.url, m[1]); const txt = m[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -151,13 +152,15 @@ async function website(key) {
 }
 // Hebrew Wikipedia's article on the kupah: its picture (the logo) and its opening lines
 const WIKI = { meuhedet: 'מאוחדת קופת חולים', clalit: 'כללית שירותי בריאות', maccabi: 'מכבי שירותי בריאות', leumit: 'לאומית שירותי בריאות' };
-async function wikipedia(key, out) {
+const WIKI_EN = { meuhedet: 'Meuhedet', clalit: 'Clalit Health Services', maccabi: 'Maccabi Healthcare Services', leumit: 'Leumit Health Services' };
+async function wikipedia(key, out) { await wiki1('he', WIKI[key], out); await wiki1('en', WIKI_EN[key], out); }
+async function wiki1(lang, q, out) {
   try {
-    const u = 'https://he.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrlimit=1&gsrsearch=' + encodeURIComponent(WIKI[key]) + '&prop=pageimages|extracts|info&inprop=url&piprop=thumbnail|name&pithumbsize=160&exintro=1&explaintext=1';
+    const u = 'https://' + lang + '.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrlimit=1&gsrsearch=' + encodeURIComponent(q) + '&prop=pageimages|extracts|info&inprop=url&piprop=thumbnail|name&pithumbsize=160&exintro=1&explaintext=1';
     const r = await fetch(u, { headers: { 'User-Agent': 'chutznik-bridge (info@chutznik.org)' }, signal: AbortSignal.timeout(30000) }); if (!r.ok) return;
     const j = await r.json(); const pg = j && j.query && j.query.pages && Object.values(j.query.pages)[0]; if (!pg) return;
     out.pages.push({ url: pg.fullurl || ('wikipedia:' + pg.title), status: 200, html: 'TITLE: ' + pg.title + '\nIMAGE: ' + (pg.pageimage || '') + '\n\n' + String(pg.extract || '').slice(0, 6000) });
-    if (pg.thumbnail && pg.thumbnail.source) { const im = await getImage(pg.thumbnail.source); if (im) out.logos.push(Object.assign({ how: 'wikipedia', sizes: '', file: pg.pageimage || '' }, im)); }
+    if (pg.thumbnail && pg.thumbnail.source) { const im = await getImage(pg.thumbnail.source); if (im) out.logos.push(Object.assign({ how: 'wikipedia', sizes: lang, file: pg.pageimage || '' }, im)); }
   } catch (e) {}
 }
 
