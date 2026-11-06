@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-06T18:33:42.495Z",
+  "lastRun": "2026-11-06T23:32:45.958Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-06T18:33:42.494Z",
+      "lastRun": "2026-11-06T23:32:45.956Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -72,7 +72,7 @@
         "iTravelJerusalem hints": "19 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
         "iTravelJerusalem": "19 cards, nothing new (19 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (6 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (14 upcoming)",
         "Pardes": "no events · fetch failed",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (7 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
@@ -188,12 +188,6 @@
         ],
         "OU Israel Center": [
           {
-            "title": "Chizuk Event for Miluim Wives",
-            "date": "2026-11-05",
-            "time": "19:30",
-            "link": "https://www.ouisrael.org/events/chizukmiluimwives/"
-          },
-          {
             "title": "ATID Rosh Chodesh Kislev Event",
             "date": "2026-11-09",
             "time": "20:00",
@@ -216,6 +210,12 @@
             "date": "2026-11-11",
             "time": "09:15",
             "link": "https://www.ouisrael.org/events/kislev2026bs/"
+          },
+          {
+            "title": "DOROT CHOIR PERFORMANCE",
+            "date": "2026-11-16",
+            "time": "19:30",
+            "link": "https://www.ouisrael.org/events/dorot2026/"
           }
         ],
         "Nefesh B'Nefesh": [
