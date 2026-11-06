@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-05T23:48:54.990Z",
+  "lastRun": "2026-11-06T03:47:50.783Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-05T23:48:54.988Z",
+      "lastRun": "2026-11-06T03:47:50.781Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -71,7 +71,7 @@
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "19 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
         "iTravelJerusalem": "19 cards, nothing new (19 distinct)",
-        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (7 upcoming)",
+        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (6 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
         "Pardes": "no events · fetch failed",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (7 upcoming)",
@@ -85,7 +85,7 @@
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
         "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
-        "Secret Jerusalem": "no events · nothing parsed at https://www.secretjerusalem.com/"
+        "Secret Jerusalem": "no events · HTTP 403"
       },
       "samples": {
         "Reconnect Shiurim": [
@@ -156,12 +156,6 @@
         "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
-            "title": "Children's Tours of the National Library of Israel",
-            "date": "2026-11-05",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/kids-tours-national-library-of-israel/"
-          },
-          {
             "title": "Moonlight Stories - Kislev",
             "date": "2026-11-10",
             "time": "",
@@ -184,6 +178,12 @@
             "date": "2026-12-01",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/adventure-tours-nachshon/"
+          },
+          {
+            "title": "Hannukah Musical for Children based on Leah Goldberg's Poems",
+            "date": "2026-12-07",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/musical-leah-goldberg-beit-avi-chai/"
           }
         ],
         "OU Israel Center": [
