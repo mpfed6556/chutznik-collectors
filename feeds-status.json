@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-08T12:18:45.050Z",
+  "lastRun": "2026-11-08T18:02:47.751Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-08T12:18:45.049Z",
-      "sent": 3,
+      "lastRun": "2026-11-08T18:02:47.750Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -122,6 +122,12 @@
         ],
         "The Kotel": [
           {
+            "title": "The Path to Redemption – Parashat Toldot",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/158099/"
+          },
+          {
             "title": "The Healing Power of Speech – Parashat Chayei Sarah",
             "date": null,
             "time": "",
@@ -144,12 +150,6 @@
             "date": null,
             "time": "",
             "link": "https://thekotel.org/en/157881/"
-          },
-          {
-            "title": "The Main Thing Is the Intention – Parashat Noah",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157856/"
           }
         ],
         "Jerusalem Municipality": [],
@@ -220,34 +220,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Surfing Course",
+            "title": "How Olim Build Israel",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/surfing-course-6/"
+            "link": "https://www.nbn.org.il/events/how-olim-build-israel-2/"
           },
           {
-            "title": "Shabbat dinner this week",
+            "title": "ITALIA MIA! A Multimedia Music Lecture by Harvey Bordowitz",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/shabbat-dinner-this-wee/"
+            "link": "https://www.nbn.org.il/events/italia-mia-a-multimedia-music-lecture-by-harvey-bordowitz/"
           },
           {
-            "title": "MielureTLV Shabbat Supper Club",
+            "title": "Night Seder Program!",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/mieluretlv-shabbat-supper-club/"
+            "link": "https://www.nbn.org.il/events/night-seder-program/"
           },
           {
-            "title": "KALO Live at Mike’s Place — Full Band",
+            "title": "OT Licensing Exam Preparatory Course",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/kalo-live-at-mikes-place-full-band/"
+            "link": "https://www.nbn.org.il/events/ot-licensing-exam-preparatory-course-2/"
           },
           {
-            "title": "Midrash Agnon: The Jewish Genius of S.Y. Agnon",
+            "title": "How to Build Your Emotional Resilience",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/midrash-agnon-the-jewish-genius-of-s-y-agnon/"
+            "link": "https://www.nbn.org.il/events/how-to-build-your-emotional-resilience-2/"
           }
         ],
         "Pardes": [],
