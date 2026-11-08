@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-08T05:45:30.152Z",
+  "lastRun": "2026-11-08T12:18:45.050Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-08T05:45:30.151Z",
-      "sent": 0,
+      "lastRun": "2026-11-08T12:18:45.049Z",
+      "sent": 3,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -168,22 +168,22 @@
             "link": "https://www.funinjerusalem.com/events/winter-lights-festival/"
           },
           {
+            "title": "Hanukkah Family Tour - Biblical Museum of Natural History",
+            "date": "2026-12-01",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/biblical-museum-of-natural-history-tour-hanukkah/"
+          },
+          {
+            "title": "Specialty Hanukkah Tours with Debra Tours",
+            "date": "2026-12-01",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/specialty-chanukah-tours-with-debra-tours/"
+          },
+          {
             "title": "Winter Tours with Debra Tours",
             "date": "2026-12-01",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/winter-tours-with-debra-tours/"
-          },
-          {
-            "title": "Adventure Tours with Nachshon Speigelman",
-            "date": "2026-12-01",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/adventure-tours-nachshon/"
-          },
-          {
-            "title": "Hannukah Musical for Children based on Leah Goldberg's Poems",
-            "date": "2026-12-07",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/musical-leah-goldberg-beit-avi-chai/"
           }
         ],
         "OU Israel Center": [
