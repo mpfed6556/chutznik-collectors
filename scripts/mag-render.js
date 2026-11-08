@@ -140,5 +140,14 @@ async function run() {
     }
   } catch (e) { LOG('📰 magazine: ' + (e && e.message)); } finally { _running = false; }
 }
-function start(log) { if (log) LOG = log; setTimeout(() => run().catch(() => {}), 90 * 1000); setInterval(() => run().catch(() => {}), 2 * 60 * 1000); }
+// the drawing library is a native one (@napi-rs/canvas): if the self-update's npm install did not bring it, it is fetched here
+function ready() {
+  try { require('@napi-rs/canvas'); require('pdf-parse'); require('jimp'); LOG('📰 magazine: ready to draw issues (pdf-parse, canvas, jimp)'); return true; }
+  catch (e) {
+    LOG('📰 magazine: ' + (e && e.message || '').slice(0, 80) + ' — npm install');
+    try { require('child_process').execSync('npm install --omit=dev --no-audit --no-fund', { cwd: path.join(__dirname, '..'), stdio: 'ignore', timeout: 300000 }); require('@napi-rs/canvas'); LOG('📰 magazine: ready to draw issues (installed now)'); return true; }
+    catch (e2) { LOG('📰 magazine: cannot draw issues — ' + (e2 && e2.message || '').slice(0, 120)); return false; }
+  }
+}
+function start(log) { if (log) LOG = log; setTimeout(() => { if (ready()) run().catch(() => {}); }, 90 * 1000); setInterval(() => run().catch(() => {}), 2 * 60 * 1000); }
 module.exports = { start, run, segment, renderIssue };
