@@ -1196,6 +1196,7 @@ async function intake(sock, m, chatName) {
   if (rawId && m.pushName) { NAMES.set(rawId, m.pushName); }
   const ctx = ctxOf(m) || {};
   const quotedId = ctx.stanzaId || '';
+  const quotedBy = String(ctx.participant || '');   // who wrote the message being replied to
   // the words of the message being replied to (WhatsApp carries them inside the reply), so an
   // answer still says what it answers even when the question itself never reached us (Miriam, 6 Oct 2026)
   let quotedText = '';
@@ -1216,6 +1217,9 @@ async function intake(sock, m, chatName) {
   // chatter, not an answer (Miriam, 13 Oct 2026: it became a public post)
   const personalNote = PERSONAL_RE.test(body) && (!link || VIDEO_LINK_RE.test(link) || VIDEO_LINK_RE.test(body)) && !cards.length;
   if ((cards.length || link) && (kind === 'chatter' || kind === 'info') && !inviteOnly && !personalNote) kind = 'answer';
+  // "He is part of Meuhedet… here are his locations": words about someone named earlier in the chat are an answer, not a
+  // post of their own (Miriam, 9 Nov 2026: "it's missing the name of the dr")
+  if ((kind === 'info' || kind === 'chatter') && /^(?:he|she|they|his|her|their|here (?:are|is) (?:his|her|their))\b/i.test(body.trim()) && (quotedId || body.length > 40) && !cards.length) kind = 'answer';
   if (personalNote && (kind === 'answer' || kind === 'info')) kind = 'chatter';
   // in a rental group, a housing message is a Rental even without "for rent"
   if (kind !== 'rental' && kind !== 'chatter' && kind !== 'question' && isRentalChat(chatName) && RENT_STRONG.test(body) && body.length > 25) kind = 'rental';
@@ -1224,7 +1228,7 @@ async function intake(sock, m, chatName) {
   if (kind !== 'rental' && kind !== 'chatter' && HOUSING_RE.test(body) && RENT_WORD_RE.test(body) && body.length > 20 && !GROUP_NOTICE_RE.test(body)) kind = 'rental';
   if (kind === 'rental' && isRaffle(body)) kind = 'info';
   return { id: key.id || String(Date.now()+Math.random()), ts, chat: chatName, sender, phone, body, media, docText, kind,
-           quotedId, quotedText, mentions, cards, link,
+           quotedId, quotedText, quotedBy, mentions, cards, link,
            // where a private "your post is up" note can be sent (real number first, privacy id as fallback)
            jid: pnJid || participant, fromMe: !!key.fromMe };
 }
@@ -1246,6 +1250,47 @@ function rememberThread(msgIds, post) {
 // within a few hours still belongs to it.
 const LAST_Q = new Map();   // chatName → { id, post, ts }
 const ANSWER_WINDOW_MS = 3 * 3600 * 1000;
+// Every message seen lately, by id, so a reply can be followed back up its chain of quotes to the question it answers —
+// "He is part of Meuhedet, here are his locations" quoted "Which hospital?", which quoted "try Dr. Joava", which answered
+// "Recommendation for an orthopedic surgeon…" (Miriam, 9 Nov 2026: "all these posts need to be clear").
+const MSGS_FILE = path.join(__dirname, 'seen-msgs.json');
+let MSGS = new Map();   // messageId → { chat, sender, body, ts, quotedId, quotedText, kind }
+try { MSGS = new Map(JSON.parse(fs.readFileSync(MSGS_FILE, 'utf8'))); } catch (e) {}
+function noteMsg(m) {
+  if (!m || !m.id) return;
+  MSGS.set(m.id, { chat: m.chat, sender: m.sender, body: String(m.body || '').slice(0, 600), ts: m.ts, quotedId: m.quotedId || '', quotedText: m.quotedText || '', kind: m.kind });
+}
+function saveMsgs() {
+  try {
+    const cutoff = Date.now() - 48 * 3600 * 1000;
+    MSGS = new Map([...MSGS].filter(([, v]) => v && v.ts > cutoff).slice(-4000));
+    fs.writeFileSync(MSGS_FILE, JSON.stringify([...MSGS]));
+  } catch (e) {}
+}
+// the messages this one replies to, nearest first (the quoted one, what that quoted, …), up to six steps; a message
+// whose quote we never saw still gives the quoted words WhatsApp carried; an answer that quotes nothing follows the
+// chat's last open question
+function chainOf(m) {
+  const out = []; const seenIds = new Set([m.id]);
+  let id = m.quotedId, text = m.quotedText;
+  if (!id && m.kind === 'answer') { const lq = LAST_Q.get(m.chat); if (lq && m.ts - lq.ts < ANSWER_WINDOW_MS) id = lq.id; }
+  for (let hop = 0; hop < 6 && id && !seenIds.has(id); hop++) {
+    seenIds.add(id);
+    const a = MSGS.get(id);
+    if (!a) { if (text) out.push({ id, body: text, sender: '' }); break; }
+    out.push({ id, body: a.body, sender: a.sender, ts: a.ts, kind: a.kind });
+    id = a.quotedId; text = a.quotedText;
+  }
+  return out;
+}
+// a person named in the exchange ("Dr. Joava", "Rabbi Cohen") — the title must carry it
+function nameIn(texts) {
+  for (const t of texts) {
+    const m = String(t || '').match(/\b((?:Dr|Doctor|Prof|Professor|Rabbi|Rav|Rebbetzin|Rabbanit|Mrs|Mr|Ms|Nurse)\.?\s*[A-Z][\w'’-]{1,}(?:\s+[A-Z][\w'’-]{1,})?)/);
+    if (m) return m[1].replace(/^(Dr|Prof|Mrs|Mr|Ms)\.?\s*/, '$1. ').replace(/\s+/g, ' ').trim();
+  }
+  return '';
+}
 
 // How a reply reads as a comment: its words, then any contact card, link or
 // @mention spelled out with a name and number.
@@ -1329,6 +1374,8 @@ function resolveParent(m, batchIndex) {
     const b = viaBatch(m.quotedId); if (b) return b;
     const t = THREADS.get(m.quotedId);
     if (t) return { sent: t };
+    // further up the chain of quotes: a reply to a reply to a question still belongs to the question's thread
+    for (const a of chainOf(m).slice(1)) { const b2 = viaBatch(a.id); if (b2) return b2; const t2 = THREADS.get(a.id); if (t2) return { sent: t2 }; }
   }
   const isAnswerish = m.kind === 'answer' || (m.cards && m.cards.length) || m.link;
   if (isAnswerish) {
@@ -1396,6 +1443,8 @@ function pairPhotos(msgs) {
 function clusterThreads(msgs) {
   const out = [];
   const batchIndex = new Map();   // messageId → cluster in this batch
+  for (const m of msgs) noteMsg(m);
+  saveMsgs();
   for (const m of pairPhotos(msgs)) {
     // a bare photo that belongs to a text in this batch rides along with it
     if (m._attachTo) {
@@ -1698,9 +1747,19 @@ async function buildPost(cluster, chatName) {
     if (!(bodyJunk && fromPic)) memo = summarize(cleaned || fromPic, 900);
     // a reply whose question never became a post of its own: the question goes on top, so the
     // answer reads as an answer ("I used him and he's fantastic" alone said nothing)
-    if (first.quotedText && cluster.kind !== 'combined' && (first.kind === 'answer' || /\b(?:used|recommend|highly|fantastic|amazing|great|best|try|call)\b/i.test(first.body || '')) && !/^wanted/i.test(title)) {
-      memo = 'Someone asked: \u201c' + stripEmoji(first.quotedText) + '\u201d\n\n' + memo;
-      title = 'Recommended: ' + smartTitle(cleanBody(first.quotedText, contacts), 'question', chatName).replace(/^(?:anyone|does anyone|do you|who)\s+(?:know|have|has|recommend)s?\s*(?:a |an |of |the )?/i, '').replace(/\?+$/, '').slice(0, 70);
+    // the whole exchange this reply belongs to goes on top — the question at the root, then the steps down to this
+    // answer — and the person named along the way goes into the title (Miriam, 9 Nov 2026: "it's missing the name of the dr")
+    const chain = cluster.kind !== 'combined' ? chainOf(first) : [];   // her own earlier words too: the name is often there ("try Dr. Joava")
+    if (chain.length && !/^wanted/i.test(title)) {
+      const lines = chain.slice().reverse().map(a => stripEmoji(a.body || '').replace(/\s+/g, ' ').trim().slice(0, 240)).filter(Boolean);
+      const root = lines[0] || '';
+      const name = nameIn(lines.concat([first.body || '']));
+      const praise = first.kind === 'answer' || /\b(?:used|recommend|highly|fantastic|amazing|great|best|try|call)\b/i.test(first.body || '');
+      const qTitle = root ? (questionTitle(root) || smartTitle(cleanBody(root, contacts), 'question', chatName)).replace(/^(?:anyone|does anyone|do you|who)\s+(?:know|have|has|recommend)s?\s*(?:a |an |of |the )?/i, '').replace(/\?+$/, '').slice(0, 70) : '';
+      if (root) memo = 'Someone asked: \u201c' + root + '\u201d' + (lines.length > 1 ? '\n' + lines.slice(1).map(l => '\u2014 \u201c' + l + '\u201d').join('\n') : '') + '\n\n' + memo;
+      const hasName = name && new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\.\s/g, '\\.?\\s*'), 'i').test(title);
+      if (praise && qTitle) title = 'Recommended: ' + (name && !hasName ? name + ' \u2014 ' : '') + qTitle;
+      else if (name && !hasName) title = name + ': ' + title;
     }
   }
   if (ocrTexts.length && cluster.kind !== 'combined' && stripEmoji(first.body || '').trim() && hasTitleWords(cleanBody(first.body, contacts))) {   // words of her own AND a picture: the picture's words follow
