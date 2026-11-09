@@ -75,7 +75,9 @@ async function places() {
   const Q = {
     rail: '[out:json][timeout:120];(way["railway"="light_rail"](' + bb + ');nwr["amenity"="bus_station"](' + bb + ');nwr["name:en"="Western Wall"](' + bb + ');nwr["name"="הכותל המערבי"](' + bb + '););out geom tags;',
     hospitals: '[out:json][timeout:150];nwr["amenity"="hospital"](' + bb + ');out geom tags;',
-    shuls: '[out:json][timeout:120];(nwr["amenity"="place_of_worship"]["name"~"בעלז|בויאן|גור|[Bb]elz|[Bb]oyan|[Gg]ur|[Gg]er "](' + bb + ');nwr["amenity"="place_of_worship"]["name:en"~"[Bb]elz|[Bb]oyan|[Gg]ur|[Gg]er "](' + bb + '););out geom tags;',
+    // every shul (Miriam, 9 Nov 2026: "there are so many shuls missing"): jewish places of worship, synagogue buildings, and
+    // anything named beit knesset / beit midrash; a point each (the map colours the building the point falls in)
+    shuls: '[out:json][timeout:180];(nwr["amenity"="place_of_worship"]["religion"="jewish"](' + bb + ');nwr["building"="synagogue"](' + bb + ');nwr["amenity"="place_of_worship"]["name"~"בית ?ה?כנסת|בית ?ה?מדרש|ביהכ|ביהמ|[Ss]ynagogue|[Ss]hul|[Bb]ei[st] ?[KkMm]"](' + bb + '););out center tags;',
     kupot: '[out:json][timeout:150];(nwr["name"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|hospital|dentist)$"](' + bb + ');nwr["name"~"' + KR + '"]["healthcare"](' + bb + ');nwr["brand"~"' + KR + '"](' + bb + ');nwr["operator"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|dentist)$"](' + bb + ');nwr["name"~"^קופת חולים"](' + bb + '););out geom tags;',
   };
   let cache = {}; try { cache = JSON.parse(fs.readFileSync(CACHE, 'utf8')); } catch (e) {}
@@ -99,14 +101,18 @@ function parse(elements) {
     else if (t.amenity === 'hospital') k = 'hospital';
     else if (t['name:en'] === 'Western Wall' || t.name === 'הכותל המערבי') k = 'kotel';
     else if (t.amenity === 'bus_station') { if (!/מרכזית|central/i.test([t.name, t['name:en']].join(' '))) continue; k = 'cbs'; }
-    else if (t.amenity === 'place_of_worship') { const s = [t.name, t['name:en'], t['name:he']].filter(Boolean).join(' | '); const hit = SHUL.find(([, re]) => re.test(s)); if (!hit || t.religion && t.religion !== 'jewish') continue; k = 'shul'; extra.shul = hit[0]; }
+    else if (t.amenity === 'place_of_worship' || t.building === 'synagogue') {
+      const s = [t.name, t['name:en'], t['name:he']].filter(Boolean).join(' | '); const hit = SHUL.find(([, re]) => re.test(s));
+      if (t.religion && t.religion !== 'jewish') continue;
+      if (!hit && t.building !== 'synagogue' && t.religion !== 'jewish' && !/בית ?ה?כנסת|בית ?ה?מדרש|ביהכ|ביהמ|synagogue|shul|bei[st] ?[km]/i.test(s)) continue;
+      k = 'shul'; if (hit) extra.shul = hit[0]; }
     else { const kp = kupahOf(t); if (!kp) continue; k = 'kupah'; extra.brand = kp; }
     seen.add(id);
     const nm = nameOf(t), ad = addrOf(t);
     if (k === 'rail') { const R = rings(el)[0] || []; if (R.length < 2) continue; f.push({ k, id, line: simplify(R, 0.00002).map((p) => [r6(p[0]), r6(p[1])]) }); continue; }
     const c = centre(el); if (!c) continue;
     const item = Object.assign({ k, id, nm, ad, pt: [r6(c[0]), r6(c[1])] }, extra);
-    if (el.type !== 'node') { const R = joinRings(rings(el)).filter((r) => r.length >= 4 && Math.abs(r[0][0] - r[r.length - 1][0]) < 1e-9 && Math.abs(r[0][1] - r[r.length - 1][1]) < 1e-9).map((r) => simplifyRing(r, 0.000008).map((p) => [r6(p[0]), r6(p[1])])); if (R.length) item.polys = R.slice(0, 12); }
+    if (el.type !== 'node' && !(k === 'shul' && !extra.shul)) { const R = joinRings(rings(el)).filter((r) => r.length >= 4 && Math.abs(r[0][0] - r[r.length - 1][0]) < 1e-9 && Math.abs(r[0][1] - r[r.length - 1][1]) < 1e-9).map((r) => simplifyRing(r, 0.000008).map((p) => [r6(p[0]), r6(p[1])])); if (R.length) item.polys = R.slice(0, 12); }
     f.push(item);
   }
   return f;
