@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-09T08:46:03.704Z",
+  "lastRun": "2026-11-09T19:19:49.184Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "no feed, no scannable items, nothing in the news last 48h",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,19 +61,19 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-09T08:46:03.702Z",
-      "sent": 1,
+      "lastRun": "2026-11-09T19:19:49.183Z",
+      "sent": 3,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
-        "iTravelJerusalem hints": "19 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
-        "iTravelJerusalem": "19 cards, nothing new (19 distinct)",
+        "iTravelJerusalem hints": "20 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
+        "iTravelJerusalem": "20 cards, nothing new (20 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (7 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (14 upcoming)",
-        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
+        "Pardes": "no events · fetch failed",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · nothing parsed at https://www.imj.org.il/en",
@@ -180,10 +180,10 @@
             "link": "https://www.funinjerusalem.com/events/hanukkah-artesana/"
           },
           {
-            "title": "Specialty Hanukkah Tours with Debra Tours",
+            "title": "Hanukkah Interactive Sofer Tour",
             "date": "2026-12-01",
             "time": "",
-            "link": "https://www.funinjerusalem.com/events/specialty-chanukah-tours-with-debra-tours/"
+            "link": "https://www.funinjerusalem.com/events/hanukkah-interactive-sofer-tour/"
           }
         ],
         "OU Israel Center": [
