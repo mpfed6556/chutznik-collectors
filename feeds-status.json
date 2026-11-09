@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-09T01:42:12.653Z",
+  "lastRun": "2026-11-09T08:46:03.704Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,14 +20,14 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (4 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
-    "Bezeq": "blocked: robots.txt unreachable — skipping to be safe",
+    "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Electric Corporation": "blocked: robots.txt disallows this path",
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "no feed, no scannable items, nothing in the news last 48h",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "ok via RSS (6 items)",
+    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-09T01:42:12.651Z",
-      "sent": 0,
+      "lastRun": "2026-11-09T08:46:03.702Z",
+      "sent": 1,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -73,7 +73,7 @@
         "iTravelJerusalem": "19 cards, nothing new (19 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (7 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (14 upcoming)",
-        "Pardes": "no events · fetch failed",
+        "Pardes": "no events · nothing parsed at https://www.pardes.org.il/feed/",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · nothing parsed at https://www.imj.org.il/en",
@@ -174,16 +174,16 @@
             "link": "https://www.funinjerusalem.com/events/biblical-museum-of-natural-history-tour-hanukkah/"
           },
           {
+            "title": "Hanukkah Hot Glass Fusing Workshop at Artesana",
+            "date": "2026-12-01",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/hanukkah-artesana/"
+          },
+          {
             "title": "Specialty Hanukkah Tours with Debra Tours",
             "date": "2026-12-01",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/specialty-chanukah-tours-with-debra-tours/"
-          },
-          {
-            "title": "Winter Tours with Debra Tours",
-            "date": "2026-12-01",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/winter-tours-with-debra-tours/"
           }
         ],
         "OU Israel Center": [
@@ -220,34 +220,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "How Olim Build Israel",
+            "title": "Cyber Week",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/how-olim-build-israel-2/"
+            "link": "https://www.nbn.org.il/events/cyber-week/"
           },
           {
-            "title": "ITALIA MIA! A Multimedia Music Lecture by Harvey Bordowitz",
+            "title": "Nishmat Online Beit Midrash",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/italia-mia-a-multimedia-music-lecture-by-harvey-bordowitz/"
+            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
           },
           {
-            "title": "Night Seder Program!",
+            "title": "Salsa Classes in Spanish",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/night-seder-program/"
+            "link": "https://www.nbn.org.il/events/salsa-classes-in-spanish/"
           },
           {
-            "title": "OT Licensing Exam Preparatory Course",
+            "title": "Gil Hoffman: Behind the Scenes of the Israeli Corridors of Power and the Effort to Improve Israel’s International Image",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/ot-licensing-exam-preparatory-course-2/"
+            "link": "https://www.nbn.org.il/events/gil-hoffman-behind-the-scenes-of-the-israeli-corridors-of-power-and-the-effort-to-improve-israels-international-image/"
           },
           {
-            "title": "How to Build Your Emotional Resilience",
+            "title": "Hebrew Unlocked is back",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/how-to-build-your-emotional-resilience-2/"
+            "link": "https://www.nbn.org.il/events/hebrew-unlocked-is-back/"
           }
         ],
         "Pardes": [],
