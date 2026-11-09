@@ -2626,7 +2626,7 @@ async function sendStatus() {
     const status = {
       node: process.version, at: new Date().toISOString(), version: (fs.statSync(__filename).mtime || '').toString(), pid: process.pid, up: Math.round(process.uptime()),
       connected: !!(global._sock && global._sock.user), loggedOut: global._loggedOut ? new Date(global._loggedOut).toISOString() : null, pairing: global._pairCount || 0, pairCode: global._pairCode || null, pairCodeAt: global._pairCodeAt || 0, pairUntil: global._pairUntil || 0, me: global._sock && global._sock.user ? String(global._sock.user.id || '').split(':')[0] : '',
-      lids: Object.keys(LIDS).length, seen: SEEN.size, posted: Object.keys(POSTED).length, notifyMode: NOTIFY_MODE, waSend: global._waSendOn ? 'on' : 'off',
+      lids: Object.keys(LIDS).length, seen: SEEN.size, posted: Object.keys(POSTED).length, notifyMode: NOTIFY_MODE, waSend: global._waSendOn ? 'on' : (global._waCommentsOn ? 'comments' : 'off'),
       log: LOG_RING.slice(-80),
       events: global._eventsReport || null,
       jerusaguide: global._jgReport || null,
