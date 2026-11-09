@@ -75,6 +75,8 @@ async function places() {
   const Q = {
     rail: '[out:json][timeout:120];(way["railway"="light_rail"](' + bb + ');nwr["amenity"="bus_station"](' + bb + ');nwr["name:en"="Western Wall"](' + bb + ');nwr["name"="הכותל המערבי"](' + bb + '););out geom tags;',
     hospitals: '[out:json][timeout:150];nwr["amenity"="hospital"](' + bb + ');out geom tags;',
+    // every park and garden, and the playgrounds that carry a name (Miriam, 9 Nov 2026: "add all the parks, find them all")
+    parks: '[out:json][timeout:180];(nwr["leisure"~"^(park|garden)$"](' + bb + ');nwr["leisure"="playground"]["name"](' + bb + '););out geom tags;',
     // every shul (Miriam, 9 Nov 2026: "there are so many shuls missing"): jewish places of worship, synagogue buildings, and
     // anything named beit knesset / beit midrash; a point each (the map colours the building the point falls in)
     shuls: '[out:json][timeout:180];(nwr["amenity"="place_of_worship"]["religion"="jewish"](' + bb + ');nwr["building"="synagogue"](' + bb + ');nwr["amenity"="place_of_worship"]["name"~"בית ?ה?כנסת|בית ?ה?מדרש|ביהכ|ביהמ|[Ss]ynagogue|[Ss]hul|[Bb]ei[st] ?[KkMm]"](' + bb + '););out center tags;',
@@ -99,6 +101,7 @@ function parse(elements) {
     let k = '', extra = {};
     if (t.railway === 'light_rail') { if (t.service) continue; k = 'rail'; }
     else if (t.amenity === 'hospital') k = 'hospital';
+    else if (/^(park|garden|playground)$/.test(t.leisure || '')) { if (t.leisure === 'playground' && !t.name && !t['name:en']) continue; k = 'park'; }
     else if (t['name:en'] === 'Western Wall' || t.name === 'הכותל המערבי') k = 'kotel';
     else if (t.amenity === 'bus_station') { if (!/מרכזית|central/i.test([t.name, t['name:en']].join(' '))) continue; k = 'cbs'; }
     else if (t.amenity === 'place_of_worship' || t.building === 'synagogue') {
