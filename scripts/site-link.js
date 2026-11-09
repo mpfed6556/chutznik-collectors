@@ -50,6 +50,15 @@ function sendAllowed() {
   return '';
 }
 function sendDone() { SENT.push(Date.now()); try { fs.writeFileSync(SEND_FILE, JSON.stringify(SENT)); } catch (e) {} }
+// the comment notes (Miriam, 9 Nov 2026: "on the moment"): no gap between them, their own hourly cap, and they go while
+// WA_SEND is 'comments' even though everything else is off
+const CM_HOUR = Number(process.env.COMMENT_NOTES_PER_HOUR || 40); let CSENT = [];
+function commentAllowed() {
+  if (!global._waCommentsOn && !global._waSendOn) return 'WhatsApp sending is off (WA_SEND is neither on nor comments)';
+  const now = Date.now(); CSENT = CSENT.filter((t) => now - t < 3600 * 1000);
+  if (CSENT.length >= CM_HOUR) return CSENT.length + ' comment notes in the last hour';
+  return '';
+}
 let _paceSaid = 0;
 function paceLog(why, what) { if (Date.now() - _paceSaid > 10 * 60 * 1000) { _paceSaid = Date.now(); CFG.log('🐢 ' + what + ' wait: ' + why + ' (one note every ' + Math.round(SEND_GAP / 60000) + ' min, ' + SEND_HOUR + ' an hour, ' + SEND_DAY + ' a day)'); } }
 
@@ -72,9 +81,17 @@ async function outboxRound() {
       if (!id) continue;
       if (d.length < 11 || d.length > 13 || !text) { CFG.log('📤 outbox: ' + id + ' has no usable number — dropped'); done.push(id); continue; }
       const isCode = String(m.kind || '') === 'code';   // a one-time code the business asked for itself (claiming its listing, 27 Oct 2026): never a note, so neither rule below applies
-      if (!isCode && CFG.optedOut(d)) { CFG.log('📤 outbox: ' + d + ' asked not to be messaged — dropped'); done.push(id); continue; }
+      const isComment = String(m.kind || '') === 'comment';   // someone commented on the post posted for this person (9 Nov 2026): about their own post, so not an outreach note — no ledger, no pacing gap
+      if (CFG.optedOut(d)) { CFG.log('📤 outbox: ' + d + ' asked not to be messaged — dropped'); done.push(id); continue; }
       // never twice, whatever button queued it (Miriam, 26 Oct 2026: a realty office got the same note twice)
-      if (!isCode && await contactedHas(d)) { CFG.log('📤 outbox: ' + d + ' was written to before — dropped'); done.push(id); continue; }
+      if (!isCode && !isComment && await contactedHas(d)) { CFG.log('📤 outbox: ' + d + ' was written to before — dropped'); done.push(id); continue; }
+      if (isComment) {
+        const why = commentAllowed(); if (why) { paceLog(why, 'comment note'); continue; }   // the others in the list may still be sendable
+        if (Date.now() - Number(m.at || 0) > 3 * 864e5) { CFG.log('📤 comment note for ' + d + ' is three days old — dropped'); done.push(id); continue; }
+        try { CSENT.push(Date.now()); await sock.sendMessage(d + '@s.whatsapp.net', { text }, { commentNote: true }); CFG.log('💬 comment note → ' + d + ' (post ' + (m.postId || '?') + ')'); done.push(id); }
+        catch (e) { CFG.log('💬 comment note failed → ' + d + ': ' + (e && e.message)); }
+        continue;
+      }
       const why = sendAllowed(); if (why) { paceLog(why, 'outbox'); break; }   // the rest next round
       try {
         sendDone(); await sock.sendMessage(d + '@s.whatsapp.net', { text });

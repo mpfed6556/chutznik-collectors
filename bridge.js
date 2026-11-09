@@ -2061,7 +2061,8 @@ async function pullSettings() {
   try {
     const r = await fetch(SITE + '/api/live-data?type=settings'); if (!r.ok) return;
     const j = await r.json(); if (!j || typeof j !== 'object') return;
-    { const on = String(j.WA_SEND || 'off').toLowerCase() === 'on'; if (on !== !!global._waSendOn) { global._waSendOn = on; log('⚙️  WhatsApp sending is ' + (on ? 'ON' : 'OFF') + ' (WA_SEND in the site settings)'); } }
+    { const v = String(j.WA_SEND || 'off').toLowerCase(); const on = v === 'on', cm = on || v === 'comments';
+      if (on !== !!global._waSendOn || cm !== !!global._waCommentsOn) { global._waSendOn = on; global._waCommentsOn = cm; log('⚙️  WhatsApp sending is ' + (on ? 'ON' : cm ? 'COMMENT NOTES ONLY (a comment on a post posted for someone tells them at once; nothing else goes out)' : 'OFF') + ' (WA_SEND in the site settings)'); } }
     if (j.NOTIFY_MODE && ['off', 'dry', 'live'].includes(String(j.NOTIFY_MODE).toLowerCase()) && String(j.NOTIFY_MODE).toLowerCase() !== NOTIFY_MODE) {
       NOTIFY_MODE = String(j.NOTIFY_MODE).toLowerCase(); log('⚙️  poster notes mode is now: ' + NOTIFY_MODE + ' (from the site settings)');
     }
@@ -3121,8 +3122,11 @@ async function start() {
   // ── Never a WhatsApp message from the site (Miriam, 27 Oct 2026, the account put under review): the socket itself refuses
   //    to send — poster notes, reply notes, the outbox, codes, sheets, lists, all of it — unless WA_SEND is 'on' in the
   //    site settings. Reading the groups goes on as before.
+  //    WA_SEND 'comments' (Miriam, 9 Nov 2026): the one message allowed is the note to the person a post was posted for when
+  //    someone comments on it — the outbox marks it commentNote; everything else still stops here.
   const realSend = sock.sendMessage.bind(sock);
   sock.sendMessage = async (jid, content, opts) => {
+    if (opts && opts.commentNote) { const { commentNote, ...rest } = opts; if (global._waCommentsOn || global._waSendOn) return realSend(jid, content, rest); }
     if (!global._waSendOn) { const k = String(jid).split('@')[0]; if (!global._sendOffSaid || Date.now() - global._sendOffSaid > 600000) { global._sendOffSaid = Date.now(); log('🚫 WhatsApp sending is off — nothing sent to ' + k + ' (or anyone) until WA_SEND is on in the site settings'); } throw new Error('WhatsApp sending is off'); }
     return realSend(jid, content, opts);
   };
