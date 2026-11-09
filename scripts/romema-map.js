@@ -162,6 +162,23 @@ async function fetchTile(r, c) {
     if (flat.length < (kind === 4 ? 4 : 6)) continue;
     out.push([el.id, kind, name, addr].concat(flat));
   }
+  // the buildings OpenStreetMap does not have (Miriam, 9 Nov 2026: "fill in all missing buildings"): the open footprints,
+  // only where no OpenStreetMap building already stands — plain outlines, no name, ids of their own above 5 000 000 000
+  try {
+    const ML = require('./ml-footprints.js'); await ML.ensure(); const extra = ML.forTile(r, c); let added = 0;
+    const cen = (P) => { let y = 0, x = 0; for (const q of P) { y += q[0]; x += q[1]; } return [y / P.length, x / P.length]; };
+    for (const pts of extra) {
+      const [cy, cx] = cen(pts); if (cy < s || cy >= n || cx < w || cx >= e) continue;
+      let y0 = 90, y1 = -90, x0 = 180, x1 = -180; for (const q of pts) { y0 = Math.min(y0, q[0]); y1 = Math.max(y1, q[0]); x0 = Math.min(x0, q[1]); x1 = Math.max(x1, q[1]); }
+      const under = polys.some((P) => { if (P.box[2] < y0 || P.box[0] > y1 || P.box[3] < x0 || P.box[1] > x1) return false; if (inPoly(cy, cx, P.pts)) return true; const pc = cen(P.pts); return inPoly(pc[0], pc[1], pts); });
+      if (under) continue;
+      const flat = []; let py = 0, px = 0; pts.forEach((q, i) => { const y = Math.round((q[0] - s) * 1e5), x = Math.round((q[1] - w) * 1e5); if (i && y === py && x === px) return; flat.push(i ? y - py : y, i ? x - px : x); py = y; px = x; });
+      if (flat.length < 6) continue;
+      const id = 5e9 + (Math.round(cy * 1e5) % 100000) * 100000 + (Math.round(cx * 1e5) % 100000);
+      out.push([id, 0, '', ''].concat(flat)); added++;
+    }
+    if (added) LOG('🏘️ buildings: square ' + r + '_' + c + ' — ' + added + ' outline(s) added from the footprints beside ' + polys.length + ' from OpenStreetMap');
+  } catch (e) { LOG('🏘️ footprints: ' + (e && e.message)); }
   return { v: 1, t: r + '_' + c, o: [Number(s.toFixed(4)), Number(w.toFixed(4))], sc: 1e5, b: out, fetchedAt: Date.now() };
 }
 let _bRunning = false;
@@ -171,6 +188,8 @@ async function runBuildings() {
     let mark = {}; try { mark = JSON.parse(fs.readFileSync(MARK, 'utf8')); } catch (e) {}
     mark.btiles = mark.btiles || {};
     if (mark.bver !== 2) { mark.btiles = {}; mark.bver = 2; fs.writeFileSync(MARK, JSON.stringify(mark)); LOG('🏘️ buildings: fetching every square again, now with the house numbers'); }
+    // once the footprints are here, every square is drawn again with the missing buildings filled in (9 Nov 2026)
+    try { const ML = require('./ml-footprints.js'); ML.start(LOG); const md = await ML.ensure(); if (md && md.n && mark.bver !== 3) { mark.btiles = {}; mark.bver = 3; fs.writeFileSync(MARK, JSON.stringify(mark)); LOG('🏘️ buildings: fetching every square again, now with ' + md.n + ' footprints to fill the gaps'); } } catch (e) { LOG('🏘️ footprints: ' + (e && e.message)); }
     // Romema's square first, then outwards
     const r0 = Math.floor((31.7935 - CITY_BBOX[0]) / GRID), c0 = Math.floor((35.2095 - CITY_BBOX[1]) / GRID);
     const order = []; for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) order.push([r, c]);
