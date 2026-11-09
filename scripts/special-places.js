@@ -79,7 +79,7 @@ async function places() {
     parks: '[out:json][timeout:180];(nwr["leisure"~"^(park|garden)$"](' + bb + ');nwr["leisure"="playground"]["name"](' + bb + '););out geom tags;',
     // every shul (Miriam, 9 Nov 2026: "there are so many shuls missing"): jewish places of worship, synagogue buildings, and
     // anything named beit knesset / beit midrash; a point each (the map colours the building the point falls in)
-    shuls: '[out:json][timeout:180];(nwr["amenity"="place_of_worship"]["religion"="jewish"](' + bb + ');nwr["building"="synagogue"](' + bb + ');nwr["amenity"="place_of_worship"]["name"~"בית ?ה?כנסת|בית ?ה?מדרש|ביהכ|ביהמ|[Ss]ynagog|[Ss]hul|[Ss]ht[ie]+bel|[Mm]inyan|[Bb]ei[st] ?[KkMm]"](' + bb + '););out center tags;',
+    shuls: '[out:json][timeout:180];(nwr["amenity"="place_of_worship"]["religion"="jewish"](' + bb + ');nwr["building"="synagogue"](' + bb + ');nwr["amenity"="place_of_worship"]["name"~"שטיבל|קלויז|בית ?ה?כנסת|בית ?ה?מדרש|ביהכ|ביהמ|[Ss]ynagog|[Ss]hul|[Ss]ht[ie]+bel|[Mm]inyan|[Bb]ei[st] ?[KkMm]"](' + bb + '););out center tags;',
     kupot: '[out:json][timeout:150];(nwr["name"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|hospital|dentist)$"](' + bb + ');nwr["name"~"' + KR + '"]["healthcare"](' + bb + ');nwr["brand"~"' + KR + '"](' + bb + ');nwr["operator"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|dentist)$"](' + bb + ');nwr["name"~"^קופת חולים"](' + bb + '););out geom tags;',
   };
   let cache = {}; try { cache = JSON.parse(fs.readFileSync(CACHE, 'utf8')); } catch (e) {}
@@ -107,7 +107,7 @@ function parse(elements) {
     else if (t.amenity === 'place_of_worship' || t.building === 'synagogue') {
       const s = [t.name, t['name:en'], t['name:he']].filter(Boolean).join(' | '); const hit = SHUL.find(([, re]) => re.test(s));
       if (t.religion && t.religion !== 'jewish') continue;
-      if (!hit && t.building !== 'synagogue' && t.religion !== 'jewish' && !/בית ?ה?כנסת|בית ?ה?מדרש|ביהכ|ביהמ|synagog|shul|sht[ie]+bel|minyan|bei[st] ?[km]/i.test(s)) continue;
+      if (!hit && t.building !== 'synagogue' && t.religion !== 'jewish' && !/בית ?ה?כנסת|בית ?ה?מדרש|ביהכ|ביהמ|שטיבל|קלויז|synagog|shul|sht[ie]+bel|kloiz|minyan|bei[st] ?[km]/i.test(s)) continue;
       k = 'shul'; if (hit) extra.shul = hit[0]; }
     else { const kp = kupahOf(t); if (!kp) continue; k = 'kupah'; extra.brand = kp; }
     seen.add(id);
