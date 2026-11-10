@@ -17,6 +17,21 @@ const KUPOT = {
   maccabi: { re: /מכבי\s*(?:שירותי בריאות|פארם|דנט|טבעי)|^מכבי$|maccabi\s*(?:health|healthcare|pharm|dent)|kupat holim maccabi|^maccabi$/i, site: 'https://www.maccabi4u.co.il/' },
   leumit: { re: /(?:^|קופ[תה]?\s*חולים\s*|שירותי בריאות\s*)לאומית|לאומית\s*שירותי|^לאומית|leumit/i, site: 'https://www.leumit.co.il/' },
 };
+// the banks (Miriam, 10 Nov 2026: "add all ATMs and banks to map just like insurance logos"); Mercantile before Discount, which owns it
+const BANKS = {
+  mercantile: { re: /מרכנתיל|mercantile/i, site: 'https://www.mercantile.co.il/' },
+  leumi: { re: /בנק לאומי|^לאומי$|\bbank leumi\b|^leumi$|leumi card|לאומי קארד/i, site: 'https://www.leumi.co.il/' },
+  hapoalim: { re: /הפועלים|hapoalim/i, site: 'https://www.bankhapoalim.co.il/' },
+  discount: { re: /דיסקונט|discount/i, site: 'https://www.discountbank.co.il/' },
+  mizrahi: { re: /מזרחי|טפחות|mizrahi|tefahot/i, site: 'https://www.mizrahi-tefahot.co.il/' },
+  fibi: { re: /הבינלאומי|first international|\bfibi\b/i, site: 'https://www.fibi.co.il/' },
+  jerusalem: { re: /בנק ירושלים|bank of jerusalem|bank jerusalem/i, site: 'https://www.bankjerusalem.co.il/' },
+  yahav: { re: /יהב|yahav/i, site: 'https://www.bank-yahav.co.il/' },
+  otzar: { re: /אוצר החייל|otsar|otzar/i, site: 'https://www.bankotsar.co.il/' },
+  massad: { re: /בנק מסד|^מסד$|massad/i, site: 'https://www.bankmassad.co.il/' },
+};
+const bankOf = (t) => { const parts = [t.brand, t.operator, t.name, t['name:he'], t['name:en'], t['brand:he'], t['operator:he']].filter(Boolean); for (const [k, K] of Object.entries(BANKS)) { for (const p of parts) if (K.re.test(String(p).trim())) return k; } return ''; };
+const SITES = Object.assign({}, KUPOT, BANKS);
 const kupahOf = (t) => { const s = [t.brand, t.operator, t.name, t['name:he'], t['name:en']].filter(Boolean).join(' | '); for (const [k, K] of Object.entries(KUPOT)) { for (const part of s.split(' | ')) if (K.re.test(part.trim())) return k; } return ''; };
 const SHUL = [['belz', /בעלז|belz/i], ['gur', /חסידי\s*גור|(?:^|\s)גור(?:\s|$)|\bgur\b|\bger\b/i], ['boyan', /בויאן|boyan/i]];
 
@@ -80,6 +95,7 @@ async function places() {
     // every shul (Miriam, 9 Nov 2026: "there are so many shuls missing"): jewish places of worship, synagogue buildings, and
     // anything named beit knesset / beit midrash; a point each (the map colours the building the point falls in)
     shuls: '[out:json][timeout:180];(nwr["amenity"="place_of_worship"]["religion"="jewish"](' + bb + ');nwr["building"="synagogue"](' + bb + ');nwr["amenity"="place_of_worship"]["name"~"שטיבל|קלויז|בית ?ה?כנסת|בית ?ה?מדרש|ביהכ|ביהמ|[Ss]ynagog|[Ss]hul|[Ss]ht[ie]+bel|[Mm]inyan|[Bb]ei[st] ?[KkMm]"](' + bb + '););out center tags;',
+    banks: '[out:json][timeout:150];nwr["amenity"~"^(bank|atm)$"](' + bb + ');out center tags;',
     kupot: '[out:json][timeout:150];(nwr["name"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|hospital|dentist)$"](' + bb + ');nwr["name"~"' + KR + '"]["healthcare"](' + bb + ');nwr["brand"~"' + KR + '"](' + bb + ');nwr["operator"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|dentist)$"](' + bb + ');nwr["name"~"^קופת חולים"](' + bb + '););out geom tags;',
   };
   let cache = {}; try { cache = JSON.parse(fs.readFileSync(CACHE, 'utf8')); } catch (e) {}
@@ -104,6 +120,7 @@ function parse(elements) {
     else if (/^(park|garden|playground)$/.test(t.leisure || '')) { k = 'park'; if (t.leisure === 'playground') extra.play = 1; }
     else if (t['name:en'] === 'Western Wall' || t.name === 'הכותל המערבי') k = 'kotel';
     else if (t.amenity === 'bus_station') { if (!/מרכזית|central/i.test([t.name, t['name:en']].join(' '))) continue; k = 'cbs'; }
+    else if (t.amenity === 'bank' || t.amenity === 'atm') { k = t.amenity; const b = bankOf(t); if (b) extra.brand = b; const op = String(t.operator || t.brand || '').slice(0, 40); if (op && !b) extra.op = op; }
     else if (t.amenity === 'place_of_worship' || t.building === 'synagogue') {
       const s = [t.name, t['name:en'], t['name:he']].filter(Boolean).join(' | '); const hit = SHUL.find(([, re]) => re.test(s));
       if (t.religion && t.religion !== 'jewish') continue;
@@ -115,7 +132,7 @@ function parse(elements) {
     if (k === 'rail') { const R = rings(el)[0] || []; if (R.length < 2) continue; f.push({ k, id, line: simplify(R, 0.00002).map((p) => [r6(p[0]), r6(p[1])]) }); continue; }
     const c = centre(el); if (!c) continue;
     const item = Object.assign({ k, id, nm, ad, pt: [r6(c[0]), r6(c[1])] }, extra);
-    if (el.type !== 'node' && !(k === 'shul' && !extra.shul)) { const R = joinRings(rings(el)).filter((r) => r.length >= 4 && Math.abs(r[0][0] - r[r.length - 1][0]) < 1e-9 && Math.abs(r[0][1] - r[r.length - 1][1]) < 1e-9).map((r) => simplifyRing(r, 0.000008).map((p) => [r6(p[0]), r6(p[1])])); if (R.length) item.polys = R.slice(0, 12); }
+    if (el.type !== 'node' && !(k === 'shul' && !extra.shul) && k !== 'bank' && k !== 'atm') { const R = joinRings(rings(el)).filter((r) => r.length >= 4 && Math.abs(r[0][0] - r[r.length - 1][0]) < 1e-9 && Math.abs(r[0][1] - r[r.length - 1][1]) < 1e-9).map((r) => simplifyRing(r, 0.000008).map((p) => [r6(p[0]), r6(p[1])])); if (R.length) item.polys = R.slice(0, 12); }
     f.push(item);
   }
   return f;
@@ -131,7 +148,7 @@ async function getImage(url) {
 }
 function abs(base, href) { try { return new URL(href.replace(/&amp;/g, '&'), base).href; } catch (e) { return ''; } }
 async function website(key) {
-  const K = KUPOT[key]; const home = await getText(K.site); const out = { home: { url: home.url, status: home.status, error: home.error }, pages: [], logos: [] };
+  const K = SITES[key]; const home = await getText(K.site); const out = { home: { url: home.url, status: home.status, error: home.error }, pages: [], logos: [] };
   await wikipedia(key, out);   // a site that turns the droplet away still has its logo and a few words on Wikipedia
   if (!home.html) return out;
   out.pages.push({ url: home.url, status: home.status, html: home.html });
@@ -160,8 +177,10 @@ async function website(key) {
   return out;
 }
 // Hebrew Wikipedia's article on the kupah: its picture (the logo) and its opening lines
-const WIKI = { meuhedet: 'מאוחדת קופת חולים', clalit: 'כללית שירותי בריאות', maccabi: 'מכבי שירותי בריאות', leumit: 'לאומית שירותי בריאות' };
-const WIKI_EN = { meuhedet: 'Meuhedet', clalit: 'Clalit Health Services', maccabi: 'Maccabi Healthcare Services', leumit: 'Leumit Health Services' };
+const WIKI = { meuhedet: 'מאוחדת קופת חולים', clalit: 'כללית שירותי בריאות', maccabi: 'מכבי שירותי בריאות', leumit: 'לאומית שירותי בריאות',
+  leumi: 'בנק לאומי', hapoalim: 'בנק הפועלים', discount: 'בנק דיסקונט', mercantile: 'בנק מרכנתיל', mizrahi: 'בנק מזרחי טפחות', fibi: 'הבנק הבינלאומי הראשון', jerusalem: 'בנק ירושלים', yahav: 'בנק יהב', otzar: 'בנק אוצר החייל', massad: 'בנק מסד' };
+const WIKI_EN = { meuhedet: 'Meuhedet', clalit: 'Clalit Health Services', maccabi: 'Maccabi Healthcare Services', leumit: 'Leumit Health Services',
+  leumi: 'Bank Leumi', hapoalim: 'Bank Hapoalim', discount: 'Israel Discount Bank', mercantile: 'Mercantile Discount Bank', mizrahi: 'Mizrahi Tefahot Bank', fibi: 'First International Bank of Israel', jerusalem: 'Bank of Jerusalem', yahav: 'Bank Yahav', otzar: 'Bank Otsar Ha-Hayal', massad: 'Bank Massad' };
 async function wikipedia(key, out) { await wiki1('he', WIKI[key], out); await wiki1('en', WIKI_EN[key], out); }
 async function wiki1(lang, q, out) {
   try {
@@ -183,7 +202,7 @@ async function run() {
   try {
     const P = await places(); const f = P.f;
     const logos = {}; const web = {};
-    for (const k of Object.keys(KUPOT)) { const w = await website(k); web[k] = w; if (w.logos.length) logos[k] = w.logos.map((l) => ({ how: l.how, sizes: l.sizes, type: l.type, size: l.size, url: l.url, file: l.file, data: l.data })); }
+    for (const k of Object.keys(SITES)) { const w = await website(k); if (KUPOT[k]) web[k] = w; if (w.logos.length) logos[k] = w.logos.map((l) => ({ how: l.how, sizes: l.sizes, type: l.type, size: l.size, url: l.url, file: l.file, data: l.data })); }
     // the logos are handed over even when OpenStreetMap is busy; the site keeps the places it had
     const st = await post({ special: { at: Date.now(), f: f || [], logos } }); const by = {}; for (const x of f || []) by[x.k] = (by[x.k] || 0) + 1;
     LOG('⭐ special places: ' + (f ? f.length : 0) + ' (' + Object.entries(by).map(([k, n]) => k + ' ' + n).join(', ') + '), logos for ' + (Object.keys(logos).join(', ') || 'none') + (P.missing.length ? ' — OpenStreetMap did not answer for ' + P.missing.join(', ') + ', asked again in an hour' : '') + (st === 200 ? '' : ' — the site answered ' + st));
@@ -193,4 +212,4 @@ async function run() {
   } catch (e) { LOG('⭐ special places: ' + (e && e.message)); } finally { _running = false; }
 }
 function start(log) { if (log) LOG = log; setTimeout(() => run().catch(() => {}), 2 * 60 * 1000); setInterval(() => run().catch(() => {}), 24 * 3600 * 1000); }
-module.exports = { start, run, places, parse, website, kupahOf };
+module.exports = { start, run, places, parse, website, kupahOf, bankOf };
