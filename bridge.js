@@ -2490,13 +2490,13 @@ const buffers = new Map(); // chatName → msgs[]
 const SELF_RAW = 'https://raw.githubusercontent.com/mpfed6556/chutznik-collectors/main/';
 let _updating = false;
 // the helper files that ride along with bridge.js (the daily sheet, its fonts)
-const EXTRA_FILES = ['scripts/shabbos.js', 'scripts/site-link.js', 'scripts/site-watch.js', 'scripts/romema-map.js', 'scripts/post-geo.js', 'scripts/special-places.js', 'scripts/mag-render.js', 'scripts/ocr-sweep.js', 'scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/bizlist.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
+const EXTRA_FILES = ['scripts/shabbos.js', 'scripts/site-link.js', 'scripts/site-watch.js', 'scripts/romema-map.js', 'scripts/ml-footprints.js', 'scripts/post-geo.js', 'scripts/special-places.js', 'scripts/mag-render.js', 'scripts/ocr-sweep.js', 'scripts/milestones.js', 'scripts/milestones-pdf.js', 'scripts/cvc-sync.js', 'scripts/bizlist.js', 'scripts/rental-match.js', 'scripts/events-lib.js', 'scripts/today-pdf.js', 'scripts/rentals-pdf.js', 'scripts/events-sync.js', 'scripts/jerusaguide-mail.js', 'fonts/DejaVuSans.ttf', 'fonts/DejaVuSans-Bold.ttf', 'fonts/logo.png', 'fonts/lady.png',
   'fonts/PlayfairDisplay-Bold.ttf', 'fonts/PlayfairDisplay-Regular.ttf', 'fonts/Lora-Regular.ttf', 'fonts/Lora-Bold.ttf', 'fonts/FrankRuhlLibre-Bold.ttf',
   'fonts/bg-base.png', 'fonts/bg-top.png', 'fonts/bg-bot.png',
   'fonts/bg2-base.png', 'fonts/bg2-tl.png', 'fonts/bg2-tr.png', 'fonts/bg2-bot.png'];
 // helper modules the bridge holds in memory: a new copy on disk does nothing until a restart
 // (13 Oct 2026: the jerusaguide rules were updated three times on disk and the old ones kept running)
-const LOADED_HELPERS = /shabbos\.js|site-link\.js|site-watch\.js|romema-map\.js|post-geo\.js|special-places\.js|mag-render\.js|ocr-sweep\.js|jerusaguide-mail\.js|rental-match\.js|events-lib\.js|events-sync\.js|milestones(?:-pdf)?\.js|cvc-sync\.js|bizlist\.js|today-pdf\.js|rentals-pdf\.js$/;
+const LOADED_HELPERS = /shabbos\.js|site-link\.js|site-watch\.js|romema-map\.js|ml-footprints\.js|post-geo\.js|special-places\.js|mag-render\.js|ocr-sweep\.js|jerusaguide-mail\.js|rental-match\.js|events-lib\.js|events-sync\.js|milestones(?:-pdf)?\.js|cvc-sync\.js|bizlist\.js|today-pdf\.js|rentals-pdf\.js$/;
 async function syncExtras() {
   let n = 0, reload = [];
   for (const rel of EXTRA_FILES) {
