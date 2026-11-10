@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-10T02:20:34.046Z",
+  "lastRun": "2026-11-10T10:09:34.906Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-10T02:20:34.045Z",
-      "sent": 0,
+      "lastRun": "2026-11-10T10:09:34.904Z",
+      "sent": 2,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -73,7 +73,7 @@
         "iTravelJerusalem": "20 cards, nothing new (20 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (7 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (14 upcoming)",
-        "Pardes": "no events · fetch failed",
+        "Pardes": "ok via https://www.pardes.org.il/events/feed/ (2 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · nothing parsed at https://www.imj.org.il/en",
@@ -220,37 +220,50 @@
         ],
         "Nefesh B'Nefesh": [
           {
+            "title": "Exploring Ancient Wonders & Hidden Caves Date",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/exploring-ancient-wonders-hidden-caves-date/"
+          },
+          {
             "title": "Cyber Week",
             "date": null,
             "time": "",
             "link": "https://www.nbn.org.il/events/cyber-week/"
           },
           {
+            "title": "Memoir Workshop with Carol Ungar",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/memoir-workshop-with-carol-ungar/"
+          },
+          {
+            "title": "Technology Make Simple: Empowering You, One App At A Time",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/technology-make-simple-empowering-you-one-app-at-a-time-2/"
+          },
+          {
             "title": "Nishmat Online Beit Midrash",
             "date": null,
             "time": "",
             "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
-          },
-          {
-            "title": "Salsa Classes in Spanish",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/salsa-classes-in-spanish/"
-          },
-          {
-            "title": "Gil Hoffman: Behind the Scenes of the Israeli Corridors of Power and the Effort to Improve Israel’s International Image",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/gil-hoffman-behind-the-scenes-of-the-israeli-corridors-of-power-and-the-effort-to-improve-israels-international-image/"
-          },
-          {
-            "title": "Hebrew Unlocked is back",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/hebrew-unlocked-is-back/"
           }
         ],
-        "Pardes": [],
+        "Pardes": [
+          {
+            "title": "Author Series: Rabbi Yitz Greenberg",
+            "date": "2026-11-11",
+            "time": "7:45",
+            "link": "https://pardes.org.il/events/life-against-death-book-launch/"
+          },
+          {
+            "title": "Pardes Virtual Open House",
+            "date": "2026-11-15",
+            "time": "1 PM",
+            "link": "https://pardes.org.il/events/pardes-virtual-open-house/"
+          }
+        ],
         "Beit Avi Chai": [
           {
             "title": "Digging under the British Mandate Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 15, 2026 Sun |",
