@@ -2081,7 +2081,7 @@ async function pullSettings() {
     // RETITLE {stamp}: business-first titles for the past posts, once per stamp (titles only, nothing is published)
     // Chaim V'Chesed's articles as posts: once per stamp, and again every week on its own (Miriam, 7 Oct 2026)
     if (j.CVC && typeof j.CVC === 'object' && j.CVC.stamp) { global._cvc = { stamp: String(j.CVC.stamp), limit: Number(j.CVC.limit) || 0 }; setTimeout(cvcRun, 5000); }
-    if (j.RETITLE && typeof j.RETITLE === 'object' && j.RETITLE.stamp) { global._retitle = { stamp: String(j.RETITLE.stamp), days: Number(j.RETITLE.days) || 92, all: !!j.RETITLE.all }; setTimeout(retitleBacklog, 3000); }
+    if (j.RETITLE && typeof j.RETITLE === 'object' && j.RETITLE.stamp) { global._retitle = { stamp: String(j.RETITLE.stamp), days: Number(j.RETITLE.days) || 92, all: !!j.RETITLE.all, live: !!j.RETITLE.live }; setTimeout(retitleBacklog, 3000); }
     // MILESTONES {stamp, to: 'preview'|'members'}: the "three months of Chutznik" email, once per stamp (Miriam, 5 Oct 2026)
     // BIZLIST {stamp, to:[numbers], email:[addresses]}: every business with the number its advert came from (Miriam, 8 Oct 2026)
     if (j.BIZLIST && typeof j.BIZLIST === 'object' && j.BIZLIST.stamp) { global._bizlist = { stamp: String(j.BIZLIST.stamp), to: Array.isArray(j.BIZLIST.to) ? j.BIZLIST.to.map((x) => String(x).replace(/\D/g, '')).filter((x) => x.length >= 8) : [], email: Array.isArray(j.BIZLIST.email) ? j.BIZLIST.email.map((x) => String(x).trim().toLowerCase()).filter((x) => x.includes('@')) : [] }; setTimeout(bizlistRun, 4000); }
@@ -2199,7 +2199,7 @@ async function retitleBacklog() {
     const since = Date.now() - want.days * 86400000;
     // every external post (WhatsApp, magazine, feeds): title and text checked against each other and
     // against the first picture; rentals and jobs included (Miriam, 6 Oct 2026: "review every single post")
-    const reviewable = (it) => it && !/^wa_(BABYSIT|CLEANERS)$/.test(String(it.id)) && (want.all || it.curated !== 'reviewed');
+    const reviewable = (it) => it && !/^wa_(BABYSIT|CLEANERS)$/.test(String(it.id)) && (want.all || it.curated !== 'reviewed') && (!want.live || it.status === 'public');   // live: only what is up on the site (Miriam, 10 Nov 2026)
     // the reader needs its key on the site; without it there is nothing to do (and nothing is marked)
     const probe = await curateItems([{ id: 'probe', title: 'probe', memo: 'A test post for the reader.', group: '', attachments: [], contactPhone: '' }]);
     if (!probe || !Object.keys(probe).length) { log('✍️ review (' + want.stamp + '): the site reader did not answer — nothing done, will try again next round'); delete done[want.stamp]; fs.writeFileSync(RETITLE_FILE, JSON.stringify(done)); return; }
