@@ -195,12 +195,21 @@ async function runBuildings() {
     const order = []; for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) order.push([r, c]);
     order.sort((a, b) => Math.hypot(a[0] - r0, a[1] - c0) - Math.hypot(b[0] - r0, b[1] - c0));
     let sent = 0, total = 0, fails = 0;
-    for (const [r, c] of order) {
+    // a busy square gets a second try 90 s later, and a last one at the end of this round, not hours later in the next
+    // (10 Nov 2026: Geula / Kerem Avraham, 9_8, timed out once and waited for the whole city)
+    const later = []; const tries = {};
+    const queue = order.slice();
+    for (let qi = 0; qi < queue.length; qi++) {
+      const [r, c] = queue[qi];
       const key = r + '_' + c; if (mark.btiles[key] && Date.now() - mark.btiles[key] < 60 * 864e5) continue;
       // a square the free servers could not answer is passed over for now, not the end of the round (5 Nov 2026: one busy
       // square held the whole city back an hour); five in a row and the servers are resting — the round stops
-      const tile = await fetchTile(r, c);
-      if (!tile) { fails++; LOG('🏘️ buildings: square ' + key + ' did not come back — on to the next, it is tried again next round'); if (fails >= 5) break; await new Promise((ok) => setTimeout(ok, 90 * 1000)); continue; }
+      let tile = await fetchTile(r, c);
+      if (!tile) { tries[key] = (tries[key] || 0) + 1; await new Promise((ok) => setTimeout(ok, 90 * 1000)); tile = await fetchTile(r, c); }
+      if (!tile) { fails++; tries[key] = (tries[key] || 0) + 1;
+        if (tries[key] < 3 && !later.includes(key)) { later.push(key); queue.push([r, c]); LOG('🏘️ buildings: square ' + key + ' did not come back twice — tried once more at the end of this round'); }
+        else LOG('🏘️ buildings: square ' + key + ' did not come back — on to the next, it is tried again next round');
+        if (fails >= 5) break; await new Promise((ok) => setTimeout(ok, 90 * 1000)); continue; }
       fails = 0;
       try {
         const rr = await fetch(SITE + '/api/live-data?type=buildings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ btile: tile }), signal: AbortSignal.timeout(60000) });
