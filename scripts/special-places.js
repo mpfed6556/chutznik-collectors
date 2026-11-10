@@ -192,6 +192,26 @@ async function wiki1(lang, q, out) {
   } catch (e) {}
 }
 
+// the stores of the Tachana Merkazit (Miriam, 10 Nov 2026: "Generate posts for all the store in tachana merkazit and list them on the map"):
+// the directory pages and OpenStreetMap's shops around the station, kept for the site to make the posts from (key 'cbsstores')
+async function getAny(url) {
+  try { const r = await fetch(url, { headers: { 'User-Agent': UA, 'Accept-Language': 'he,en;q=0.8' }, redirect: 'follow', signal: AbortSignal.timeout(40000) });
+    const buf = Buffer.from(await r.arrayBuffer()); const ct = r.headers.get('content-type') || ''; let cs = (ct.match(/charset=([\w-]+)/i) || [])[1] || '';
+    if (!cs) { const head = buf.slice(0, 3000).toString('latin1'); cs = (head.match(/charset=["']?([\w-]+)/i) || [])[1] || 'utf-8'; }
+    let html = ''; try { html = new TextDecoder(/1255/.test(cs) ? 'windows-1255' : cs.toLowerCase()).decode(buf); } catch (e) { html = buf.toString('utf8'); }
+    return { url: r.url || url, status: r.status, html: html.slice(0, 220000) }; } catch (e) { return { url, status: 0, error: String(e && e.message).slice(0, 200), html: '' }; }
+}
+async function cbsStores() {
+  const pages = [];
+  for (const u of ['https://www.kenyonim.com/storeresults.asp?cboMall=56', 'https://www.kenyonim.com/mall.asp?mid=56', 'https://sites.google.com/site/centralstationjerusalem/shoppinglist', 'https://www.amot.co.il/assets/%D7%AA%D7%97%D7%A0%D7%94-%D7%9E%D7%A8%D7%9B%D7%96%D7%99%D7%AA-%D7%99%D7%A8%D7%95%D7%A9%D7%9C%D7%99%D7%9D/', 'https://www.rest.co.il/restaurants/jerusalem/jerusalem-central-bus-station/']) pages.push(await getAny(u));
+  // further result pages of the directory, if it has them
+  const more = [...new Set([...(pages[0].html || '').matchAll(/href=["']([^"']*storeresults\.asp[^"']*(?:page|Page|pg)=\d+[^"']*)["']/g)].map((m) => abs(pages[0].url, m[1].replace(/&amp;/g, '&'))))].slice(0, 2);
+  for (const u of more) pages.push(await getAny(u));
+  const j = await overpass('[out:json][timeout:90];(nwr(around:160,31.78905,35.20330)["shop"];nwr(around:160,31.78905,35.20330)["amenity"~"^(restaurant|fast_food|cafe|pharmacy|bank|atm|bureau_de_change|post_office|ice_cream)$"];nwr(around:160,31.78905,35.20330)["office"];nwr(around:160,31.78905,35.20330)["craft"];);out center tags;');
+  pages.push({ url: 'overpass:cbs', status: j ? 200 : 0, html: j ? JSON.stringify(j.elements || []).slice(0, 220000) : '' });
+  const st = await post({ kupahweb: { key: 'cbsstores', at: Date.now(), home: { url: 'cbs', status: 200 }, pages: pages.slice(0, 8) } }).catch(() => 0);
+  LOG('🏬 tachana merkazit stores: ' + pages.map((p) => (p.status || p.error || 0) + ':' + (p.html || '').length).join(' ') + (st === 200 ? '' : ' — the site answered ' + st));
+}
 async function post(body) {
   const r = await fetch(SITE + '/api/live-data?type=buildings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify(body), signal: AbortSignal.timeout(90000) });
   return r.status;
@@ -209,6 +229,8 @@ async function run() {
     clearTimeout(_retry); if (P.missing.length) _retry = setTimeout(() => run().catch(() => {}), 60 * 60 * 1000);
     for (const k of Object.keys(web)) { const st2 = await post({ kupahweb: { key: k, at: Date.now(), home: web[k].home, pages: web[k].pages } }).catch(() => 0);
       LOG('⭐ ' + k + ' website: ' + (web[k].home.status || web[k].home.error) + ', ' + web[k].pages.length + ' page(s) (' + (web[k].sitemapCount || 0) + ' in its sitemap), ' + web[k].logos.length + ' logo(s)' + (st2 === 200 ? '' : ' — the site answered ' + st2)); }
+    // once per restart of the droplet is plenty
+    if (!global._cbsDone) { global._cbsDone = true; await cbsStores().catch((e) => LOG('🏬 tachana merkazit stores: ' + (e && e.message))); }
   } catch (e) { LOG('⭐ special places: ' + (e && e.message)); } finally { _running = false; }
 }
 function start(log) { if (log) LOG = log; setTimeout(() => run().catch(() => {}), 2 * 60 * 1000); setInterval(() => run().catch(() => {}), 24 * 3600 * 1000); }
