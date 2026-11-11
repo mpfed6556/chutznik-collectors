@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-10T22:39:47.486Z",
+  "lastRun": "2026-11-11T02:18:37.548Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-10T22:39:47.484Z",
+      "lastRun": "2026-11-11T02:18:37.546Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -71,7 +71,7 @@
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "20 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
         "iTravelJerusalem": "20 cards, nothing new (20 distinct)",
-        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (7 upcoming)",
+        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (6 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (13 upcoming)",
         "Pardes": "ok via https://www.pardes.org.il/events/feed/ (2 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
@@ -156,12 +156,6 @@
         "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
-            "title": "Moonlight Stories - Kislev",
-            "date": "2026-11-10",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/moonlight-stories-kislev/"
-          },
-          {
             "title": "Winter Dreams - Lights Festival at Botanical Gardens",
             "date": "2026-11-17",
             "time": "",
@@ -184,6 +178,12 @@
             "date": "2026-12-01",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/hanukkah-interactive-sofer-tour/"
+          },
+          {
+            "title": "Hanukkah Wooden Mezuzah Workshop with Uri Kalfa",
+            "date": "2026-12-01",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/wooden-mezuzah-workshop/"
           }
         ],
         "OU Israel Center": [
