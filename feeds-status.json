@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-11T17:32:39.200Z",
+  "lastRun": "2026-11-11T23:44:03.151Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-11T17:32:39.199Z",
+      "lastRun": "2026-11-11T23:44:03.150Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -226,28 +226,28 @@
             "link": "https://www.nbn.org.il/events/cyber-week/"
           },
           {
-            "title": "High Tea & Torah in the Garden",
+            "title": "Find Work in Haifa and the North",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/high-tea-torah-in-the-garden/"
+            "link": "https://www.nbn.org.il/events/find-work-in-haifa-and-the-north/"
           },
           {
-            "title": "Nishmat Online Beit Midrash",
+            "title": "HER Women’s Reproductive Health and Fertility Panel",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
+            "link": "https://www.nbn.org.il/events/her-womens-reproductive-health-and-fertility-panel/"
           },
           {
-            "title": "Art Wednesday",
+            "title": "Rabbi Yitz Greenberg – Life Against Death Book Launch",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/art-wednesday/"
+            "link": "https://www.nbn.org.il/events/rabbi-yitz-greenberg-life-against-death-book-launch/"
           },
           {
-            "title": "Cafe Oleh | Fall 2026",
+            "title": "Tennis Course Beginner",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/cafe-oleh-fall-2026-2/"
+            "link": "https://www.nbn.org.il/events/tennis-course-advanced/"
           }
         ],
         "Pardes": [
