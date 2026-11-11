@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-11T02:18:37.548Z",
+  "lastRun": "2026-11-11T09:40:58.694Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -33,7 +33,7 @@
     "Partner": "blocked: robots.txt disallows this path",
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
     "AACI": "no feed, no scannable items, nothing in the news last 48h",
-    "Janglo": "ok via page-scan (5 items) — no RSS found",
+    "Janglo": "page HTTP 520",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
     "Drushim": "ok via page-scan (4 items) — no RSS found",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "no feed, no scannable items, nothing in the news last 48h",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "ok via RSS (6 items)",
+    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "no feed, no scannable items, nothing in the news last 48h",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,18 +61,18 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-11T02:18:37.546Z",
-      "sent": 0,
+      "lastRun": "2026-11-11T09:40:58.692Z",
+      "sent": 2,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
-        "iTravelJerusalem hints": "20 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
-        "iTravelJerusalem": "20 cards, nothing new (20 distinct)",
+        "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId YMNB6mKKAl-3ljMCMWIqk",
+        "iTravelJerusalem": "ok via listing cards (1 new of 40)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (6 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (13 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (11 upcoming)",
         "Pardes": "ok via https://www.pardes.org.il/events/feed/ (2 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
@@ -153,8 +153,22 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [],
+        "iTravelJerusalem": [
+          {
+            "title": "Tower of David Hanukkah Menorah Tours",
+            "date": "2026-12-06",
+            "time": "16:30",
+            "link": "https://www.itraveljerusalem.com/event/hanukkah-tour-tod",
+            "raw": "1 dates; first {\"startDate\":\"2026-12-06T14:30:00.000Z\",\"endDate\":\"\",\"startTime\":\"16:30\",\"endTime\":\"18:30\",\"repeats\":\"no\"}"
+          }
+        ],
         "Fun In Jerusalem": [
+          {
+            "title": "Hanukkah Gift Ideas from Tamarim Concierge",
+            "date": "2026-11-11",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/hanukkah-gifts-tamarim/"
+          },
           {
             "title": "Winter Dreams - Lights Festival at Botanical Gardens",
             "date": "2026-11-17",
@@ -178,27 +192,9 @@
             "date": "2026-12-01",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/hanukkah-interactive-sofer-tour/"
-          },
-          {
-            "title": "Hanukkah Wooden Mezuzah Workshop with Uri Kalfa",
-            "date": "2026-12-01",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/wooden-mezuzah-workshop/"
           }
         ],
         "OU Israel Center": [
-          {
-            "title": "Tuesday Learning for Women",
-            "date": "2026-11-10",
-            "time": "09:15",
-            "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-11-10/"
-          },
-          {
-            "title": "Rosh Chodesh Kislev- Yerushalayim",
-            "date": "2026-11-10",
-            "time": "09:15",
-            "link": "https://www.ouisrael.org/events/kislev2026/"
-          },
           {
             "title": "Rosh Chodesh Kislev BS",
             "date": "2026-11-11",
@@ -216,6 +212,18 @@
             "date": "2026-11-17",
             "time": "09:15",
             "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-11-17/"
+          },
+          {
+            "title": "Tuesday Learning for Women",
+            "date": "2026-11-24",
+            "time": "09:15",
+            "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-11-24/"
+          },
+          {
+            "title": "Men's Safrut 5787",
+            "date": "2026-11-30",
+            "time": "",
+            "link": "https://www.ouisrael.org/events/mens-safrut-5787/"
           }
         ],
         "Nefesh B'Nefesh": [
