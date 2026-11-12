@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-12T04:23:29.987Z",
+  "lastRun": "2026-11-12T13:05:17.554Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-12T04:23:29.986Z",
+      "lastRun": "2026-11-12T13:05:17.553Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -72,7 +72,7 @@
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId vhxIwPL8W_jHi0Z33i66V",
         "iTravelJerusalem": "40 cards, nothing new (20 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (5 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (11 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (10 upcoming)",
         "Pardes": "ok via https://www.pardes.org.il/events/feed/ (1 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
@@ -188,12 +188,6 @@
         ],
         "OU Israel Center": [
           {
-            "title": "Rosh Chodesh Kislev BS",
-            "date": "2026-11-11",
-            "time": "09:15",
-            "link": "https://www.ouisrael.org/events/kislev2026bs/"
-          },
-          {
             "title": "DOROT CHOIR PERFORMANCE",
             "date": "2026-11-16",
             "time": "19:30",
@@ -216,9 +210,21 @@
             "date": "2026-11-30",
             "time": "",
             "link": "https://www.ouisrael.org/events/mens-safrut-5787/"
+          },
+          {
+            "title": "Tuesday Learning for Women",
+            "date": "2026-12-01",
+            "time": "09:15",
+            "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-12-01/"
           }
         ],
         "Nefesh B'Nefesh": [
+          {
+            "title": "ACADEMY BY SAR-EL",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/academy-by-sar-el/"
+          },
           {
             "title": "Cyber Week",
             "date": null,
@@ -226,28 +232,22 @@
             "link": "https://www.nbn.org.il/events/cyber-week/"
           },
           {
-            "title": "Find Work in Haifa and the North",
+            "title": "StandWithUs Jerusalem Gala Evening",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/find-work-in-haifa-and-the-north/"
+            "link": "https://www.nbn.org.il/events/standwithus-jerusalem-gala-evening/"
           },
           {
-            "title": "HER Women’s Reproductive Health and Fertility Panel",
+            "title": "Saul Kaye (USA) Live at The Terminal!",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/her-womens-reproductive-health-and-fertility-panel/"
+            "link": "https://www.nbn.org.il/events/saul-kaye-usa-live-at-the-terminal/"
           },
           {
-            "title": "Rabbi Yitz Greenberg – Life Against Death Book Launch",
+            "title": "Night Seder Program!",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/rabbi-yitz-greenberg-life-against-death-book-launch/"
-          },
-          {
-            "title": "Tennis Course Beginner",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/tennis-course-advanced/"
+            "link": "https://www.nbn.org.il/events/night-seder-program/"
           }
         ],
         "Pardes": [
