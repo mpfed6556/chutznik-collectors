@@ -2067,6 +2067,8 @@ async function pullSettings() {
       if (on !== !!global._waSendOn || cm !== !!global._waCommentsOn) { global._waSendOn = on; global._waCommentsOn = cm; log('⚙️  WhatsApp sending is ' + (on ? 'ON' : cm ? 'COMMENT NOTES ONLY (a comment on a post posted for someone tells them at once; nothing else goes out)' : 'OFF') + ' (WA_SEND in the site settings)'); } }
     // the member drive's invites (Miriam, 12 Nov 2026: "1 message every 30 minutes from 8 am to 8 pm sunday through thursday and
     // 8-12 morning friday so we dont lose access to the whatsapp"): WA_INVITES { on, gapMin } lets outbox kind 'invite' through
+    // WA_PACE (12 Nov 2026): the human pace for every WhatsApp message — runs of burstMin–burstMax, then breakMin–breakMax minutes
+    { const v = j.WA_PACE && typeof j.WA_PACE === 'object' ? j.WA_PACE : null; if (JSON.stringify(v) !== JSON.stringify(global._waPace || null)) { global._waPace = v; if (v) log('⚙️  WhatsApp pace: ' + JSON.stringify(v)); } }
     { const v = j.WA_INVITES && typeof j.WA_INVITES === 'object' ? j.WA_INVITES : {}; const on = !!v.on; const gap = Math.max(10, Number(v.gapMin) || 30);
       if (on !== !!global._waInvitesOn || gap !== global._waInviteGapMin) { global._waInvitesOn = on; global._waInviteGapMin = gap; log('⚙️  business invites are ' + (on ? 'ON — one every ' + gap + ' min, Sun–Thu 8:00–20:00, Fri 8:00–12:00 (Israel)' : 'OFF') + ' (WA_INVITES in the site settings)'); } }
     if (j.NOTIFY_MODE && ['off', 'dry', 'live'].includes(String(j.NOTIFY_MODE).toLowerCase()) && String(j.NOTIFY_MODE).toLowerCase() !== NOTIFY_MODE) {

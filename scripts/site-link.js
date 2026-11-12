@@ -42,12 +42,7 @@ const SEND_GAP = Number(process.env.NOTE_GAP_MIN || 3) * 60 * 1000, SEND_HOUR = 
 let SENT = []; try { SENT = JSON.parse(fs.readFileSync(SEND_FILE, 'utf8')) || []; } catch (e) {}
 function sendAllowed() {
   if (!global._waSendOn) return 'WhatsApp sending is off (Miriam, 27 Oct 2026: never via the site, for now)';   // the master switch: WA_SEND 'on' in the site settings turns it back on
-  const now = Date.now(); SENT = SENT.filter((t) => now - t < 24 * 3600 * 1000);
-  const last = SENT.length ? SENT[SENT.length - 1] : 0; const hour = SENT.filter((t) => now - t < 3600 * 1000).length;
-  if (now - last < SEND_GAP) return 'the last note went ' + Math.round((now - last) / 1000) + ' s ago';
-  if (hour >= SEND_HOUR) return hour + ' notes in the last hour';
-  if (SENT.length >= SEND_DAY) return SENT.length + ' notes today';
-  return '';
+  return '';   // no daily or hourly count any more (12 Nov 2026): the shared human pace below spaces every message
 }
 function sendDone() { SENT.push(Date.now()); try { fs.writeFileSync(SEND_FILE, JSON.stringify(SENT)); } catch (e) {} }
 // the comment notes (Miriam, 9 Nov 2026: "on the moment"): no gap between them, their own hourly cap, and they go while
@@ -57,7 +52,8 @@ function commentAllowed() {
   if (!global._waCommentsOn && !global._waSendOn) return 'WhatsApp sending is off (WA_SEND is neither on nor comments)';
   const now = Date.now(); CSENT = CSENT.filter((t) => now - t < 3600 * 1000);
   if (CSENT.length >= CM_HOUR) return CSENT.length + ' comment notes in the last hour';
-  return '';
+  if (!awakeHours()) return 'night in Israel — comment notes go from 7:30';
+  return paceAllowed();
 }
 // the member drive's invites (12 Nov 2026): one at a time, gapMin apart (30 by default), only Sunday–Thursday 8:00–20:00 and
 // Friday 8:00–12:00 Israel time, never on Shabbos, never twice — their own log, so the other notes keep their own pace
@@ -72,13 +68,37 @@ function inviteAllowed() {
   const t = israelNow();
   const open = (t.day >= 0 && t.day <= 4 && t.min >= 8 * 60 && t.min < 20 * 60) || (t.day === 5 && t.min >= 8 * 60 && t.min < 12 * 60);
   if (!open) return 'outside the invite hours (Sun–Thu 8–20, Fri 8–12 Israel)';
-  const gap = (Number(global._waInviteGapMin) || 30) * 60 * 1000; const last = ISENT.length ? ISENT[ISENT.length - 1] : 0;
-  if (Date.now() - last < gap) return 'the last invite went ' + Math.round((Date.now() - last) / 60000) + ' min ago';
-  return '';
+  return paceAllowed();   // the gap is the shared human pace below (12 Nov 2026), no longer a fixed 30 minutes
 }
 function inviteDone() { ISENT.push(Date.now()); ISENT = ISENT.slice(-500); try { fs.writeFileSync(INV_FILE, JSON.stringify(ISENT)); } catch (e) {} }
+// one human pace for everything that goes out (Miriam, 12 Nov 2026: "i dont care how many messages go out per day ... as
+// long as the rules are never broken to send a bunch at once, like you can send 2 or 6 at once and then take a 20 minute
+// break and then a 12 minute break. look human"): a short run of 2–6 messages, 40–150 s apart with "typing…" first, then a
+// 12–25 minute break, then the next run; no daily cap. Comment notes go first in each run; one-time claim codes never wait.
+// WA_PACE { burstMin, burstMax, breakMin, breakMax } in the site settings changes the numbers.
+const PACE_FILE = path.join(__dirname, '..', 'pace-state.json');
+let PACE = { left: 0, nextAt: 0 }; try { PACE = Object.assign(PACE, JSON.parse(fs.readFileSync(PACE_FILE, 'utf8')) || {}); } catch (e) {}
+const rnd = (a, b) => a + Math.random() * (b - a);
+function paceCfg() { const v = global._waPace || {}; const n = (x, d) => (Number.isFinite(Number(x)) && Number(x) > 0 ? Number(x) : d);
+  const bMin = n(v.burstMin, 2), bMax = Math.max(bMin, n(v.burstMax, 6)), kMin = n(v.breakMin, 12), kMax = Math.max(kMin, n(v.breakMax, 25)); return { bMin, bMax, kMin, kMax }; }
+function paceAllowed() { const now = Date.now(); if (now < PACE.nextAt) return 'next message in ' + Math.max(1, Math.round((PACE.nextAt - now) / 60000)) + ' min (' + (PACE.left > 0 ? 'mid-run' : 'on a break') + ')'; return ''; }
+function paceDone() {
+  const c = paceCfg(); const now = Date.now();
+  if (PACE.left <= 0) PACE.left = Math.round(rnd(c.bMin, c.bMax));   // a new run starts with this message
+  PACE.left -= 1;
+  if (PACE.left > 0) PACE.nextAt = now + rnd(40, 150) * 1000;
+  else { PACE.nextAt = now + rnd(c.kMin, c.kMax) * 60000; CFG.log('☕ WhatsApp break: next run in ' + Math.round((PACE.nextAt - now) / 60000) + ' min'); }
+  try { fs.writeFileSync(PACE_FILE, JSON.stringify(PACE)); } catch (e) {}
+}
+// typing… for a few seconds before the message, as a person would
+async function typeThenSend(sock, jid, content, opts) {
+  try { await sock.sendPresenceUpdate('composing', jid); await new Promise((r) => setTimeout(r, rnd(2500, 7000))); await sock.sendPresenceUpdate('paused', jid); } catch (e) {}
+  return sock.sendMessage(jid, content, opts);
+}
+// comment notes and the invite hours: people are awake 7:30–22:30 Israel time
+function awakeHours() { const t = israelNow(); return t.min >= 7 * 60 + 30 && t.min < 22 * 60 + 30; }
 let _paceSaid = 0;
-function paceLog(why, what) { if (Date.now() - _paceSaid > 10 * 60 * 1000) { _paceSaid = Date.now(); CFG.log('🐢 ' + what + ' wait: ' + why + ' (one note every ' + Math.round(SEND_GAP / 60000) + ' min, ' + SEND_HOUR + ' an hour, ' + SEND_DAY + ' a day)'); } }
+function paceLog(why, what) { if (Date.now() - _paceSaid > 10 * 60 * 1000) { _paceSaid = Date.now(); const c = paceCfg(); CFG.log('🐢 ' + what + ' wait: ' + why + ' (runs of ' + c.bMin + '–' + c.bMax + ', then a ' + c.kMin + '–' + c.kMax + ' min break)'); } }
 
 // ── outbox ───────────────────────────────────────────────────────────────────────────────────────
 let _outBusy = false;
@@ -93,20 +113,25 @@ async function outboxRound() {
     const j = await r.json(); const list = (j && Array.isArray(j.pending)) ? j.pending : [];
     if (!list.length) return;
     const done = [];
-    for (const m of list.slice(0, 20)) {
+    const rank = (m) => (String(m.kind || '') === 'code' ? 0 : String(m.kind || '') === 'comment' ? 1 : 2);
+    const ordered = list.slice().sort((a, b) => rank(a) - rank(b) || (Number(a.at) || 0) - (Number(b.at) || 0));
+    let sentNow = 0; const waitWhy = paceAllowed();
+    for (const m of ordered.slice(0, 25)) {
+      if (sentNow && String(m.kind || '') !== 'code') break;   // one paced message per round; the next waits for its turn
       const id = String(m.id || ''); let d = String(m.to || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '972' + d.slice(1);
       const text = String(m.text || '').trim();
       if (!id) continue;
       if (d.length < 11 || d.length > 13 || !text) { CFG.log('📤 outbox: ' + id + ' has no usable number — dropped'); done.push(id); continue; }
       const isCode = String(m.kind || '') === 'code';   // a one-time code the business asked for itself (claiming its listing, 27 Oct 2026): never a note, so neither rule below applies
       const isComment = String(m.kind || '') === 'comment';   // someone commented on the post posted for this person (9 Nov 2026): about their own post, so not an outreach note — no ledger, no pacing gap
+      if (waitWhy && !isCode) { paceLog(waitWhy, 'WhatsApp'); continue; }   // mid-break: only a claim code goes now
       if (CFG.optedOut(d)) { CFG.log('📤 outbox: ' + d + ' asked not to be messaged — dropped'); done.push(id); continue; }
       // never twice, whatever button queued it (Miriam, 26 Oct 2026: a realty office got the same note twice)
       if (!isCode && !isComment && await contactedHas(d)) { CFG.log('📤 outbox: ' + d + ' was written to before — dropped'); done.push(id); continue; }
       if (String(m.kind || '') === 'invite') {
         if (await contactedHas(d)) { CFG.log('📨 invite: ' + d + ' was written to before — dropped'); done.push(id); continue; }
         const why = inviteAllowed(); if (why) { paceLog(why, 'invite'); continue; }   // comment notes further down the list may still go
-        try { inviteDone(); await sock.sendMessage(d + '@s.whatsapp.net', { text }, { commentNote: true });
+        try { inviteDone(); paceDone(); sentNow++; await typeThenSend(sock, d + '@s.whatsapp.net', { text }, { commentNote: true });
           CFG.log('📨 invite → ' + d + ' (post ' + (m.postId || '?') + ')'); done.push(id); await contactedAdd(d, 'invite', m.postId || ''); }
         catch (e) { CFG.log('📨 invite failed → ' + d + ': ' + (e && e.message)); }
         continue;
@@ -114,13 +139,13 @@ async function outboxRound() {
       if (isComment) {
         const why = commentAllowed(); if (why) { paceLog(why, 'comment note'); continue; }   // the others in the list may still be sendable
         if (Date.now() - Number(m.at || 0) > 3 * 864e5) { CFG.log('📤 comment note for ' + d + ' is three days old — dropped'); done.push(id); continue; }
-        try { CSENT.push(Date.now()); await sock.sendMessage(d + '@s.whatsapp.net', { text }, { commentNote: true }); CFG.log('💬 comment note → ' + d + ' (post ' + (m.postId || '?') + ')'); done.push(id); }
+        try { CSENT.push(Date.now()); paceDone(); sentNow++; await typeThenSend(sock, d + '@s.whatsapp.net', { text }, { commentNote: true }); CFG.log('💬 comment note → ' + d + ' (post ' + (m.postId || '?') + ')'); done.push(id); }
         catch (e) { CFG.log('💬 comment note failed → ' + d + ': ' + (e && e.message)); }
         continue;
       }
-      const why = sendAllowed(); if (why) { paceLog(why, 'outbox'); break; }   // the rest next round
+      const why = isCode ? '' : (sendAllowed() || paceAllowed()); if (why) { paceLog(why, 'outbox'); continue; }   // the rest next round
       try {
-        sendDone(); await sock.sendMessage(d + '@s.whatsapp.net', { text });
+        if (!isCode) { sendDone(); paceDone(); sentNow++; } await (isCode ? sock.sendMessage(d + '@s.whatsapp.net', { text }) : typeThenSend(sock, d + '@s.whatsapp.net', { text }));
         CFG.log('📤 outbox → ' + d + ': "' + text.slice(0, 60).replace(/\n/g, ' ') + '"');
         done.push(id); if (!isCode) await contactedAdd(d, 'outbox', m.postId || '');
       } catch (e) { CFG.log('📤 outbox failed → ' + d + ': ' + (e && e.message)); }
