@@ -2164,18 +2164,19 @@ setInterval(cvcRun, 6 * 3600 * 1000);
 let _catchupBusy = false;
 async function curateCatchup() {
   if (!CURATE || !INGEST_KEY || _catchupBusy) return;
-  if (!aiAllowed('catchup', 3)) return;   // three reader calls a round, within the day's share
+  if (!aiAllowed('catchup', 5)) return;   // five reader calls a round (40 posts), within the catch-up allowance
   _catchupBusy = true;
   try {
     const r = await fetch(SITE + '/api/live-data?type=updates&queue=1&t=' + Date.now(), { headers: { 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' } }); const all = r.ok ? await r.json() : [];
     const since = Date.now() - 5 * 86400000;   // five days back (12 Nov 2026: "catch up all the things that aren't there")
     // once: every plain "waiting" post of those days is decided again under today's rules (the same-seller hold is gone)
-    let rejudge = false; try { rejudge = fs.readFileSync(path.join(__dirname, 'catchup-rejudge.txt'), 'utf8').trim() !== '2026-11-12'; } catch (e) { rejudge = true; }
+    let rejudge = false; try { rejudge = fs.readFileSync(path.join(__dirname, 'catchup-rejudge.txt'), 'utf8').trim() !== '2026-11-12b'; } catch (e) { rejudge = true; }
     // a "waiting" question is asked about again once replies have come in (Miriam, 14 Oct 2026: "only answers")
     const judgedWith = (it) => { const m = /^waiting:(\d+)$/.exec(String(it.curated || '')); return m ? Number(m[1]) : (String(it.curated || '') === 'waiting' ? 0 : -1); };
     const again = (it) => judgedWith(it) >= 0 && (it.comments || []).length > judgedWith(it);
-    const list = (Array.isArray(all) ? all : []).filter((it) => it && it.status === 'pending' && (!it.curated || again(it) || (rejudge && it.curated === 'waiting')) && curatable(it) && (it.created || 0) >= since && !inviteAd(String(it.title || '') + '\n' + String(it.memo || ''))).sort((a, b) => (a.created || 0) - (b.created || 0)).slice(0, 24);
-    if (!list.length) return;
+    const todo = (Array.isArray(all) ? all : []).filter((it) => it && it.status === 'pending' && (!it.curated || again(it) || (rejudge && it.curated === 'waiting')) && curatable(it) && (it.created || 0) >= since && !inviteAd(String(it.title || '') + '\n' + String(it.memo || ''))).sort((a, b) => (a.created || 0) - (b.created || 0));
+    const list = todo.slice(0, 40); const allDone = todo.length <= 40;   // the re-check stamp waits until every waiting post of the five days was seen
+    if (!list.length) { if (rejudge) { try { fs.writeFileSync(path.join(__dirname, 'catchup-rejudge.txt'), '2026-11-12b'); } catch (e) {} } return; }
     let published = 0, waiting = 0, failed = 0;
     for (let i = 0; i < list.length; i += 8) {
       const batch = list.slice(i, i + 8);
@@ -2183,7 +2184,7 @@ async function curateCatchup() {
       if (!Object.keys(out).length) { failed += batch.length; await new Promise((res) => setTimeout(res, 5000)); continue; }   // still no reader: the posts stay for next time
       for (const it of batch) {
         const c = out[String(it.id)]; if (!c) { failed++; continue; }
-        const patch = { curated: c.publish ? 'published' : 'waiting' + ((it.comments || []).length ? ':' + it.comments.length : '') };
+        const patch = { curated: c.publish ? 'published' : 'waiting:' + (it.comments || []).length };   // 'waiting:N' = decided again with N replies, so the re-check moves on
         if (c.title && String(c.title).trim().length >= 8 && !/https?:\/\//i.test(c.title)) patch.title = String(c.title).trim().substring(0, 150);
         if (c.publish) patch.status = 'public';
         try { const pr = await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', id: String(it.id), patch }) }); if (!pr.ok) { failed++; continue; } } catch (e) { failed++; continue; }
@@ -2192,7 +2193,7 @@ async function curateCatchup() {
       }
       await new Promise((res) => setTimeout(res, 3000));
     }
-    if (rejudge && !failed) { try { fs.writeFileSync(path.join(__dirname, 'catchup-rejudge.txt'), '2026-11-12'); } catch (e) {} }
+    if (rejudge && !failed && allDone) { try { fs.writeFileSync(path.join(__dirname, 'catchup-rejudge.txt'), '2026-11-12b'); } catch (e) {} }
     log('✍️ catch-up: ' + list.length + ' undecided post(s) → ' + published + ' published, ' + waiting + ' wait for Miriam' + (failed ? ', ' + failed + ' still undecided' : ''));
   } catch (e) { log('✍️ catch-up: ' + (e && e.message)); }
   finally { _catchupBusy = false; }
