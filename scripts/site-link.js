@@ -59,6 +59,24 @@ function commentAllowed() {
   if (CSENT.length >= CM_HOUR) return CSENT.length + ' comment notes in the last hour';
   return '';
 }
+// the member drive's invites (12 Nov 2026): one at a time, gapMin apart (30 by default), only Sunday–Thursday 8:00–20:00 and
+// Friday 8:00–12:00 Israel time, never on Shabbos, never twice — their own log, so the other notes keep their own pace
+const INV_FILE = path.join(__dirname, '..', 'invite-log.json');
+let ISENT = []; try { ISENT = JSON.parse(fs.readFileSync(INV_FILE, 'utf8')) || []; } catch (e) {}
+function israelNow() {
+  const p = {}; for (const x of new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jerusalem', weekday: 'short', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(new Date())) p[x.type] = x.value;
+  return { day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.weekday), min: Number(p.hour) * 60 + Number(p.minute) };
+}
+function inviteAllowed() {
+  if (!global._waInvitesOn && !global._waSendOn) return 'business invites are off (WA_INVITES)';
+  const t = israelNow();
+  const open = (t.day >= 0 && t.day <= 4 && t.min >= 8 * 60 && t.min < 20 * 60) || (t.day === 5 && t.min >= 8 * 60 && t.min < 12 * 60);
+  if (!open) return 'outside the invite hours (Sun–Thu 8–20, Fri 8–12 Israel)';
+  const gap = (Number(global._waInviteGapMin) || 30) * 60 * 1000; const last = ISENT.length ? ISENT[ISENT.length - 1] : 0;
+  if (Date.now() - last < gap) return 'the last invite went ' + Math.round((Date.now() - last) / 60000) + ' min ago';
+  return '';
+}
+function inviteDone() { ISENT.push(Date.now()); ISENT = ISENT.slice(-500); try { fs.writeFileSync(INV_FILE, JSON.stringify(ISENT)); } catch (e) {} }
 let _paceSaid = 0;
 function paceLog(why, what) { if (Date.now() - _paceSaid > 10 * 60 * 1000) { _paceSaid = Date.now(); CFG.log('🐢 ' + what + ' wait: ' + why + ' (one note every ' + Math.round(SEND_GAP / 60000) + ' min, ' + SEND_HOUR + ' an hour, ' + SEND_DAY + ' a day)'); } }
 
@@ -85,6 +103,14 @@ async function outboxRound() {
       if (CFG.optedOut(d)) { CFG.log('📤 outbox: ' + d + ' asked not to be messaged — dropped'); done.push(id); continue; }
       // never twice, whatever button queued it (Miriam, 26 Oct 2026: a realty office got the same note twice)
       if (!isCode && !isComment && await contactedHas(d)) { CFG.log('📤 outbox: ' + d + ' was written to before — dropped'); done.push(id); continue; }
+      if (String(m.kind || '') === 'invite') {
+        if (await contactedHas(d)) { CFG.log('📨 invite: ' + d + ' was written to before — dropped'); done.push(id); continue; }
+        const why = inviteAllowed(); if (why) { paceLog(why, 'invite'); continue; }   // comment notes further down the list may still go
+        try { inviteDone(); await sock.sendMessage(d + '@s.whatsapp.net', { text }, { commentNote: true });
+          CFG.log('📨 invite → ' + d + ' (post ' + (m.postId || '?') + ')'); done.push(id); await contactedAdd(d, 'invite', m.postId || ''); }
+        catch (e) { CFG.log('📨 invite failed → ' + d + ': ' + (e && e.message)); }
+        continue;
+      }
       if (isComment) {
         const why = commentAllowed(); if (why) { paceLog(why, 'comment note'); continue; }   // the others in the list may still be sendable
         if (Date.now() - Number(m.at || 0) > 3 * 864e5) { CFG.log('📤 comment note for ' + d + ' is three days old — dropped'); done.push(id); continue; }
@@ -164,4 +190,4 @@ function start() {
 }
 function report() { return { notesHour: SENT.filter((t) => Date.now() - t < 3600 * 1000).length, notesDay: SENT.length, memoryWaiting: _memLines, memoryLastSent: _memLast ? new Date(_memLast).toISOString() : null, contactedKnown: _keys ? _keys.size : null }; }
 
-module.exports = { init, start, contactedHas, contactedAdd, contactedKeys, outboxRound, memoryPush, memoryFlush, leadsPush, report, norm, sendAllowed, sendDone, paceLog };
+module.exports = { init, start, inviteAllowed, contactedHas, contactedAdd, contactedKeys, outboxRound, memoryPush, memoryFlush, leadsPush, report, norm, sendAllowed, sendDone, paceLog };
