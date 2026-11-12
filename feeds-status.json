@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-11T23:44:03.151Z",
+  "lastRun": "2026-11-12T04:23:29.987Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-11T23:44:03.150Z",
+      "lastRun": "2026-11-12T04:23:29.986Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -71,9 +71,9 @@
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId vhxIwPL8W_jHi0Z33i66V",
         "iTravelJerusalem": "40 cards, nothing new (20 distinct)",
-        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (6 upcoming)",
+        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (5 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (11 upcoming)",
-        "Pardes": "ok via https://www.pardes.org.il/events/feed/ (2 upcoming)",
+        "Pardes": "ok via https://www.pardes.org.il/events/feed/ (1 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · nothing parsed at https://www.imj.org.il/en",
@@ -156,12 +156,6 @@
         "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
-            "title": "Hanukkah Gift Ideas from Tamarim Concierge",
-            "date": "2026-11-11",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/hanukkah-gifts-tamarim/"
-          },
-          {
             "title": "Winter Dreams - Lights Festival at Botanical Gardens",
             "date": "2026-11-17",
             "time": "",
@@ -184,6 +178,12 @@
             "date": "2026-12-01",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/hanukkah-interactive-sofer-tour/"
+          },
+          {
+            "title": "Hanukkah Wooden Mezuzah Workshop with Uri Kalfa",
+            "date": "2026-12-01",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/wooden-mezuzah-workshop/"
           }
         ],
         "OU Israel Center": [
@@ -251,12 +251,6 @@
           }
         ],
         "Pardes": [
-          {
-            "title": "Author Series: Rabbi Yitz Greenberg",
-            "date": "2026-11-11",
-            "time": "7:45",
-            "link": "https://pardes.org.il/events/life-against-death-book-launch/"
-          },
           {
             "title": "Pardes Virtual Open House",
             "date": "2026-11-15",
