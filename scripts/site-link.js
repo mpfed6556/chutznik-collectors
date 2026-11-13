@@ -93,7 +93,27 @@ function paceDone() {
 // typing… for a few seconds before the message, as a person would
 async function typeThenSend(sock, jid, content, opts) {
   try { await sock.sendPresenceUpdate('composing', jid); await new Promise((r) => setTimeout(r, rnd(2500, 7000))); await sock.sendPresenceUpdate('paused', jid); } catch (e) {}
-  return sock.sendMessage(jid, content, opts);
+  return sock.sendMessage(jid, await withGuide(content), opts);
+}
+// a Chutznik guide goes as the PDF itself, attached, with the words as its caption — not as a link (Miriam, 13 Nov 2026:
+// "why aren't you sending the guide as an attached PDF? It should be from now on"); if the file cannot be fetched, the link stays
+const GUIDE_RE = /:?\s*(https?:\/\/(?:www\.)?chutznik\.org\/guides\/([\w.-]+)\.pdf)\b/i;
+const _guideCache = new Map();
+async function guidePdf(url) {
+  const c = _guideCache.get(url); if (c && Date.now() - c.at < 6 * 3600e3) return c.buf;
+  const r = await fetch(url, { signal: AbortSignal.timeout(30000) }); if (!r.ok) throw new Error('HTTP ' + r.status);
+  const buf = Buffer.from(await r.arrayBuffer()); if (buf.length < 1000 || buf.slice(0, 4).toString() !== '%PDF') throw new Error('not a PDF');
+  _guideCache.set(url, { at: Date.now(), buf }); return buf;
+}
+async function withGuide(content) {
+  const text = content && typeof content.text === 'string' ? content.text : ''; const m = text.match(GUIDE_RE); if (!m) return content;
+  try {
+    const buf = await guidePdf(m[1]);
+    const nice = m[2].split(/[-_]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+    const caption = text.replace(GUIDE_RE, ' (attached 📎)').replace(/[ \t]+\n/g, '\n').trim();
+    CFG.log('📎 guide attached: ' + m[2] + '.pdf (' + Math.round(buf.length / 1024) + ' KB)');
+    return { document: buf, mimetype: 'application/pdf', fileName: 'Chutznik - ' + nice + '.pdf', caption };
+  } catch (e) { CFG.log('📎 guide ' + m[2] + '.pdf could not be fetched (' + (e && e.message) + ') — sent as a link'); return content; }
 }
 // comment notes and the invite hours: people are awake 7:30–22:30 Israel time
 function awakeHours() { const t = israelNow(); return t.min >= 7 * 60 + 30 && t.min < 22 * 60 + 30; }
