@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-13T01:39:15.744Z",
+  "lastRun": "2026-11-13T08:49:12.001Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-13T01:39:15.743Z",
-      "sent": 9,
+      "lastRun": "2026-11-13T08:49:12.000Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -83,7 +83,7 @@
         "Jerusalem Botanical Gardens": "no events · nothing parsed at https://www.botanic.co.il/en/",
         "Biblical Zoo": "no events · HTTP 403",
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
-        "Eventbrite Jerusalem": "ok via https://www.eventbrite.com/d/israel--jerusalem/events/ (10 upcoming)",
+        "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
         "Secret Jerusalem": "no events · HTTP 403"
       },
@@ -329,38 +329,7 @@
             "link": "https://www.jso.co.il/%d7%91%d7%99%d7%9f-%d7%94%d7%a4%d7%98%d7%99%d7%a9-%d7%9c%d7%9e%d7%92%d7%9c/"
           }
         ],
-        "Eventbrite Jerusalem": [
-          {
-            "title": "Physicians Financial Wellness Conference 2026",
-            "date": "2026-11-14",
-            "time": "",
-            "link": "https://www.eventbrite.ca/e/physicians-financial-wellness-conference-2026-tickets-1997800789942"
-          },
-          {
-            "title": "SVPG Product Masterclass - Nov 16-18, 2026",
-            "date": "2026-11-16",
-            "time": "",
-            "link": "https://www.eventbrite.co.uk/e/svpg-product-masterclass-nov-16-18-2026-tickets-1999787190319"
-          },
-          {
-            "title": "Visite du Tombeau des Rois - Tombs of the Kings",
-            "date": "2026-11-17",
-            "time": "",
-            "link": "https://www.eventbrite.com/e/visite-du-tombeau-des-rois-tombs-of-the-kings-tickets-1990878690757"
-          },
-          {
-            "title": "Макаки пицца и деструкция",
-            "date": "2026-11-18",
-            "time": "",
-            "link": "https://www.eventbrite.com/e/2004062757656"
-          },
-          {
-            "title": "SCHOOL OF PROPHETS VI: Dreams & Visions III - Interpretation and Alignment",
-            "date": "2026-11-19",
-            "time": "",
-            "link": "https://www.eventbrite.ca/e/school-of-prophets-vi-dreams-visions-iii-interpretation-and-alignment-tickets-2003064401546"
-          }
-        ],
+        "Eventbrite Jerusalem": [],
         "Janglo events": [],
         "Secret Jerusalem": []
       }
