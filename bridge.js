@@ -3121,12 +3121,34 @@ async function handleMessages(sock, messages, label) {
   saveSeen(); saveNames();
 }
 
+// What the bridge sends is kept for a week (13 Nov 2026: Miriam's phone showed "Waiting for this message" on an invite the
+// bridge had sent): when a phone — hers or the person's — can't open a message it asks for it again, and WhatsApp needs
+// the sender to hand it over once more. Without a copy the asking phone waits forever.
+const SENT_FILE = path.join(__dirname, 'sent-cache.json');
+let SENT_CACHE = {}; try { SENT_CACHE = JSON.parse(fs.readFileSync(SENT_FILE, 'utf8')) || {}; } catch (e) {}
+let _sentSaveT = null;
+function rememberSent(msg) {
+  try {
+    if (!msg || !msg.key || !msg.key.id || !msg.message) return;
+    SENT_CACHE[msg.key.id] = { m: JSON.parse(JSON.stringify(msg.message)), t: Date.now() };
+    const cut = Date.now() - 7 * 864e5; const ids = Object.keys(SENT_CACHE);
+    for (const id of ids) if (SENT_CACHE[id].t < cut) delete SENT_CACHE[id];
+    const left = Object.keys(SENT_CACHE); if (left.length > 3000) left.sort((a, b) => SENT_CACHE[a].t - SENT_CACHE[b].t).slice(0, left.length - 3000).forEach((id) => delete SENT_CACHE[id]);
+    clearTimeout(_sentSaveT); _sentSaveT = setTimeout(() => { try { fs.writeFileSync(SENT_FILE, JSON.stringify(SENT_CACHE)); } catch (e) {} }, 2000);
+  } catch (e) {}
+}
+// the retry counter WhatsApp's library keeps per message (a plain map is all it needs)
+const RETRY_MAP = new Map();
+const retryCache = { get: (k) => RETRY_MAP.get(k), set: (k, v) => { RETRY_MAP.set(k, v); if (RETRY_MAP.size > 5000) RETRY_MAP.delete(RETRY_MAP.keys().next().value); }, del: (k) => RETRY_MAP.delete(k), flushAll: () => RETRY_MAP.clear() };
+
 async function start() {
   const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, 'baileys_auth'));
   let version; try { ({ version } = await fetchLatestBaileysVersion()); } catch (e) {}
   const sock = makeWASocket({
     version, auth: state, logger: pino({ level: 'silent' }),
     syncFullHistory: false, markOnlineOnConnect: false,
+    msgRetryCounterCache: retryCache,
+    getMessage: async (key) => { const e = key && SENT_CACHE[key.id]; if (e) { log('🔁 a phone asked again for message ' + key.id + ' — sent it once more'); return e.m; } return undefined; },
     // a pairing code is accepted only from a browser WhatsApp knows (27 Oct 2026: "Couldn't link device" with the old made-up name)
     browser: (baileys.Browsers && baileys.Browsers.macOS) ? baileys.Browsers.macOS('Chrome') : ['Mac OS', 'Chrome', '14.4.1'],
   });
@@ -3138,9 +3160,9 @@ async function start() {
   //    someone comments on it — the outbox marks it commentNote; everything else still stops here.
   const realSend = sock.sendMessage.bind(sock);
   sock.sendMessage = async (jid, content, opts) => {
-    if (opts && opts.commentNote) { const { commentNote, ...rest } = opts; if (global._waCommentsOn || global._waSendOn) return realSend(jid, content, rest); }
+    if (opts && opts.commentNote) { const { commentNote, ...rest } = opts; if (global._waCommentsOn || global._waSendOn) { const r = await realSend(jid, content, rest); rememberSent(r); return r; } }
     if (!global._waSendOn) { const k = String(jid).split('@')[0]; if (!global._sendOffSaid || Date.now() - global._sendOffSaid > 600000) { global._sendOffSaid = Date.now(); log('🚫 WhatsApp sending is off — nothing sent to ' + k + ' (or anyone) until WA_SEND is on in the site settings'); } throw new Error('WhatsApp sending is off'); }
-    return realSend(jid, content, opts);
+    const r = await realSend(jid, content, opts); rememberSent(r); return r;
   };
   sock.ev.on('creds.update', saveCreds);
   // Pairing by code instead of the QR (Miriam, 16 Sep 2026): start with
