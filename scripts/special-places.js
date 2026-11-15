@@ -33,6 +33,7 @@ const BANKS = {
 const bankOf = (t) => { const parts = [t.brand, t.operator, t.name, t['name:he'], t['name:en'], t['brand:he'], t['operator:he']].filter(Boolean); for (const [k, K] of Object.entries(BANKS)) { for (const p of parts) if (K.re.test(String(p).trim())) return k; } return ''; };
 const SITES = Object.assign({}, KUPOT, BANKS);
 const kupahOf = (t) => { const s = [t.brand, t.operator, t.name, t['name:he'], t['name:en']].filter(Boolean).join(' | '); for (const [k, K] of Object.entries(KUPOT)) { for (const part of s.split(' | ')) if (K.re.test(part.trim())) return k; } return ''; };
+const KOLLEL = /(?:^|[\s"'(\-–])כולל(?:[\s"')\-–,]|$)|\bkoll?el\b|\bkolel\b/i;
 const SHUL = [['belz', /בעלז|belz/i], ['gur', /חסידי\s*גור|(?:^|\s)גור(?:\s|$)|\bgur\b|\bger\b/i], ['boyan', /בויאן|boyan/i]];
 
 function simplify(pts, tol) {
@@ -95,6 +96,8 @@ async function places() {
     // every shul (Miriam, 9 Nov 2026: "there are so many shuls missing"): jewish places of worship, synagogue buildings, and
     // anything named beit knesset / beit midrash; a point each (the map colours the building the point falls in)
     shuls: '[out:json][timeout:180];(nwr["amenity"="place_of_worship"]["religion"="jewish"](' + bb + ');nwr["building"="synagogue"](' + bb + ');nwr["amenity"="place_of_worship"]["name"~"שטיבל|קלויז|בית ?ה?כנסת|בית ?ה?מדרש|ביהכ|ביהמ|[Ss]ynagog|[Ss]hul|[Ss]ht[ie]+bel|[Mm]inyan|[Bb]ei[st] ?[KkMm]"](' + bb + '););out center tags;',
+    // every kollel, whatever it is tagged as (Miriam, 15 Nov 2026: "add all the kolel spots to the map, same category as shul or yeshiva")
+    kollels: '[out:json][timeout:150];(nwr["name"~"כולל|[Kk]oll?el|[Kk]olel"](' + bb + ');nwr["name:en"~"[Kk]oll?el|[Kk]olel"](' + bb + ');nwr["name:he"~"כולל"](' + bb + '););out center tags;',
     banks: '[out:json][timeout:150];nwr["amenity"~"^(bank|atm)$"](' + bb + ');out center tags;',
     kupot: '[out:json][timeout:150];(nwr["name"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|hospital|dentist)$"](' + bb + ');nwr["name"~"' + KR + '"]["healthcare"](' + bb + ');nwr["brand"~"' + KR + '"](' + bb + ');nwr["operator"~"' + KR + '"]["amenity"~"^(clinic|doctors|pharmacy|dentist)$"](' + bb + ');nwr["name"~"^קופת חולים"](' + bb + '););out geom tags;',
   };
@@ -126,6 +129,11 @@ function parse(elements) {
       if (t.religion && t.religion !== 'jewish') continue;
       if (!hit && t.building !== 'synagogue' && t.religion !== 'jewish' && !/בית ?ה?כנסת|בית ?ה?מדרש|ביהכ|ביהמ|שטיבל|קלויז|synagog|shul|sht[ie]+bel|kloiz|minyan|bei[st] ?[km]/i.test(s)) continue;
       k = 'shul'; if (hit) extra.shul = hit[0]; }
+    else if (KOLLEL.test([t.name, t['name:en'], t['name:he']].filter(Boolean).join(' | '))) {
+      // a kollel: on the map with the shuls and yeshivas (its name gives it the Torah-scroll mark); not a shop, office, street or clinic
+      if (t.religion && t.religion !== 'jewish') continue;
+      if (t.highway || t.shop || t.office || t.healthcare || t.craft || t.tourism || /^(clinic|doctors|pharmacy|restaurant|cafe|fast_food|bank|atm|parking|fuel)$/.test(t.amenity || '')) continue;
+      k = 'shul'; extra.kollel = 1; }
     else { const kp = kupahOf(t); if (!kp) continue; k = 'kupah'; extra.brand = kp; }
     seen.add(id);
     const nm = nameOf(t), ad = addrOf(t);
