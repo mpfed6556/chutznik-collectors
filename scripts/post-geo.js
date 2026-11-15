@@ -182,8 +182,14 @@ async function run() {
     if (!Array.isArray(ups)) { LOG('📍 post map: could not read the posts'); return; }
     const map = geocodePosts(ix, ups, Array.isArray(posts) ? posts : []);
     const n = Object.keys(map).length;
-    const r = await fetch(SITE + '/api/live-data?type=buildings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ postgeo: { at: Date.now(), map } }), signal: AbortSignal.timeout(60000) });
-    LOG('📍 post map: ' + n + ' posts with an address placed (' + ix.addr.size + ' streets known)' + (r.ok ? '' : ' — the site answered ' + r.status));
+    // the save is tried again when the site is busy (15 Nov 2026: a save lost to a busy moment left the map three hours behind)
+    let r = null;
+    for (let a = 0; a < 4; a++) {
+      try { r = await fetch(SITE + '/api/live-data?type=buildings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ postgeo: { at: Date.now(), map } }), signal: AbortSignal.timeout(60000) }); } catch (e) { r = null; }
+      if (r && r.ok) break;
+      await new Promise((ok) => setTimeout(ok, 45000 * (a + 1)));
+    }
+    LOG('📍 post map: ' + n + ' posts with an address placed (' + ix.addr.size + ' streets known)' + (r && r.ok ? '' : ' — the site answered ' + (r ? r.status : 'nothing') + ', after four tries'));
   } catch (e) { LOG('📍 post map: ' + (e && e.message)); } finally { _running = false; }
 }
 function start(log) { if (log) LOG = log; setTimeout(() => run().catch(() => {}), 8 * 60 * 1000); setInterval(() => run().catch(() => {}), 3 * 3600 * 1000); }
