@@ -123,8 +123,12 @@ const VENUES = [
   // these three by their address in the map's own book
   ['OU Israel Center', /\bou israel cent(?:er|re)\b/i, 'קרן היסוד', '22'],
   ['Kivun Center', /\bkivun cent(?:er|re)\b|מרכז כיוון/i, 'הצבי', '5'],
-  ['Romema Community Center', /\bromema community cent(?:er|re)\b|מי?נהל קהילתי רוממה/i, 'זכרון יעקב', '5'],
+  ['Romema Community Center', /\bromema community (?:cent(?:er|re)|council|administration)\b|מי?נהל ה?קהילתי רוממה|\b02[-\s]?313[-\s]?2275\b/i, 'זכרון יעקב', '5'],
 ];
+// a place that runs its own events (Miriam, 15 Nov 2026, an event of the Romema community centre that only named it as the
+// organiser: no "View on map"): on an event, its name anywhere is enough — the organiser's own hall is where it is held
+const V_HOSTS = new Set(['Romema Community Center', 'OU Israel Center', 'Beit Avi Chai', 'Pardes Institute', 'Nishmat', 'Kivun Center', 'Begin Heritage Center', 'Israel Museum', 'Bible Lands Museum', 'Bloomfield Science Museum',
+  'Tower of David', 'Friends of Zion Museum', 'Botanical Gardens', 'Biblical Zoo', 'Cinematheque', 'Khan Theatre', 'Jerusalem Theatre', 'Train Theater', 'Hansen House', 'Museum of Tolerance', 'Yad Vashem']);
 const V_NEAR = /(?:\bnear(?:by)?|\bclose to|\bnext to|\bsteps? (?:from|to|away)|\bwalk(?:ing)?(?: distance)?(?: from| to)?|\bmin(?:ute)?s?\.? (?:from|to|walk|away)|\bacross from|\bopposite|\bbehind|\bbeside|\bby the|\btoward|\bview of|\boverlooking|\bbetween|\bdeliver\w*(?: to)?|ליד|קרוב|סמוך|מול|דקות|הליכה|משלוח\w*)[^\n.!?]{0,40}$/i;
 const V_AT = /(?:@|📍|\bat|\bin|\binside|\bvenue|\blocation|\bwhere|\bplace|\bmeet(?:ing)? (?:at|in)|מיקום|מקום|כתובת|איפה)\s*[:\-–]?\s*(?:the\s+|ה)?(?:new\s+|beautiful\s+|famous\s+)?[*_"“]*$|(?:^|[\s(])[בל]ה?$/i;
 const V_RENTAL = /rent|apartment|sublet|real estate|housing|דירה|השכרה/i;
@@ -132,13 +136,15 @@ function findVenue(ix, p) {
   if (!p || V_RENTAL.test([].concat(p.types || [], p.category || []).join(' '))) return null;
   const t = [p.title, p.memo, p.picText].filter(Boolean).join('\n').replace(/<[^>]+>/g, ' ').slice(0, 6000);
   const titleLen = String(p.title || '').length;
+  // an organiser's trip or tour is held somewhere else: its hall is not the place
+  const isEvent = /event/i.test([].concat(p.types || [], p.category || []).join(' ')) && !/\b(?:tours?|trips?|outing|hike|excursion)\b|טיול|סיור|נסיעה/i.test(String(p.title || '') + ' ' + String(p.memo || '').slice(0, 400));
   for (const v of VENUES) {
     const re = new RegExp(v[1].source, 'gi'); let m;
     while ((m = re.exec(t))) {
       const before = t.slice(Math.max(0, m.index - 60), m.index); const line = before.slice(before.lastIndexOf('\n') + 1);
       if (V_NEAR.test(line)) continue;
       const atHead = /^[\s*_•·\-–—:|]*$/.test(line);
-      if (!(V_AT.test(line) || atHead || m.index < titleLen)) continue;
+      if (!(V_AT.test(line) || atHead || m.index < titleLen || (isEvent && V_HOSTS.has(v[0])))) continue;
       if (typeof v[2] === 'number') return { lat: v[2], lon: v[3], label: v[0] };
       const book = ix && ix.addr && ix.addr.get(normHe(v[2])); const g = book && book.get(String(v[3]));
       if (g) return { lat: g[0], lon: g[1], label: v[0] };
