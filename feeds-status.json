@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-15T14:49:28.652Z",
+  "lastRun": "2026-11-15T20:03:36.260Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-15T14:49:28.648Z",
-      "sent": 1,
+      "lastRun": "2026-11-15T20:03:36.259Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (1 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -74,7 +74,7 @@
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (5 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (10 upcoming)",
         "Pardes": "ok via https://www.pardes.org.il/events/feed/ (2 upcoming)",
-        "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (6 upcoming)",
+        "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (5 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
         "Israel Museum": "no events · nothing parsed at https://www.imj.org.il/en",
         "Tower of David": "no events · nothing parsed at https://www.tod.org.il/en/",
@@ -242,12 +242,6 @@
         ],
         "Beit Avi Chai": [
           {
-            "title": "Digging under the British Mandate Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 15, 2026 Sun |",
-            "date": "2026-11-15",
-            "time": "7pm",
-            "link": "https://www.bac.org.il/en/events/?eventID=26127"
-          },
-          {
             "title": "Excavating in the State of Israel Dr. Shelley-Anne Peleg Series: The History of Archaeology zoom November 22, 2026 Sun |",
             "date": "2026-11-22",
             "time": "7pm",
@@ -270,6 +264,12 @@
             "date": "2026-12-20",
             "time": "7pm",
             "link": "https://www.bac.org.il/en/events/?eventID=26225"
+          },
+          {
+            "title": "Meditation and Transformation Rabbi Dr. Yakov Nagen Series: Prayer and Spirituality in the Mishnah zoom December 27, 202",
+            "date": "2026-12-27",
+            "time": "7pm",
+            "link": "https://www.bac.org.il/en/events/?eventID=26226"
           }
         ],
         "Jerusalem Theatre": [],
