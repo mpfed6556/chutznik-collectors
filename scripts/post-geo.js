@@ -65,11 +65,93 @@ function findAddress(ix, text) {
   EN_B.lastIndex = 0; while ((m = EN_B.exec(t))) { const words = m[2].trim().split(/\s+/); for (let k = Math.min(4, words.length); k >= 1; k--) { const hk = lookupStreet(ix, words.slice(0, k), false); if (hk) { const g = hit(hk, m[1]); if (g) return g; break; } } }
   return null;
 }
+// ── A post held at a well-known place (Miriam, 15 Nov 2026, a flyer reading "ALL @ TACHANA RISHONA": "should show on map,
+//    all such instances"). A post with no street address that names one of these places as where it happens is put there.
+//    Each place's spot is its own on OpenStreetMap (looked up 15 Nov 2026); three are found by their address in the map's
+//    own address book. "Near the shuk" or "5 minutes from Mamilla" is not "at": a place counts only when the words before it
+//    say so (@, 📍, at, in, Location:, ב…) or it stands at the head of a line — and never on a rental.
+const VENUES = [
+  ['The First Station', /\bfirst station\b|\btachana\s+(?:ha)?rishona\b|התחנה הראשונה/i, 31.766333, 35.224783],
+  ['Beit Avi Chai', /\bbeit avi cha?i\b|בית אבי חי/i, 31.777427, 35.215856],
+  ['Pardes Institute', /\bpardes\b(?!\s+(?:chana|hanna|hana|katz))/i, 31.754384, 35.214799],
+  ['Israel Museum', /\bisrael museum\b|מוזיאון ישראל/i, 31.771888, 35.203387],
+  ['Ramot Mall', /\bramot mall\b|קניון רמות/i, 31.817516, 35.194487],
+  ['Binyanei HaUma', /\bbinyanei ha'?uma\b|בנייני האומה|\binternational convention cent(?:er|re)\b/i, 31.786256, 35.20264],
+  ['Cinema City', /\bcinema city\b|סינמה סיטי/i, 31.782675, 35.203903],
+  ['Jerusalem Theatre', /\bjerusalem theat(?:re|er)\b|תיאטרון ירושלים/i, 31.768918, 35.215517],
+  ['Heichal Shlomo', /\bheichal shlomo\b|היכל שלמה/i, 31.775668, 35.217006],
+  ['Great Synagogue', /\bgreat synagogue\b(?!\s+of\s+belz)|בית הכנסת הגדול(?!\s*(?:של|ד)?\s*בעלז)/i, 31.775766, 35.216598],
+  ['Pais Arena', /\bpais arena\b|\bjerusalem arena\b|פיס ארנה/i, 31.751277, 35.194106],
+  ['Teddy Stadium', /\bteddy stadium\b|אצטדיון טדי/i, 31.75112, 35.190833],
+  ['Sacher Park', /\bsacher park\b|\bgan sacher\b|גן סאקר/i, 31.779868, 35.207583],
+  ['Liberty Bell Park', /\bliberty bell park\b|\bgan hapa'?amon\b|גן הפעמון/i, 31.770045, 35.223178],
+  ['Mamilla Mall', /\bmamilla (?:mall|avenue)\b|קניון ממילא/i, 31.777653, 35.223874],
+  ['Malha Mall', /\bmal[ck]?ha mall\b|קניון מלחה/i, 31.75166, 35.18739],
+  ['Machane Yehuda Market', /\bma[ck]?hane yehuda\b|שוק מחנה יהודה/i, 31.784806, 35.212372],
+  ['Tower of David', /\btower of david\b|מגדל דוד/i, 31.776039, 35.228302],
+  ['Bible Lands Museum', /\bbible lands museum\b|מוזיאון ארצות המקרא/i, 31.774909, 35.202449],
+  ['Bloomfield Science Museum', /\bscience museum\b|מוזיאון המדע/i, 31.77838, 35.200232],
+  ['Biblical Zoo', /\bbiblical zoo\b|גן החיות התנ"?כי/i, 31.746483, 35.176463],
+  ['Botanical Gardens', /\bbotanical gardens?\b|הגן הבוטני/i, 31.770053, 35.199969],
+  ['Ammunition Hill', /\bammunition hill\b|גבעת התחמושת/i, 31.798159, 35.22784],
+  ['Friends of Zion Museum', /\bfriends of zion\b/i, 31.780134, 35.220184],
+  ['Waldorf Astoria', /\bwaldorf astoria\b/i, 31.777351, 35.221518],
+  ['King David Hotel', /\bking david hotel\b|מלון המלך דוד/i, 31.774348, 35.222516],
+  ['Inbal Hotel', /\binbal (?:jerusalem )?hotel\b|מלון ענבל/i, 31.77052, 35.221899],
+  ['Begin Heritage Center', /\bbegin (?:heritage )?cent(?:er|re)\b|מרכז (?:מורשת )?(?:מנחם )?בגין/i, 31.769269, 35.225438],
+  ['Cinematheque', /\bcinematheque\b|סינמטק/i, 31.769878, 35.226015],
+  ['Khan Theatre', /\bkhan theat(?:re|er)\b|תיאטרון החאן/i, 31.768412, 35.224836],
+  ['Hansen House', /\bhansen house\b|בית הנסן/i, 31.767681, 35.216801],
+  ['Gerard Behar Center', /\bgerard be[ch]+ar\b|ז'?ראר בכר/i, 31.780661, 35.212812],
+  ['Safra Square', /\bsafra square\b|\bkikar safra\b|כיכר ספרא/i, 31.780321, 35.223731],
+  ['Zion Square', /\bzion square\b|\bkikar t?zion\b|כיכר ציון/i, 31.781965, 35.219567],
+  ['Hadar Mall', /\bhadar mall\b|קניון הדר/i, 31.753353, 35.213477],
+  ['Yad Vashem', /\byad vashem\b|יד ושם/i, 31.774069, 35.174915],
+  ['Mount Herzl', /\b(?:har|mount|mt\.?) herzl\b|הר הרצל/i, 31.772361, 35.181634],
+  ['Nishmat', /\bnishmat\b/i, 31.748765, 35.20248],
+  ['Ohr Somayach', /\bohr som[ae]y?ach\b/i, 31.793917, 35.225732],
+  ['Hurva Synagogue', /\bhurva\b|בית הכנסת החורבה/i, 31.775333, 35.231344],
+  ['Museum of Tolerance', /\bmuseum of tolerance\b|מוזיאון הסובלנות/i, 31.779131, 35.220072],
+  ["Sultan's Pool", /\bsultan'?s pool\b|בריכת הסולטן/i, 31.771786, 35.226253],
+  ['Haas Promenade', /\bhaas promenade\b|טיילת האס/i, 31.754737, 35.231248],
+  ['Independence Park', /\bindependence park\b|\bgan ha'?atzma'?ut\b|גן העצמאות/i, 31.777408, 35.21853],
+  ['Train Theater', /\btrain theat(?:re|er)\b|תיאטרון הקרון/i, 31.768439, 35.2225],
+  ["Mishkenot Sha'ananim", /\bmishkenot sha'?ananim\b|משכנות שאננים/i, 31.770863, 35.224919],
+  ['YMCA', /\bymca\b|ימק"?א/i, 31.774287, 35.221463],
+  ['Shaare Zedek', /\bsha'?are[iy]? [tz]+edek\b|שערי צדק/i, 31.773036, 35.185597],
+  ['Nitzanim Shul', /\bnitzanim (?:shul|synagogue)\b/i, 31.759042, 35.216244],
+  // these three by their address in the map's own book
+  ['OU Israel Center', /\bou israel cent(?:er|re)\b/i, 'קרן היסוד', '22'],
+  ['Kivun Center', /\bkivun cent(?:er|re)\b|מרכז כיוון/i, 'הצבי', '5'],
+  ['Romema Community Center', /\bromema community cent(?:er|re)\b|מי?נהל קהילתי רוממה/i, 'זכרון יעקב', '5'],
+];
+const V_NEAR = /(?:\bnear(?:by)?|\bclose to|\bnext to|\bsteps? (?:from|to|away)|\bwalk(?:ing)?(?: distance)?(?: from| to)?|\bmin(?:ute)?s?\.? (?:from|to|walk|away)|\bacross from|\bopposite|\bbehind|\bbeside|\bby the|\btoward|\bview of|\boverlooking|\bbetween|\bdeliver\w*(?: to)?|ליד|קרוב|סמוך|מול|דקות|הליכה|משלוח\w*)[^\n.!?]{0,40}$/i;
+const V_AT = /(?:@|📍|\bat|\bin|\binside|\bvenue|\blocation|\bwhere|\bplace|\bmeet(?:ing)? (?:at|in)|מיקום|מקום|כתובת|איפה)\s*[:\-–]?\s*(?:the\s+|ה)?(?:new\s+|beautiful\s+|famous\s+)?[*_"“]*$|(?:^|[\s(])[בל]ה?$/i;
+const V_RENTAL = /rent|apartment|sublet|real estate|housing|דירה|השכרה/i;
+function findVenue(ix, p) {
+  if (!p || V_RENTAL.test([].concat(p.types || [], p.category || []).join(' '))) return null;
+  const t = [p.title, p.memo, p.picText].filter(Boolean).join('\n').replace(/<[^>]+>/g, ' ').slice(0, 6000);
+  const titleLen = String(p.title || '').length;
+  for (const v of VENUES) {
+    const re = new RegExp(v[1].source, 'gi'); let m;
+    while ((m = re.exec(t))) {
+      const before = t.slice(Math.max(0, m.index - 60), m.index); const line = before.slice(before.lastIndexOf('\n') + 1);
+      if (V_NEAR.test(line)) continue;
+      const atHead = /^[\s*_•·\-–—:|]*$/.test(line);
+      if (!(V_AT.test(line) || atHead || m.index < titleLen)) continue;
+      if (typeof v[2] === 'number') return { lat: v[2], lon: v[3], label: v[0] };
+      const book = ix && ix.addr && ix.addr.get(normHe(v[2])); const g = book && book.get(String(v[3]));
+      if (g) return { lat: g[0], lon: g[1], label: v[0] };
+      break;
+    }
+  }
+  return null;
+}
 function geocodePosts(ix, updates, posts) {
   const out = {};
   const each = (p, key) => {
     if (!p || p.deleted || (p.status && p.status !== 'public')) return;
-    const g = findAddress(ix, [p.title, p.memo, p.contactAddress, p.picText].filter(Boolean).join('\n'));
+    const g = findAddress(ix, [p.title, p.memo, p.contactAddress, p.picText].filter(Boolean).join('\n')) || findVenue(ix, p);   // a street address first; failing that, the place it is held at
     if (g) out[key] = [g.lat, g.lon, g.label.slice(0, 60)];
   };
   for (const u of updates || []) each(u, 'up_' + u.id);
@@ -96,4 +178,4 @@ async function run() {
   } catch (e) { LOG('📍 post map: ' + (e && e.message)); } finally { _running = false; }
 }
 function start(log) { if (log) LOG = log; setTimeout(() => run().catch(() => {}), 8 * 60 * 1000); setInterval(() => run().catch(() => {}), 3 * 3600 * 1000); }
-module.exports = { start, run, buildIndex, findAddress, geocodePosts, normEn, normHe, skel };
+module.exports = { start, run, buildIndex, findAddress, findVenue, VENUES, geocodePosts, normEn, normHe, skel };
