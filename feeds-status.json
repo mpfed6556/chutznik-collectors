@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-15T00:26:08.049Z",
+  "lastRun": "2026-11-15T07:06:08.802Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -33,7 +33,7 @@
     "Partner": "blocked: robots.txt disallows this path",
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
     "AACI": "no feed, no scannable items, nothing in the news last 48h",
-    "Janglo": "ok via page-scan (5 items) — no RSS found",
+    "Janglo": "no feed, no scannable items, nothing in the news last 48h",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
     "Drushim": "ok via page-scan (4 items) — no RSS found",
@@ -61,14 +61,14 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-15T00:26:08.048Z",
-      "sent": 0,
+      "lastRun": "2026-11-15T07:06:08.801Z",
+      "sent": 5,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
-        "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
+        "The Kotel": "nothing parsed · SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON",
         "iTravelJerusalem hints": "20 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId vhxIwPL8W_jHi0Z33i66V",
         "iTravelJerusalem": "20 cards, nothing new (20 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (5 upcoming)",
@@ -82,8 +82,8 @@
         "Bloomfield Science Museum": "no events · HTTP 404",
         "Jerusalem Botanical Gardens": "no events · nothing parsed at https://www.botanic.co.il/en/",
         "Biblical Zoo": "no events · HTTP 403",
-        "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
-        "Eventbrite Jerusalem": "no events · HTTP 405",
+        "Jerusalem Symphony": "no events · nothing parsed at https://www.jso.co.il/feed/",
+        "Eventbrite Jerusalem": "ok via https://www.eventbrite.com/d/israel--jerusalem/events/ (8 upcoming)",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
         "Secret Jerusalem": "no events · HTTP 403"
       },
@@ -120,38 +120,7 @@
             "link": "https://reconnectshiurim.com/product/listening-and-the-four-family-types/"
           }
         ],
-        "The Kotel": [
-          {
-            "title": "The Path to Redemption – Parashat Toldot",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/158099/"
-          },
-          {
-            "title": "The Healing Power of Speech – Parashat Chayei Sarah",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/158040/"
-          },
-          {
-            "title": "Bridging Heaven and Earth",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157954/"
-          },
-          {
-            "title": "There Is No Wisdom Like That Gained Through Experience",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157888/"
-          },
-          {
-            "title": "Following the Inauguration of Colombia’s Embassy in Jerusalem: Colombia’s Foreign Minister Visits the Western Wall: “This Is the Most Sublime and Profound Moment of My Life!”",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157881/"
-          }
-        ],
+        "The Kotel": [],
         "Jerusalem Municipality": [],
         "iTravelJerusalem": [],
         "Fun In Jerusalem": [
@@ -297,39 +266,39 @@
         "Bloomfield Science Museum": [],
         "Jerusalem Botanical Gardens": [],
         "Biblical Zoo": [],
-        "Jerusalem Symphony": [
+        "Jerusalem Symphony": [],
+        "Eventbrite Jerusalem": [
           {
-            "title": "האופרה 'העטלף' מאת שטראוס – בהפקה מלאה!",
-            "date": null,
+            "title": "HBR Book Webinar: Unspeakable",
+            "date": "2026-11-23",
             "time": "",
-            "link": "https://www.jso.co.il/%d7%9c%d7%a8%d7%90%d7%a9%d7%95%d7%a0%d7%94-%d7%91%d7%99%d7%a9%d7%a8%d7%90%d7%9c-%d7%94%d7%90%d7%95%d7%a4%d7%a8%d7%94-%d7%94%d7%a2%d7%98%d7%9c%d7%a3-%d7%9e%d7%90%d7%aa-%d7%a9%d7%98%d7%a8%d7%90/"
+            "link": "https://www.eventbrite.co.uk/e/hbr-book-webinar-unspeakable-tickets-2003706919334"
           },
           {
-            "title": "סדרת המוסיקה הקאמרית",
-            "date": "2022-12-27",
+            "title": "HBR Press Webinar: Unspeakable",
+            "date": "2026-11-23",
             "time": "",
-            "link": "https://www.jso.co.il/%d7%94%d7%a1%d7%93%d7%a8%d7%94-%d7%94%d7%a7%d7%90%d7%9e%d7%a8%d7%99%d7%aa/"
+            "link": "https://www.eventbrite.com/e/hbr-press-webinar-unspeakable-tickets-2004063230069"
           },
           {
-            "title": "הסדרה הקלאסית",
-            "date": null,
+            "title": "Gestion des données de recherche [en ligne, GDR101]",
+            "date": "2026-11-25",
             "time": "",
-            "link": "https://www.jso.co.il/%d7%94%d7%a1%d7%93%d7%a8%d7%94-%d7%94%d7%a7%d7%9c%d7%90%d7%a1%d7%99%d7%aa/"
+            "link": "https://www.eventbrite.com/e/inscription-gestion-des-donnees-de-recherche-en-ligne-gdr101-2002430421294"
           },
           {
-            "title": "פסטיבל הללויה",
-            "date": "2022-12-05",
+            "title": "The MI5 Archive: Official Secrets",
+            "date": "2026-11-27",
             "time": "",
-            "link": "https://www.jso.co.il/%d7%a4%d7%a1%d7%98%d7%99%d7%91%d7%9c-%d7%94%d7%9c%d7%9c%d7%95%d7%99%d7%94/"
+            "link": "https://www.eventbrite.co.uk/e/the-mi5-archive-official-secrets-tickets-1997551526388"
           },
           {
-            "title": "בין הפטיש למגל",
-            "date": "2023-02-04",
+            "title": "How to Choose a (New) Career Fast",
+            "date": "2026-12-03",
             "time": "",
-            "link": "https://www.jso.co.il/%d7%91%d7%99%d7%9f-%d7%94%d7%a4%d7%98%d7%99%d7%a9-%d7%9c%d7%9e%d7%92%d7%9c/"
+            "link": "https://www.eventbrite.co.uk/e/how-to-choose-a-new-career-fast-tickets-1993681331531"
           }
         ],
-        "Eventbrite Jerusalem": [],
         "Janglo events": [],
         "Secret Jerusalem": []
       }
