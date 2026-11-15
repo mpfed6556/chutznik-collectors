@@ -169,6 +169,17 @@ async function uploadImage(base64, mime, tag, index) {
 //    title ("Refuit Health Center: winter is a time…") and says whether Miriam
 //    would publish it; what she would not, waits for her as before.
 const CURATE = String(process.env.CURATE || 'on') !== 'off';
+// the site's reader also says which section a post belongs in (Miriam, 15 Nov 2026: "this is a job — and many others are categorized
+// wrong"): it reads what the post IS, where the word lists here only see single words. Rentals found by the rental rules stay rentals.
+function aiCategory(item, c) {
+  try {
+    if (!c || !c.category) return;
+    const cur = (item.types || []).map(String);
+    if (cur.includes('Rental') && c.category !== 'Rental') return;
+    item.types = [c.category]; item.typesFixedBy = 'the curator';
+    log('   🗂 section · ' + c.category);
+  } catch (e) {}
+}
 async function curateItems(items, review) {
   if (!CURATE || !INGEST_KEY || !items.length) return {};
   try {
@@ -426,6 +437,7 @@ async function sendToQueue(item) {
     try {
       const c = (await curateItems([item]))[String(item.id)];
       if (c && c.title && String(c.title).trim().length >= 8 && !/https?:\/\//i.test(c.title)) { item.title = String(c.title).trim().substring(0, 150); log('   ✍️ titled · "' + item.title.slice(0, 70) + '"'); }
+      aiCategory(item, c);
     } catch (e) {}
   }
   if (curatable(item) && item.status !== 'public' && inviteAd(String(item.title || '') + '\n' + String(item.memo || ''))) {
@@ -434,6 +446,7 @@ async function sendToQueue(item) {
     const c = (await curateItems([item]))[String(item.id)];
     if (c) {
       if (c.title) item.title = c.title.substring(0, 150);
+      aiCategory(item, c);
       // the same seller again within the week ("taking orders for tonight" after last week's was published):
       // Miriam dismisses the repeat (14 Oct 2026), so it waits for her instead of going up on its own
       const sellerKey = senderD9 ? senderD9 + '@' + String(item.group || '').toLowerCase() : '';
@@ -2189,6 +2202,7 @@ async function curateCatchup() {
         const patch = { curated: c.publish ? 'published' : 'waiting:' + (it.comments || []).length };   // 'waiting:N' = decided again with N replies, so the re-check moves on
         if (c.title && String(c.title).trim().length >= 8 && !/https?:\/\//i.test(c.title)) patch.title = String(c.title).trim().substring(0, 150);
         if (c.publish) patch.status = 'public';
+        if (c.category && !/^(Rental|Jobs)$/.test(String((it.types || [])[0] || ''))) patch.types = [c.category];   // the reader's section for it (15 Nov 2026)
         try { const pr = await fetch(INGEST_URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY }, body: JSON.stringify({ file: 'updates', id: String(it.id), patch }) }); if (!pr.ok) { failed++; continue; } } catch (e) { failed++; continue; }
         if (c.publish) { published++; log('   ✍️ published late · "' + String(patch.title || it.title || '').slice(0, 60) + '"' + (c.why ? ' · ' + c.why : '')); } else waiting++;
         await new Promise((res) => setTimeout(res, 350));
