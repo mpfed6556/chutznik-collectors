@@ -136,15 +136,18 @@ function findVenue(ix, p) {
   if (!p || V_RENTAL.test([].concat(p.types || [], p.category || []).join(' '))) return null;
   const t = [p.title, p.memo, p.picText].filter(Boolean).join('\n').replace(/<[^>]+>/g, ' ').slice(0, 6000);
   const titleLen = String(p.title || '').length;
-  // an organiser's trip or tour is held somewhere else: its hall is not the place
-  const isEvent = /event/i.test([].concat(p.types || [], p.category || []).join(' ')) && !/\b(?:tours?|trips?|outing|hike|excursion)\b|טיול|סיור|נסיעה/i.test(String(p.title || '') + ' ' + String(p.memo || '').slice(0, 400));
+  // a trip or tour is held somewhere else than its organiser's hall or the office that takes the bookings: only a place in its title counts
+  const isTour = /\b(?:tours?|trips?|outing|hike|excursion)\b|טיול|סיור|נסיעה/i.test(String(p.title || '') + ' ' + String(p.memo || '').slice(0, 400));
+  const isEvent = /event/i.test([].concat(p.types || [], p.category || []).join(' '));
   for (const v of VENUES) {
     const re = new RegExp(v[1].source, 'gi'); let m;
     while ((m = re.exec(t))) {
       const before = t.slice(Math.max(0, m.index - 60), m.index); const line = before.slice(before.lastIndexOf('\n') + 1);
       if (V_NEAR.test(line)) continue;
       const atHead = /^[\s*_•·\-–—:|]*$/.test(line);
-      if (!(V_AT.test(line) || atHead || m.index < titleLen || (isEvent && V_HOSTS.has(v[0])))) continue;
+      const inTitle = m.index < titleLen, host = isEvent && V_HOSTS.has(v[0]);
+      if (isTour && !inTitle) continue;
+      if (/^[\d\s-]+$/.test(m[0]) ? !host : !(V_AT.test(line) || atHead || inTitle || host)) continue;   // a phone number alone says who runs it, not where: only for a host's own event
       if (typeof v[2] === 'number') return { lat: v[2], lon: v[3], label: v[0] };
       const book = ix && ix.addr && ix.addr.get(normHe(v[2])); const g = book && book.get(String(v[3]));
       if (g) return { lat: g[0], lon: g[1], label: v[0] };
