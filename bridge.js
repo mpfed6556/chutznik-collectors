@@ -3158,6 +3158,8 @@ function rememberSent(msg) {
 const RETRY_MAP = new Map();
 const retryCache = { get: (k) => RETRY_MAP.get(k), set: (k, v) => { RETRY_MAP.set(k, v); if (RETRY_MAP.size > 5000) RETRY_MAP.delete(RETRY_MAP.keys().next().value); }, del: (k) => RETRY_MAP.delete(k), flushAll: () => RETRY_MAP.clear() };
 
+// linked = paired by code (registered) or by the QR (the library marks a QR link only with `account`, never `registered`)
+function paired(c) { return !!(c && (c.registered || c.account)); }
 async function start() {
   const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, 'baileys_auth'));
   let version; try { ({ version } = await fetchLatestBaileysVersion()); } catch (e) {}
@@ -3186,7 +3188,7 @@ async function start() {
   //   PAIR_PHONE=19295630370 node bridge.js
   // and an 8-character code is printed; on the phone: Linked devices → Link a device → Link with phone number.
   let savedNumber = ''; try { savedNumber = fs.readFileSync(path.join(__dirname, 'my-number.txt'), 'utf8').replace(/\D/g, ''); } catch (e) {}
-  const pairPhone = String(process.env.PAIR_PHONE || '').replace(/\D/g, '') || (global._loggedOut ? (global._pairPhoneReq || savedNumber) : '');
+  const pairPhone = global._qrMode ? '' : (String(process.env.PAIR_PHONE || '').replace(/\D/g, '') || (global._loggedOut ? (global._pairPhoneReq || savedNumber) : ''));
   // ── Pairing on demand (27 Oct 2026): after a logout the bridge no longer loops — a fresh socket every two minutes with a
   //    code emailed each time flooded Miriam's inbox (18 codes in forty minutes). Now one email says it is out; the admin's
   //    bridge tile asks for a code (PAIR_NOW in the site settings), the code goes into the status for the tile to show, and a
@@ -3210,7 +3212,8 @@ async function start() {
       global._loggedOut = 0; global._pairCount = 0; global._pairCode = null; global._pairUntil = 0; pairIdleStop(); try { fs.unlinkSync(path.join(__dirname, 'pair-state.json')); } catch (e) {}
       try { const me = String(sock.user && sock.user.id || '').split(':')[0].replace(/\D/g, ''); if (me) fs.writeFileSync(path.join(__dirname, 'my-number.txt'), me); } catch (e) {}
       log('✅ Connected. Watching ALL groups. History for the last ' + HOURS + 'h arrives on its own; live messages reach the site within seconds.');
-      if (wasOut) { try { sendStatus(); } catch (e) {} }
+      if (wasOut || global._qrMode) { try { sendStatus(); } catch (e) {} }
+      if (global._qrMode) { global._qrMode = false; console.log('\n✅ Linked by QR. Now press Ctrl+C once, wait for the prompt, then type:   pm2 start all\n'); }
       global._linkedAt = Date.now();
       setTimeout(async () => { await refreshLids(sock); await backfillContacts(); }, GENTLE_MS + 8000);   // gentle start: after the window
       setTimeout(() => { releaseHistory(sock).catch(() => {}); }, GENTLE_MS + 30000);
@@ -3218,6 +3221,7 @@ async function start() {
     }
     if (u.connection === 'close') {
       const code = u.lastDisconnect?.error?.output?.statusCode;
+      if (code === DisconnectReason.loggedOut && global._qrMode) { console.log('\n❌ WhatsApp refused the link. Try again later, or use the pairing code on the admin\'s bridge tile.\n'); process.exit(1); }
       if (code === DisconnectReason.loggedOut) {
         // 26 Oct 2026 (twice in a day): the bridge no longer dies and restarts every five seconds. The old pairing is put
         // aside; one email says it is out, and the admin's bridge tile hands out the code when Miriam is ready for it.
@@ -3235,7 +3239,13 @@ async function start() {
         pairIdle();
         return;
       }
-      if (!state.creds.registered && !process.env.PAIR_PHONE) {
+      if (!paired(state.creds) && global._qrMode) {
+        global._sock = null; global._qrRounds = (global._qrRounds || 0) + 1;
+        if (global._qrRounds < 8) { console.log('\n📱 That QR ran out — a fresh one is coming…'); setTimeout(start, 2000); }
+        else { console.log('\n📱 No scan in about fifteen minutes — stopped. Paste the same line again when you are ready.\n'); process.exit(0); }
+        return;
+      }
+      if (!paired(state.creds) && !process.env.PAIR_PHONE) {
         global._loggedOut = global._loggedOut || Date.now();
         // the pairing socket timed out: another code while the request is fresh, otherwise back to waiting
         global._sock = null; global._pairCode = null;
@@ -3262,7 +3272,16 @@ process.on('unhandledRejection', (e) => { try { log('💥 unhandled: ' + (e && e
 // a restart while logged out (pair-state.json from before): straight to the quiet wait, no fresh socket
 (function boot() {
   try {
-    let registered = false; try { registered = !!JSON.parse(fs.readFileSync(path.join(__dirname, 'baileys_auth', 'creds.json'), 'utf8')).registered; } catch (e) {}
+    let registered = false; try { registered = paired(JSON.parse(fs.readFileSync(path.join(__dirname, 'baileys_auth', 'creds.json'), 'utf8'))); } catch (e) {}
+    // PAIR_QR=1 node bridge.js (Miriam, 16 Nov 2026): the QR in the console even after a logout. An unlinked leftover
+    // (a code that was never used) is cleared first; the old pairings put aside (baileys_auth.old-*) are not touched.
+    if (process.env.PAIR_QR && !process.env.PAIR_PHONE) {
+      if (registered) { console.log('\nThis bridge already holds a link — starting it as usual. If WhatsApp shows no linked device, tell Claude.\n'); return start(); }
+      try { const a = path.join(__dirname, 'baileys_auth'); if (fs.existsSync(a)) fs.rmSync(a, { recursive: true, force: true }); } catch (e) {}
+      global._qrMode = true; global._qrRounds = 0; global._loggedOut = 0;
+      console.log('\n📱 QR mode: the code appears below in a few seconds. A fresh one follows by itself for about fifteen minutes.\n');
+      return start();
+    }
     if (registered || process.env.PAIR_PHONE) return start();
     // not paired: a logout put the old pairing aside (baileys_auth.old-<time>) — wait for the admin's request, never a socket every two minutes
     const olds = fs.readdirSync(__dirname).map((n) => (n.match(/^baileys_auth\.old-?(\d+)$/) || [])[1]).filter(Boolean).map(Number);
