@@ -63,14 +63,38 @@ function israelNow() {
   const p = {}; for (const x of new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jerusalem', weekday: 'short', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(new Date())) p[x.type] = x.value;
   return { day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.weekday), min: Number(p.hour) * 60 + Number(p.minute) };
 }
+// The invites' own pace (Miriam, 16 Nov 2026, after WhatsApp restricted the account on 15 Nov for the runs of 2–6 —
+// ten an hour, 39 one morning and 51 the next, to numbers that had never written to it: "the least amounts ... one an
+// hour but I don't want it to look consistent like a bot"). ONE invite, then 50–110 minutes before the next (now and
+// then an extra half hour to an hour), never a run, at most 8 a day, and the day's first one at a different minute
+// each morning (8:08–9:40), never 8:00 sharp. WA_INVITES { minGap, maxGap, maxDay } in the site settings changes the numbers.
+const IPACE_FILE = path.join(__dirname, '..', 'invite-pace.json');
+let IPACE = { nextAt: 0, day: '', startMin: 0, n: 0 }; try { IPACE = Object.assign(IPACE, JSON.parse(fs.readFileSync(IPACE_FILE, 'utf8')) || {}); } catch (e) {}
+let _invWasOff = false;
+function ipaceSave() { try { fs.writeFileSync(IPACE_FILE, JSON.stringify(IPACE)); } catch (e) {} }
+function inviteCfg() { const v = global._waInvites || {}; const n = (x, d) => (Number.isFinite(Number(x)) && Number(x) > 0 ? Number(x) : d);
+  const minGap = Math.max(30, n(v.minGap, 50)), maxGap = Math.max(minGap + 10, n(v.maxGap, 110)), maxDay = Math.min(12, Math.round(n(v.maxDay, 8))); return { minGap, maxGap, maxDay }; }
 function inviteAllowed() {
-  if (!global._waInvitesOn && !global._waSendOn) return 'business invites are off (WA_INVITES)';
+  if (!global._waInvitesOn) { _invWasOff = true; return 'business invites are off (WA_INVITES)'; }   // the invites' own switch only: WA_SEND 'on' no longer opens them
   const t = israelNow();
   const open = (t.day >= 0 && t.day <= 4 && t.min >= 8 * 60 && t.min < 20 * 60) || (t.day === 5 && t.min >= 8 * 60 && t.min < 12 * 60);
   if (!open) return 'outside the invite hours (Sun–Thu 8–20, Fri 8–12 Israel)';
-  return paceAllowed();   // the gap is the shared human pace below (12 Nov 2026), no longer a fixed 30 minutes
+  const c = inviteCfg(); const now = Date.now();
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(new Date());
+  if (IPACE.day !== today) { IPACE.day = today; IPACE.n = 0; IPACE.startMin = Math.round(rnd(8 * 60 + 8, 9 * 60 + 40)); ipaceSave(); }
+  // just switched on (or never run): not the very minute the switch is thrown
+  if (_invWasOff || !IPACE.nextAt) { _invWasOff = false; IPACE.nextAt = Math.max(IPACE.nextAt || 0, now + rnd(10, 40) * 60000); ipaceSave(); }
+  if (t.min < IPACE.startMin) return 'today\'s first invite goes at ' + Math.floor(IPACE.startMin / 60) + ':' + String(IPACE.startMin % 60).padStart(2, '0') + ' Israel time';
+  if (IPACE.n >= c.maxDay) return 'today\'s ' + c.maxDay + ' invites have gone';
+  if (now < IPACE.nextAt) return 'next invite in ' + Math.max(1, Math.round((IPACE.nextAt - now) / 60000)) + ' min';
+  return '';
 }
-function inviteDone() { ISENT.push(Date.now()); ISENT = ISENT.slice(-500); try { fs.writeFileSync(INV_FILE, JSON.stringify(ISENT)); } catch (e) {} }
+function inviteDone() {
+  ISENT.push(Date.now()); ISENT = ISENT.slice(-500); try { fs.writeFileSync(INV_FILE, JSON.stringify(ISENT)); } catch (e) {}
+  const c = inviteCfg(); let gap = rnd(c.minGap, c.maxGap); if (Math.random() < 0.2) gap += rnd(30, 70);   // now and then a longer pause, as a person's day has
+  IPACE.n = (IPACE.n || 0) + 1; IPACE.nextAt = Date.now() + gap * 60000; ipaceSave();
+  CFG.log('🐢 invite ' + IPACE.n + ' of at most ' + c.maxDay + ' today — the next no sooner than ' + Math.round(gap) + ' min from now');
+}
 // one human pace for everything that goes out (Miriam, 12 Nov 2026: "i dont care how many messages go out per day ... as
 // long as the rules are never broken to send a bunch at once, like you can send 2 or 6 at once and then take a 20 minute
 // break and then a 12 minute break. look human"): a short run of 2–6 messages, 40–150 s apart with "typing…" first, then a
@@ -151,7 +175,7 @@ async function outboxRound() {
       if (String(m.kind || '') === 'invite') {
         if (await contactedHas(d)) { CFG.log('📨 invite: ' + d + ' was written to before — dropped'); done.push(id); continue; }
         const why = inviteAllowed(); if (why) { paceLog(why, 'invite'); continue; }   // comment notes further down the list may still go
-        try { inviteDone(); paceDone(); sentNow++; await typeThenSend(sock, d + '@s.whatsapp.net', { text }, { commentNote: true });
+        try { inviteDone(); sentNow++; await typeThenSend(sock, d + '@s.whatsapp.net', { text }, { invite: true });
           CFG.log('📨 invite → ' + d + ' (post ' + (m.postId || '?') + ')'); done.push(id); await contactedAdd(d, 'invite', m.postId || ''); }
         catch (e) { CFG.log('📨 invite failed → ' + d + ': ' + (e && e.message)); }
         continue;

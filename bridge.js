@@ -2084,8 +2084,9 @@ async function pullSettings() {
     // 8-12 morning friday so we dont lose access to the whatsapp"): WA_INVITES { on, gapMin } lets outbox kind 'invite' through
     // WA_PACE (12 Nov 2026): the human pace for every WhatsApp message — runs of burstMin–burstMax, then breakMin–breakMax minutes
     { const v = j.WA_PACE && typeof j.WA_PACE === 'object' ? j.WA_PACE : null; if (JSON.stringify(v) !== JSON.stringify(global._waPace || null)) { global._waPace = v; if (v) log('⚙️  WhatsApp pace: ' + JSON.stringify(v)); } }
-    { const v = j.WA_INVITES && typeof j.WA_INVITES === 'object' ? j.WA_INVITES : {}; const on = !!v.on; const gap = Math.max(10, Number(v.gapMin) || 30);
-      if (on !== !!global._waInvitesOn || gap !== global._waInviteGapMin) { global._waInvitesOn = on; global._waInviteGapMin = gap; log('⚙️  business invites are ' + (on ? 'ON — one every ' + gap + ' min, Sun–Thu 8:00–20:00, Fri 8:00–12:00 (Israel)' : 'OFF') + ' (WA_INVITES in the site settings)'); } }
+    { const v = j.WA_INVITES && typeof j.WA_INVITES === 'object' ? j.WA_INVITES : {}; const on = !!v.on; const sig = JSON.stringify([on, v.minGap || 0, v.maxGap || 0, v.maxDay || 0]);
+      if (sig !== global._waInvitesSig) { global._waInvitesSig = sig; global._waInvitesOn = on; global._waInvites = v;
+        log('⚙️  business invites are ' + (on ? 'ON — one at a time, ' + (Number(v.minGap) || 50) + '–' + (Number(v.maxGap) || 110) + ' min apart, at most ' + (Number(v.maxDay) || 8) + ' a day, Sun–Thu 8:00–20:00, Fri 8:00–12:00 (Israel)' : 'OFF') + ' (WA_INVITES in the site settings)'); } }
     if (j.NOTIFY_MODE && ['off', 'dry', 'live'].includes(String(j.NOTIFY_MODE).toLowerCase()) && String(j.NOTIFY_MODE).toLowerCase() !== NOTIFY_MODE) {
       NOTIFY_MODE = String(j.NOTIFY_MODE).toLowerCase(); log('⚙️  poster notes mode is now: ' + NOTIFY_MODE + ' (from the site settings)');
     }
@@ -3179,6 +3180,8 @@ async function start() {
   //    someone comments on it — the outbox marks it commentNote; everything else still stops here.
   const realSend = sock.sendMessage.bind(sock);
   sock.sendMessage = async (jid, content, opts) => {
+    // an invite goes on WA_INVITES alone (16 Nov 2026): WA_SEND can stay off for everything else
+    if (opts && opts.invite) { const { invite, ...rest } = opts; if (global._waInvitesOn) { const r = await realSend(jid, content, rest); rememberSent(r); return r; } opts = rest; }
     if (opts && opts.commentNote) { const { commentNote, ...rest } = opts; if (global._waCommentsOn || global._waSendOn) { const r = await realSend(jid, content, rest); rememberSent(r); return r; } }
     if (!global._waSendOn) { const k = String(jid).split('@')[0]; if (!global._sendOffSaid || Date.now() - global._sendOffSaid > 600000) { global._sendOffSaid = Date.now(); log('🚫 WhatsApp sending is off — nothing sent to ' + k + ' (or anyone) until WA_SEND is on in the site settings'); } throw new Error('WhatsApp sending is off'); }
     const r = await realSend(jid, content, opts); rememberSent(r); return r;
