@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-16T06:11:19.873Z",
+  "lastRun": "2026-11-16T15:49:45.967Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -25,7 +25,7 @@
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
     "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
-    "Dan": "ok via page-scan (4 items) — no RSS found",
+    "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
     "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
     "Israel Electric Corporation": "blocked: robots.txt disallows this path",
@@ -61,18 +61,18 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-16T06:11:19.870Z",
-      "sent": 0,
+      "lastRun": "2026-11-16T15:49:45.966Z",
+      "sent": 2,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
         "Jerusalem Municipality": "blocked: robots.txt unreachable — skipping to be safe",
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
-        "iTravelJerusalem hints": "20 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId vhxIwPL8W_jHi0Z33i66V",
-        "iTravelJerusalem": "20 cards, nothing new (20 distinct)",
+        "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId vhxIwPL8W_jHi0Z33i66V",
+        "iTravelJerusalem": "ok via listing cards (1 new of 40)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (5 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (10 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (11 upcoming)",
         "Pardes": "ok via https://www.pardes.org.il/events/feed/ (1 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (5 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
@@ -153,7 +153,15 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [],
+        "iTravelJerusalem": [
+          {
+            "title": "Winter Dreams - The World’s Largest Light Sculpture Exhibition",
+            "date": "2026-11-17",
+            "time": "17:00",
+            "link": "https://www.itraveljerusalem.com/event/winter-dreams-blossom-botanical-garden",
+            "raw": "1 dates; first {\"startDate\":\"2026-11-17T15:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"17:00\",\"endTime\":\"22:00\",\"repeats\":\"no\"}"
+          }
+        ],
         "Fun In Jerusalem": [
           {
             "title": "Winter Dreams - Lights Festival at Botanical Gardens",
@@ -220,34 +228,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
+            "title": "Tablecloth Playhouse Workshop: A Hanukkah Gift for the Grandchildren (Talpiot)",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/tablecloth-playhouse-workshop-a-hanukkah-gift-for-the-grandchildren-talpiot/"
+          },
+          {
             "title": "Nishmat Online Beit Midrash",
             "date": null,
             "time": "",
             "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
           },
           {
-            "title": "Coming soon! Tel Aviv Port’s mini golf is open to EVERYONE!",
+            "title": "Salsa Classes in Spanish",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/coming-soon-tel-aviv-ports-mini-golf-is-open-to-everyone/"
+            "link": "https://www.nbn.org.il/events/salsa-classes-in-spanish/"
           },
           {
-            "title": "JUST WRITE!",
+            "title": "Hebrew Unlocked is back",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/just-write/"
+            "link": "https://www.nbn.org.il/events/hebrew-unlocked-is-back/"
           },
           {
-            "title": "Hebrew University of Jerusalem Digital Open Day | November 15, 2026",
-            "date": "2026-11-15",
-            "time": "",
-            "link": "https://www.nbn.org.il/events/hebrew-university-of-jerusalem-digital-open-day-november-15-2026/"
-          },
-          {
-            "title": "Night Seder Program!",
+            "title": "Cafe Oleh | Fall 2026",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/night-seder-program/"
+            "link": "https://www.nbn.org.il/events/cafe-oleh-fall-2026/"
           }
         ],
         "Pardes": [
