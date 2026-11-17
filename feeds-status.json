@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-17T07:41:53.063Z",
+  "lastRun": "2026-11-17T17:09:46.922Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-17T07:41:53.061Z",
-      "sent": 3,
+      "lastRun": "2026-11-17T17:09:46.920Z",
+      "sent": 1,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -70,7 +70,7 @@
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId vhxIwPL8W_jHi0Z33i66V",
-        "iTravelJerusalem": "ok via listing cards (3 new of 40)",
+        "iTravelJerusalem": "40 cards, nothing new (20 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (6 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (11 upcoming)",
         "Pardes": "ok via https://www.pardes.org.il/events/feed/ (1 upcoming)",
@@ -122,6 +122,12 @@
         ],
         "The Kotel": [
           {
+            "title": "Where There’s a Will… – Parashat Vayetzei",
+            "date": null,
+            "time": "",
+            "link": "https://thekotel.org/en/158169/"
+          },
+          {
             "title": "The Path to Redemption – Parashat Toldot",
             "date": null,
             "time": "",
@@ -144,44 +150,22 @@
             "date": null,
             "time": "",
             "link": "https://thekotel.org/en/157888/"
-          },
-          {
-            "title": "Following the Inauguration of Colombia’s Embassy in Jerusalem: Colombia’s Foreign Minister Visits the Western Wall: “This Is the Most Sublime and Profound Moment of My Life!”",
-            "date": null,
-            "time": "",
-            "link": "https://thekotel.org/en/157881/"
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [
-          {
-            "title": "Movie Eaters: Minkie Spiro, Roy Iddan and Peter the Monkey",
-            "date": "2026-11-18",
-            "time": "11:30",
-            "link": "https://www.itraveljerusalem.com/event/jerusalem-sessions-movie-eaters",
-            "raw": "1 dates; first {\"startDate\":\"2026-11-18T09:30:00.000Z\",\"endDate\":\"\",\"startTime\":\"11:30\",\"endTime\":\"13:00\",\"repeats\":\"no\"}"
-          },
-          {
-            "title": "Atara Frish, Maya Fischer, David Hadda and Martin Moszkowicz",
-            "date": "2026-11-19",
-            "time": "14:00",
-            "link": "https://www.itraveljerusalem.com/event/jerusalem-sessions-frish-fischer-hadda-moszkowicz",
-            "raw": "1 dates; first {\"startDate\":\"2026-11-19T12:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"14:00\",\"endTime\":\"15:30\",\"repeats\":\"no\"}"
-          },
-          {
-            "title": "Terence Winter: A Masterclass on Writing for Television",
-            "date": "2026-11-19",
-            "time": "19:30",
-            "link": "https://www.itraveljerusalem.com/event/jerusalem-sessions-terence-winter-masterclass",
-            "raw": "1 dates; first {\"startDate\":\"2026-11-19T17:30:00.000Z\",\"endDate\":\"\",\"startTime\":\"19:30\",\"endTime\":\"20:30\",\"repeats\":\"no\"}"
-          }
-        ],
+        "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
             "title": "Winter Dreams - Lights Festival at Botanical Gardens",
             "date": "2026-11-17",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/winter-lights-festival/"
+          },
+          {
+            "title": "Hebron: A Family Friendly Tour this Hanukkah",
+            "date": "2026-11-25",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/hebron-hanukkah/"
           },
           {
             "title": "Christmas Tree Lighting",
@@ -200,12 +184,6 @@
             "date": "2026-12-01",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/hanukkah-artesana/"
-          },
-          {
-            "title": "Hanukkah Interactive Sofer Tour",
-            "date": "2026-12-01",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/hanukkah-interactive-sofer-tour/"
           }
         ],
         "OU Israel Center": [
@@ -242,34 +220,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Tablecloth Playhouse Workshop: A Hanukkah Gift for the Grandchildren (Talpiot)",
+            "title": "Evening Hebrew Club",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/tablecloth-playhouse-workshop-a-hanukkah-gift-for-the-grandchildren-talpiot/"
+            "link": "https://www.nbn.org.il/events/evening-hebrew-club/"
           },
           {
-            "title": "Nishmat Online Beit Midrash",
+            "title": "Achdut Now – Where Conversations Become Connection",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
+            "link": "https://www.nbn.org.il/events/achdut-now-where-conversations-become-connection-2/"
           },
           {
-            "title": "Salsa Classes in Spanish",
+            "title": "Practical Investment Workshop for Olim",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/salsa-classes-in-spanish/"
+            "link": "https://www.nbn.org.il/events/practical-investment-workshop-for-olim/"
           },
           {
-            "title": "Hebrew Unlocked is back",
+            "title": "Hebrew Happy Hour",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/hebrew-unlocked-is-back/"
+            "link": "https://www.nbn.org.il/events/hebrew-happy-hour-10/"
           },
           {
-            "title": "Cafe Oleh | Fall 2026",
+            "title": "Israel Music Showcase Festival in JLM",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/cafe-oleh-fall-2026/"
+            "link": "https://www.nbn.org.il/events/israel-music-showcase-festival-in-jlm/"
           }
         ],
         "Pardes": [
