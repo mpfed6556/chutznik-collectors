@@ -138,6 +138,12 @@ function classify(subject, text) {
 }
 
 // ── sending: Resend (the site's own way) or Gmail SMTP as a fallback ────────
+// The small print at the foot of every Chutznik email (Miriam, 17 Nov 2026: "chutznik takes no responsibility for any content or
+// connections the site offers the public … links to privacy and T and C pages … all in super small"). The site adds it to
+// everything it sends; these are the same words for the mail this machine sends by itself.
+const LEGAL_LINE = 'Chutznik takes no responsibility for any content or connections the site offers the public.';
+const legalHtml = (h) => { h = String(h || ''); if (!h || h.indexOf('data-czk-legal') > -1) return h; return h + '<div data-czk-legal="1" style="font:10px/1.5 Arial,Helvetica,sans-serif;color:#a89a90;text-align:center;padding:16px 12px 8px;max-width:560px;margin:0 auto">' + LEGAL_LINE + ' <a href="https://chutznik.org/privacy" style="color:#a89a90;text-decoration:underline">Privacy</a> &nbsp;·&nbsp; <a href="https://chutznik.org/terms" style="color:#a89a90;text-decoration:underline">Terms &amp; Conditions</a></div>'; };
+const legalText = (t) => { t = String(t || ''); if (!t || t.indexOf(LEGAL_LINE) > -1) return t; return t.replace(/\s+$/, '') + '\n\n--\n' + LEGAL_LINE + '\nPrivacy: https://chutznik.org/privacy  ·  Terms & Conditions: https://chutznik.org/terms\n'; };
 async function sendMail(to, note, log, opts) {
   // the site's own mail function first: every note leaves as Chutznik <info@chutznik.org>, logged like every other email (Miriam, 13 Oct 2026)
   if (opts && opts.ingestKey) {
@@ -150,7 +156,7 @@ async function sendMail(to, note, log, opts) {
   if (key) {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: FROM, to: [to], reply_to: REPLY_TO, subject: note.subject, text: note.text, html: note.html }),
+      body: JSON.stringify({ from: FROM, to: [to], reply_to: REPLY_TO, subject: note.subject, text: legalText(note.text), html: legalHtml(note.html) }),
     });
     if (!r.ok) throw new Error('resend ' + r.status + ' ' + (await r.text()).slice(0, 120));
     return 'resend';
@@ -159,7 +165,7 @@ async function sendMail(to, note, log, opts) {
   const user = process.env.GMAIL_USER, pass = String(process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
   if (!user || !pass) throw new Error('no Gmail login for SMTP');
   const t = nodemailer.createTransport({ host: 'smtp.gmail.com', port: 465, secure: true, auth: { user, pass } });
-  await t.sendMail({ from: FROM, to, replyTo: REPLY_TO, subject: note.subject, text: note.text, html: note.html });
+  await t.sendMail({ from: FROM, to, replyTo: REPLY_TO, subject: note.subject, text: legalText(note.text), html: legalHtml(note.html) });
   return 'gmail';
 }
 
@@ -826,7 +832,7 @@ async function outreachTick() {
           if (pr.ok) { const buf = Buffer.from(await pr.arrayBuffer()); if (buf.length > 2000 && buf.length < 8e6) { attachments.push({ filename: 'chutznik-post.jpg', content: buf, cid: 'chutznik-post' }); html = html.split('src="' + it.picSrc + '"').join('src="cid:chutznik-post"'); } }
         } catch (e) {}
       }
-      await global._ogT.sendMail({ from: { name: 'Miriam', address: user }, to: it.to, subject: it.subject, text: it.text, html, attachments });
+      await global._ogT.sendMail({ from: { name: 'Miriam', address: user }, to: it.to, subject: it.subject, text: legalText(it.text), html: legalHtml(html), attachments });
       ok = true; OG_FAILS = 0;
     } catch (e) {
       error = String((e && e.message) || e).slice(0, 200); OG_FAILS++;
