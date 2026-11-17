@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-17T17:09:46.922Z",
+  "lastRun": "2026-11-17T23:53:36.883Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-17T17:09:46.920Z",
-      "sent": 1,
+      "lastRun": "2026-11-17T23:53:36.881Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -72,7 +72,7 @@
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId vhxIwPL8W_jHi0Z33i66V",
         "iTravelJerusalem": "40 cards, nothing new (20 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (6 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (11 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (10 upcoming)",
         "Pardes": "ok via https://www.pardes.org.il/events/feed/ (1 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (5 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
@@ -188,12 +188,6 @@
         ],
         "OU Israel Center": [
           {
-            "title": "DOROT CHOIR PERFORMANCE",
-            "date": "2026-11-16",
-            "time": "19:30",
-            "link": "https://www.ouisrael.org/events/dorot2026/"
-          },
-          {
             "title": "Tuesday Learning for Women",
             "date": "2026-11-17",
             "time": "09:15",
@@ -216,6 +210,12 @@
             "date": "2026-12-01",
             "time": "09:15",
             "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-12-01/"
+          },
+          {
+            "title": "Mother Daughter National Chanukah Event",
+            "date": "2026-12-07",
+            "time": "17:00",
+            "link": "https://www.ouisrael.org/events/md-national/"
           }
         ],
         "Nefesh B'Nefesh": [
@@ -224,12 +224,6 @@
             "date": null,
             "time": "",
             "link": "https://www.nbn.org.il/events/evening-hebrew-club/"
-          },
-          {
-            "title": "Achdut Now – Where Conversations Become Connection",
-            "date": null,
-            "time": "",
-            "link": "https://www.nbn.org.il/events/achdut-now-where-conversations-become-connection-2/"
           },
           {
             "title": "Practical Investment Workshop for Olim",
@@ -248,6 +242,12 @@
             "date": null,
             "time": "",
             "link": "https://www.nbn.org.il/events/israel-music-showcase-festival-in-jlm/"
+          },
+          {
+            "title": "CONVERSATIONAL HEBREW WORKSHOPS",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/conversational-hebrew-workshops/"
           }
         ],
         "Pardes": [
