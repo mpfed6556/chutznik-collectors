@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-18T14:33:39.306Z",
+  "lastRun": "2026-11-18T22:28:50.818Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -32,7 +32,7 @@
     "Cellcom": "no feed, no scannable items, nothing in the news last 48h",
     "Partner": "blocked: robots.txt disallows this path",
     "HOT": "blocked: robots.txt unreachable — skipping to be safe",
-    "AACI": "no feed, no scannable items, nothing in the news last 48h",
+    "AACI": "blocked: robots.txt unreachable — skipping to be safe",
     "Janglo": "ok via page-scan (5 items) — no RSS found",
     "Gvahim": "blocked: robots.txt disallows this path",
     "AllJobs": "blocked: robots.txt disallows this path",
@@ -50,7 +50,7 @@
     "United Hatzalah": "page HTTP 403",
     "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
-    "Bank of Israel": "ok via page-scan (5 items) — no RSS found",
+    "Bank of Israel": "blocked: robots.txt unreachable — skipping to be safe",
     "Ministry of Welfare": "page HTTP 403",
     "Tipat Chalav (Family Health Centers)": "page HTTP 403",
     "Harel Insurance": "blocked: robots.txt disallows this path",
@@ -58,11 +58,11 @@
     "Chaim V'Chessed": "blocked: robots.txt unreachable — skipping to be safe",
     "Moovit": "ok via RSS (6 items)",
     "Hadassah Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
-    "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
+    "Shaare Zedek Medical Center": "blocked: robots.txt unreachable — skipping to be safe",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-18T14:33:39.305Z",
-      "sent": 4,
+      "lastRun": "2026-11-18T22:28:50.816Z",
+      "sent": 1,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -72,7 +72,7 @@
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId vhxIwPL8W_jHi0Z33i66V",
         "iTravelJerusalem": "40 cards, nothing new (20 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (5 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (11 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (12 upcoming)",
         "Pardes": "ok via https://www.pardes.org.il/events/feed/ (1 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (5 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
@@ -83,7 +83,7 @@
         "Jerusalem Botanical Gardens": "no events · nothing parsed at https://www.botanic.co.il/en/",
         "Biblical Zoo": "no events · HTTP 403",
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
-        "Eventbrite Jerusalem": "ok via https://www.eventbrite.com/d/israel--jerusalem/events/ (7 upcoming)",
+        "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
         "Secret Jerusalem": "no events · HTTP 403"
       },
@@ -212,10 +212,10 @@
             "link": "https://www.ouisrael.org/events/tuesday-learning-for-women-3-2026-12-01/"
           },
           {
-            "title": "Mother Daughter National Chanukah Event",
-            "date": "2026-12-07",
-            "time": "17:00",
-            "link": "https://www.ouisrael.org/events/md-national/"
+            "title": "North Central Region: Chanukah Leil Iyin in Harish",
+            "date": "2026-12-01",
+            "time": "19:00",
+            "link": "https://www.ouisrael.org/events/leil-iyun-harish/"
           }
         ],
         "Nefesh B'Nefesh": [
@@ -329,38 +329,7 @@
             "link": "https://www.jso.co.il/%d7%91%d7%99%d7%9f-%d7%94%d7%a4%d7%98%d7%99%d7%a9-%d7%9c%d7%9e%d7%92%d7%9c/"
           }
         ],
-        "Eventbrite Jerusalem": [
-          {
-            "title": "HBR Book Webinar: Unspeakable",
-            "date": "2026-11-23",
-            "time": "",
-            "link": "https://www.eventbrite.co.uk/e/hbr-book-webinar-unspeakable-tickets-2003706919334"
-          },
-          {
-            "title": "Lo sviluppo della forza nella corsa prolungata",
-            "date": "2026-11-24",
-            "time": "",
-            "link": "https://www.eventbrite.it/e/lo-sviluppo-della-forza-nella-corsa-prolungata-tickets-2004286389545"
-          },
-          {
-            "title": "The MI5 Archive: Official Secrets",
-            "date": "2026-11-27",
-            "time": "",
-            "link": "https://www.eventbrite.co.uk/e/the-mi5-archive-official-secrets-tickets-1997551526388"
-          },
-          {
-            "title": "How to Choose a (New) Career Fast",
-            "date": "2026-12-03",
-            "time": "",
-            "link": "https://www.eventbrite.co.uk/e/how-to-choose-a-new-career-fast-tickets-1993681331531"
-          },
-          {
-            "title": "Sorted Live: A Food Nightmare Before Christmas",
-            "date": "2026-12-05",
-            "time": "",
-            "link": "https://www.eventbrite.co.uk/e/sorted-live-a-food-nightmare-before-christmas-tickets-2003030292525"
-          }
-        ],
+        "Eventbrite Jerusalem": [],
         "Janglo events": [],
         "Secret Jerusalem": []
       }
