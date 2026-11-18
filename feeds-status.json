@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-17T23:53:36.883Z",
+  "lastRun": "2026-11-18T05:29:13.827Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-17T23:53:36.881Z",
-      "sent": 0,
+      "lastRun": "2026-11-18T05:29:13.825Z",
+      "sent": 3,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -70,8 +70,8 @@
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId vhxIwPL8W_jHi0Z33i66V",
-        "iTravelJerusalem": "40 cards, nothing new (20 distinct)",
-        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (6 upcoming)",
+        "iTravelJerusalem": "ok via listing cards (3 new of 40)",
+        "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (5 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (10 upcoming)",
         "Pardes": "ok via https://www.pardes.org.il/events/feed/ (1 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (5 upcoming)",
@@ -153,14 +153,30 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [],
-        "Fun In Jerusalem": [
+        "iTravelJerusalem": [
           {
-            "title": "Winter Dreams - Lights Festival at Botanical Gardens",
-            "date": "2026-11-17",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/winter-lights-festival/"
+            "title": "Rotem Sela and Noa Koler: One-on-One",
+            "date": "2026-11-18",
+            "time": "16:00",
+            "link": "https://www.itraveljerusalem.com/event/jerusalem-sessions-rotem-sela-noa-koler",
+            "raw": "1 dates; first {\"startDate\":\"2026-11-18T14:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"16:00\",\"endTime\":\"17:00\",\"repeats\":\"no\"}"
           },
+          {
+            "title": "Gitit Fisher and Shirly Moshaioff: One-on-One",
+            "date": "2026-11-18",
+            "time": "20:45",
+            "link": "https://www.itraveljerusalem.com/event/jerusalem-sessions-gitit-fisher-shirly-moshaioff",
+            "raw": "1 dates; first {\"startDate\":\"2026-11-18T18:45:00.000Z\",\"endDate\":\"\",\"startTime\":\"20:45\",\"endTime\":\"21:45\",\"repeats\":\"no\"}"
+          },
+          {
+            "title": "You Have to Read This: Up for Adaptation",
+            "date": "2026-11-19",
+            "time": "17:00",
+            "link": "https://www.itraveljerusalem.com/event/jerusalem-sessions-you-have-to-read-this-adaptation",
+            "raw": "1 dates; first {\"startDate\":\"2026-11-19T15:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"17:00\",\"endTime\":\"18:15\",\"repeats\":\"no\"}"
+          }
+        ],
+        "Fun In Jerusalem": [
           {
             "title": "Hebron: A Family Friendly Tour this Hanukkah",
             "date": "2026-11-25",
@@ -184,6 +200,12 @@
             "date": "2026-12-01",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/hanukkah-artesana/"
+          },
+          {
+            "title": "Hanukkah Interactive Sofer Tour",
+            "date": "2026-12-01",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/hanukkah-interactive-sofer-tour/"
           }
         ],
         "OU Israel Center": [
