@@ -2622,6 +2622,22 @@ async function emailLoggedOutOnce() {
     log('✉️ logged-out note ' + (r.ok ? 'emailed to ' + to.join(', ') : 'failed (' + r.status + ')'));
   } catch (e) { log('✉️ logged-out note failed: ' + (e && e.message)); }
 }
+// WhatsApp refusing the account (403): one alarm per spell, phone + email through the site (a restart does not ring again)
+async function alarmRefusedOnce() {
+  const f = path.join(__dirname, 'refused-state.json'); let st = {}; try { st = JSON.parse(fs.readFileSync(f, 'utf8')) || {}; } catch (e) {}
+  if (st.alarmedAt && Date.now() - st.alarmedAt < 12 * 3600e3) return;
+  try { fs.writeFileSync(f, JSON.stringify({ alarmedAt: Date.now() })); } catch (e) {}
+  const to = String(process.env.OWNER_EMAILS || 'mpfederman@gmail.com,miriam@chutznik.org').split(',').map((x) => x.trim()).filter(Boolean);
+  const when = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Jerusalem' });
+  const body = 'WhatsApp refused the Chutznik bridge (403) at ' + when + ' Israel time. That usually means WhatsApp has restricted the account. Nothing comes in from the groups and nothing is sent.\n\n'
+    + 'Open WhatsApp on the phone with the bridge\'s number. If it says the account cannot use WhatsApp, tap Request review.\n\nThe bridge tries again on its own, further apart each time.\n— Chutznik';
+  try {
+    const r = await fetch(SITE + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ type: 'custom', to, subject: '⛔ WhatsApp is refusing the Chutznik bridge', body, whatsappAlert: true }), signal: AbortSignal.timeout(20000) });
+    log('🚨 refused alarm ' + (r.ok ? 'sent (phone + email)' : 'failed (' + r.status + ')'));
+  } catch (e) { log('🚨 refused alarm failed: ' + (e && e.message)); }
+}
+// once let in again, the next refusal rings again
+function refusedClear() { try { fs.unlinkSync(path.join(__dirname, 'refused-state.json')); } catch (e) {} }
 // while logged out: every 20 s, is there a fresh PAIR_NOW on the site? (the admin's bridge tile writes it)
 function pairIdle() {
   if (global._pairIdleTimer) return;
@@ -3211,7 +3227,7 @@ async function start() {
     }
     if (u.qr && !global._loggedOut) { console.log('\n📱 Scan with WhatsApp → Settings → Linked devices → Link a device:\n'); qrcode.generate(u.qr, { small: true }); }
     if (u.connection === 'open') {
-      const wasOut = !!global._loggedOut || !!global._f403; if (global._f403) log('✅ WhatsApp lets the bridge in again after ' + global._f403 + ' refusal(s)'); global._f403 = 0; global._f403At = 0;
+      const wasOut = !!global._loggedOut || !!global._f403; if (global._f403) { log('✅ WhatsApp lets the bridge in again after ' + global._f403 + ' refusal(s)'); refusedClear(); } global._f403 = 0; global._f403At = 0;
       global._loggedOut = 0; global._pairCount = 0; global._pairCode = null; global._pairUntil = 0; pairIdleStop(); try { fs.unlinkSync(path.join(__dirname, 'pair-state.json')); } catch (e) {}
       try { const me = String(sock.user && sock.user.id || '').split(':')[0].replace(/\D/g, ''); if (me) fs.writeFileSync(path.join(__dirname, 'my-number.txt'), me); } catch (e) {}
       log('✅ Connected. Watching ALL groups. History for the last ' + HOURS + 'h arrives on its own; live messages reach the site within seconds.');
@@ -3260,7 +3276,10 @@ async function start() {
       // and again only makes it worse, so the waits grow (5, 10, 20, then every 30 minutes) and the status says so plainly
       if (code === 403) {
         global._sock = null; global._f403 = (global._f403 || 0) + 1; if (!global._f403At) global._f403At = Date.now();
-        const mins = [5, 10, 20, 30][Math.min(3, global._f403 - 1)];
+        const mins = [5, 10, 20, 30, 60, 120][Math.min(5, global._f403 - 1)];
+        // the owners hear at once, by phone and email (Miriam, 19 Nov 2026: "The first thing that should happen before doing
+        // anything is to inform me!"): the first refusal of each spell, never again until it has let the bridge in
+        if (global._f403 === 1) alarmRefusedOnce().catch(() => {});
         log('⛔ WhatsApp refused the connection (403), ' + global._f403 + ' time(s) since ' + new Date(global._f403At).toLocaleTimeString('en-GB', { timeZone: 'Asia/Jerusalem' }) + ' Israel — trying again in ' + mins + ' min');
         try { sendStatus(); } catch (e) {}
         setTimeout(start, mins * 60000); return;
