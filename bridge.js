@@ -2654,7 +2654,7 @@ async function sendStatus() {
   try {
     const status = {
       node: process.version, at: new Date().toISOString(), version: (fs.statSync(__filename).mtime || '').toString(), pid: process.pid, up: Math.round(process.uptime()),
-      connected: !!(global._sock && global._sock.user), loggedOut: global._loggedOut ? new Date(global._loggedOut).toISOString() : null, pairing: global._pairCount || 0, pairCode: global._pairCode || null, pairCodeAt: global._pairCodeAt || 0, pairUntil: global._pairUntil || 0, me: global._sock && global._sock.user ? String(global._sock.user.id || '').split(':')[0] : '',
+      connected: !!(global._sock && global._sock.user), refused: global._f403At ? { since: new Date(global._f403At).toISOString(), times: global._f403 || 0 } : null, loggedOut: global._loggedOut ? new Date(global._loggedOut).toISOString() : null, pairing: global._pairCount || 0, pairCode: global._pairCode || null, pairCodeAt: global._pairCodeAt || 0, pairUntil: global._pairUntil || 0, me: global._sock && global._sock.user ? String(global._sock.user.id || '').split(':')[0] : '',
       lids: Object.keys(LIDS).length, seen: SEEN.size, posted: Object.keys(POSTED).length, notifyMode: NOTIFY_MODE, waSend: global._waSendOn ? 'on' : (global._waCommentsOn ? 'comments' : 'off'),
       log: LOG_RING.slice(-80),
       events: global._eventsReport || null,
@@ -3211,7 +3211,7 @@ async function start() {
     }
     if (u.qr && !global._loggedOut) { console.log('\n📱 Scan with WhatsApp → Settings → Linked devices → Link a device:\n'); qrcode.generate(u.qr, { small: true }); }
     if (u.connection === 'open') {
-      const wasOut = !!global._loggedOut;
+      const wasOut = !!global._loggedOut || !!global._f403; if (global._f403) log('✅ WhatsApp lets the bridge in again after ' + global._f403 + ' refusal(s)'); global._f403 = 0; global._f403At = 0;
       global._loggedOut = 0; global._pairCount = 0; global._pairCode = null; global._pairUntil = 0; pairIdleStop(); try { fs.unlinkSync(path.join(__dirname, 'pair-state.json')); } catch (e) {}
       try { const me = String(sock.user && sock.user.id || '').split(':')[0].replace(/\D/g, ''); if (me) fs.writeFileSync(path.join(__dirname, 'my-number.txt'), me); } catch (e) {}
       log('✅ Connected. Watching ALL groups. History for the last ' + HOURS + 'h arrives on its own; live messages reach the site within seconds.');
@@ -3255,6 +3255,15 @@ async function start() {
         if ((global._pairUntil || 0) > Date.now()) { log('🔗 the code was not used in time — a fresh one'); setTimeout(start, 2000); }
         else { log('🔗 no pairing request in the last ten minutes — waiting for the admin\'s bridge tile'); try { sendStatus(); } catch (e) {} pairIdle(); }
         return;
+      }
+      // WhatsApp refusing the account (403, 19 Nov 2026: refused every five seconds for hours, nothing coming in): asking again
+      // and again only makes it worse, so the waits grow (5, 10, 20, then every 30 minutes) and the status says so plainly
+      if (code === 403) {
+        global._sock = null; global._f403 = (global._f403 || 0) + 1; if (!global._f403At) global._f403At = Date.now();
+        const mins = [5, 10, 20, 30][Math.min(3, global._f403 - 1)];
+        log('⛔ WhatsApp refused the connection (403), ' + global._f403 + ' time(s) since ' + new Date(global._f403At).toLocaleTimeString('en-GB', { timeZone: 'Asia/Jerusalem' }) + ' Israel — trying again in ' + mins + ' min');
+        try { sendStatus(); } catch (e) {}
+        setTimeout(start, mins * 60000); return;
       }
       log('🔌 Connection dropped (' + code + ') — reconnecting in 5s…');
       setTimeout(start, 5000);
