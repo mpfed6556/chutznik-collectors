@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-19T03:47:35.655Z",
+  "lastRun": "2026-11-19T12:20:37.798Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-19T03:47:35.654Z",
-      "sent": 2,
+      "lastRun": "2026-11-19T12:20:37.797Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -83,7 +83,7 @@
         "Jerusalem Botanical Gardens": "no events · nothing parsed at https://www.botanic.co.il/en/",
         "Biblical Zoo": "no events · HTTP 403",
         "Jerusalem Symphony": "ok via https://www.jso.co.il/feed/ (10 upcoming)",
-        "Eventbrite Jerusalem": "ok via https://www.eventbrite.com/d/israel--jerusalem/events/ (8 upcoming)",
+        "Eventbrite Jerusalem": "no events · HTTP 405",
         "Janglo events": "no events · nothing parsed at https://www.janglo.net/events",
         "Secret Jerusalem": "no events · HTTP 403"
       },
@@ -220,34 +220,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Tablecloth Playhouse Workshop: A Hanukkah Gift for the Grandchildren (Talpiot)",
+            "title": "3-Day Galilee Culinary Escape Hagoshrim Hotel",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/tablecloth-playhouse-workshop-a-hanukkah-gift-for-the-grandchildren-talpiot/"
+            "link": "https://www.nbn.org.il/events/3-day-galilee-culinary-escape-hagoshrim-hotel/"
           },
           {
-            "title": "High Tea & Torah in the Garden",
+            "title": "Jerusalem in my Soul – Celebrating Art & Aliyah",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/high-tea-torah-in-the-garden/"
+            "link": "https://www.nbn.org.il/events/jerusalem-in-my-soul-celebrating-art-aliyah/"
           },
           {
-            "title": "Nishmat Online Beit Midrash",
+            "title": "Mesibat Sheket | Silent Party",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
+            "link": "https://www.nbn.org.il/events/mesibat-sheket-silent-party/"
           },
           {
-            "title": "Art Wednesday",
+            "title": "Ladies Dance Party – Back to the 90s",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/art-wednesday/"
+            "link": "https://www.nbn.org.il/events/ladies-dance-party-back-to-the-90s/"
           },
           {
-            "title": "A Taste of France in the Heart of Tel Aviv!",
+            "title": "Israel Music Showcase Festival in JLM",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/a-taste-of-france-in-the-heart-of-tel-aviv/"
+            "link": "https://www.nbn.org.il/events/israel-music-showcase-festival-in-jlm/"
           }
         ],
         "Pardes": [
@@ -329,38 +329,7 @@
             "link": "https://www.jso.co.il/%d7%91%d7%99%d7%9f-%d7%94%d7%a4%d7%98%d7%99%d7%a9-%d7%9c%d7%9e%d7%92%d7%9c/"
           }
         ],
-        "Eventbrite Jerusalem": [
-          {
-            "title": "HBR Book Webinar: Unspeakable",
-            "date": "2026-11-23",
-            "time": "",
-            "link": "https://www.eventbrite.co.uk/e/hbr-book-webinar-unspeakable-tickets-2003706919334"
-          },
-          {
-            "title": "The MI5 Archive: Official Secrets",
-            "date": "2026-11-27",
-            "time": "",
-            "link": "https://www.eventbrite.co.uk/e/the-mi5-archive-official-secrets-tickets-1997551526388"
-          },
-          {
-            "title": "Workshop mit Dr. Sandra Graf: Differenzialdiagnostik ASS/ADHS/PS",
-            "date": "2026-11-28",
-            "time": "",
-            "link": "https://www.eventbrite.de/e/workshop-mit-dr-sandra-graf-differenzialdiagnostik-assadhsps-tickets-1997966686142"
-          },
-          {
-            "title": "How to Choose a (New) Career Fast",
-            "date": "2026-12-03",
-            "time": "",
-            "link": "https://www.eventbrite.co.uk/e/how-to-choose-a-new-career-fast-tickets-1993681331531"
-          },
-          {
-            "title": "Sorted Live: A Food Nightmare Before Christmas",
-            "date": "2026-12-05",
-            "time": "",
-            "link": "https://www.eventbrite.co.uk/e/sorted-live-a-food-nightmare-before-christmas-tickets-2003030292525"
-          }
-        ],
+        "Eventbrite Jerusalem": [],
         "Janglo events": [],
         "Secret Jerusalem": []
       }
