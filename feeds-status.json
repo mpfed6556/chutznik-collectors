@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-20T18:34:58.549Z",
+  "lastRun": "2026-11-21T00:12:01.134Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "no feed, no scannable items, nothing in the news last 48h",
+    "Israir": "ok via page-scan (1 items) — no RSS found",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-20T18:34:58.548Z",
-      "sent": 1,
+      "lastRun": "2026-11-21T00:12:01.133Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -70,7 +70,7 @@
         "Reconnect Shiurim": "ok via https://reconnectshiurim.com/?post_type=product&feed=rss2 (10)",
         "The Kotel": "ok via https://thekotel.org/en/feed/ (10)",
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId vhxIwPL8W_jHi0Z33i66V",
-        "iTravelJerusalem": "ok via listing cards (1 new of 40)",
+        "iTravelJerusalem": "40 cards, nothing new (20 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (5 upcoming)",
         "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (13 upcoming)",
         "Pardes": "ok via https://www.pardes.org.il/events/feed/ (1 upcoming)",
@@ -153,15 +153,7 @@
           }
         ],
         "Jerusalem Municipality": [],
-        "iTravelJerusalem": [
-          {
-            "title": "Candle Lighting with Chabbad Young Professionals in Jerusalem",
-            "date": "2026-12-06",
-            "time": "16:00",
-            "link": "https://www.itraveljerusalem.com/event/hanukkah-with-chabbad",
-            "raw": "1 dates; first {\"startDate\":\"2026-12-06T14:00:00.000Z\",\"endDate\":\"\",\"startTime\":\"16:00\",\"endTime\":\"19:00\",\"repeats\":\"no\"}"
-          }
-        ],
+        "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
             "title": "Hebron: A Family Friendly Tour this Hanukkah",
