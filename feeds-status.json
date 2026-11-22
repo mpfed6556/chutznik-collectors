@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-22T08:15:28.879Z",
+  "lastRun": "2026-11-22T16:32:27.702Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -20,7 +20,7 @@
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
-    "Israir": "ok via page-scan (1 items) — no RSS found",
+    "Israir": "no feed, no scannable items, nothing in the news last 48h",
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-22T08:15:28.878Z",
-      "sent": 0,
+      "lastRun": "2026-11-22T16:32:27.700Z",
+      "sent": 4,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -72,7 +72,7 @@
         "iTravelJerusalem hints": "40 cards · card keys: id,name,body,previewAltText,previewCaption,previewURL,entity_infos,startDate,endDate,startTime,endTime,priceAmount,priceCurrency,urlPath,location,itemType,trueID,googleReviewCount,googleReviewRating,eventListingDate,minPrice,hideDates · buildId vhxIwPL8W_jHi0Z33i66V",
         "iTravelJerusalem": "40 cards, nothing new (20 distinct)",
         "Fun In Jerusalem": "ok via https://funinjerusalem.com/events/?ical=1 (5 upcoming)",
-        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (13 upcoming)",
+        "OU Israel Center": "ok via https://www.ouisrael.org/events/?ical=1 (15 upcoming)",
         "Pardes": "ok via https://www.pardes.org.il/events/feed/ (1 upcoming)",
         "Beit Avi Chai": "ok via https://www.bac.org.il/en/events (5 upcoming)",
         "Jerusalem Theatre": "no events · HTTP 404",
@@ -156,6 +156,18 @@
         "iTravelJerusalem": [],
         "Fun In Jerusalem": [
           {
+            "title": "Black Friday Photography Deal with Nili Auerbach",
+            "date": "2026-11-22",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/black-friday-photography-nili-auerbach/"
+          },
+          {
+            "title": "Black Friday Deals at Hasadna B'Nocturno",
+            "date": "2026-11-22",
+            "time": "",
+            "link": "https://www.funinjerusalem.com/events/black-friday-hasadna/"
+          },
+          {
             "title": "Hebron: A Family Friendly Tour this Hanukkah",
             "date": "2026-11-25",
             "time": "",
@@ -172,18 +184,6 @@
             "date": "2026-12-01",
             "time": "",
             "link": "https://www.funinjerusalem.com/events/biblical-museum-of-natural-history-tour-hanukkah/"
-          },
-          {
-            "title": "Hanukkah Hot Glass Fusing Workshop at Artesana",
-            "date": "2026-12-01",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/hanukkah-artesana/"
-          },
-          {
-            "title": "Hanukkah Interactive Sofer Tour",
-            "date": "2026-12-01",
-            "time": "",
-            "link": "https://www.funinjerusalem.com/events/hanukkah-interactive-sofer-tour/"
           }
         ],
         "OU Israel Center": [
@@ -220,34 +220,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "3-Day Galilee Culinary Escape Hagoshrim Hotel",
+            "title": "Nishmat Online Beit Midrash",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/3-day-galilee-culinary-escape-hagoshrim-hotel/"
+            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
           },
           {
-            "title": "Jerusalem in my Soul – Celebrating Art & Aliyah",
+            "title": "Coming soon! Tel Aviv Port’s mini golf is open to EVERYONE!",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/jerusalem-in-my-soul-celebrating-art-aliyah/"
+            "link": "https://www.nbn.org.il/events/coming-soon-tel-aviv-ports-mini-golf-is-open-to-everyone/"
           },
           {
-            "title": "Mesibat Sheket | Silent Party",
+            "title": "Lecture Series",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/mesibat-sheket-silent-party/"
+            "link": "https://www.nbn.org.il/events/lecture-series-2/"
           },
           {
-            "title": "Ladies Dance Party – Back to the 90s",
+            "title": "Olim Turning Pages",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/ladies-dance-party-back-to-the-90s/"
+            "link": "https://www.nbn.org.il/events/olim-turning-pages/"
           },
           {
-            "title": "Israel Music Showcase Festival in JLM",
+            "title": "Undergraduate Degree Programs in English | Designed for English Speakers and New Olim",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/israel-music-showcase-festival-in-jlm/"
+            "link": "https://pages.ono.ac.il/go/study-in-english-nbn"
           }
         ],
         "Pardes": [
