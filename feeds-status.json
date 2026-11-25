@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-24T18:24:33.628Z",
+  "lastRun": "2026-11-25T02:43:55.104Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -61,8 +61,8 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-24T18:24:33.627Z",
-      "sent": 2,
+      "lastRun": "2026-11-25T02:43:55.102Z",
+      "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
         "Nefesh B'Nefesh Jobs": "ok via RSS (1 items)",
@@ -208,34 +208,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Memoir Workshop with Carol Ungar",
+            "title": "Practical Investment Workshop for Olim",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/memoir-workshop-with-carol-ungar/"
+            "link": "https://www.nbn.org.il/events/practical-investment-workshop-for-olim/"
           },
           {
-            "title": "Nishmat Online Beit Midrash",
+            "title": "Basketball League",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/nishmat-online-beit-midrash/"
+            "link": "https://www.nbn.org.il/events/basketball-league-2/"
           },
           {
-            "title": "Give your writing two days | JWWS Online",
+            "title": "Jacob’s Stepladder – A New Play",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/give-your-writing-two-days-jwws-online/"
+            "link": "https://www.nbn.org.il/events/jacobs-stepladder-a-new-play/"
           },
           {
-            "title": "Evening Hebrew Club",
+            "title": "Women’s Soccer Academy",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/evening-hebrew-club/"
+            "link": "https://www.nbn.org.il/events/womens-soccer-academy-2/"
           },
           {
-            "title": "Achdut Now – Where Conversations Become Connection",
+            "title": "Take the Stage | a 6-week workshop for women",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/achdut-now-where-conversations-become-connection-2/"
+            "link": "https://www.nbn.org.il/events/take-the-stage-a-6-week-workshop-for-women/"
           }
         ],
         "Pardes": [
