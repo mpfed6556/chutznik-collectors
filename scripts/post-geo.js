@@ -40,6 +40,9 @@ function buildIndex(tiles, cityNames) {
   }
   // spellings people use that the map does not ("Touval 7" is the map's Tuval 7: 26 Nov 2026, the Meuchedet clinic that moved there)
   for (const [alias, he] of [['touval', 'תובל'], ['tuval', 'תובל']]) { const hk = normHe(he); if (addr.has(hk) && !en.has(alias)) en.set(alias, hk); }
+  // "Sderot Eshkol" is Levi Eshkol, the boulevard of Ramat Eshkol — not the one-house HaEshkol lane the bare word finds (Miriam,
+  // 26 Nov 2026, a sale at "10 Sderot Eshkol": "why doesn't it have a map icon with the address")
+  for (const alias of ['sderot eshkol', 'sderos eshkol', 'shderot eshkol', 'sd eshkol', 'sderot levi eshkol', 'sderos levi eshkol', 'shderot levi eshkol', 'sd levi eshkol']) { const hk = normHe('לוי אשכול'); if (addr.has(hk)) en.set(alias, hk); }
   return { addr, en, sk, enName };
 }
 
@@ -200,28 +203,34 @@ function geocodePosts(ix, updates, posts) {
 }
 
 async function getJson(url) { try { const r = await fetch(url, { headers: { 'x-ingest-key': KEY, 'User-Agent': 'chutznik-bridge' }, signal: AbortSignal.timeout(120000) }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
-let _running = false;
+let _running = false, _ix = null, _ixAt = 0, _lastSig = '';
 async function run() {
   if (_running) return; _running = true;
   try {
-    const city = await getJson(SITE + '/api/live-data?type=buildings&part=city');
-    const tiles = [];
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const t = await getJson(SITE + '/api/live-data?type=buildings&part=tile&t=' + r + '_' + c); if (t && Array.isArray(t.b) && t.b.length) tiles.push(t); }
-    if (!tiles.length) { LOG('📍 post map: no building squares yet'); return; }
-    const ix = buildIndex(tiles, city && city.names);
+    // the address book is read once a day (224 squares); between readings only the posts are read, so a new post is on the map
+    // within the hour instead of three (26 Nov 2026)
+    if (!_ix || Date.now() - _ixAt > 24 * 3600 * 1000) {
+      const city = await getJson(SITE + '/api/live-data?type=buildings&part=city');
+      const tiles = [];
+      for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const t = await getJson(SITE + '/api/live-data?type=buildings&part=tile&t=' + r + '_' + c); if (t && Array.isArray(t.b) && t.b.length) tiles.push(t); }
+      if (!tiles.length) { LOG('📍 post map: no building squares yet'); return; }
+      _ix = buildIndex(tiles, city && city.names); _ixAt = Date.now();
+    }
+    const ix = _ix;
     const [ups, posts] = await Promise.all([getJson(SITE + '/api/live-data?type=updates&t=' + Date.now()), getJson(SITE + '/api/live-data?type=posts&t=' + Date.now())]);
     if (!Array.isArray(ups)) { LOG('📍 post map: could not read the posts'); return; }
     const map = geocodePosts(ix, ups, Array.isArray(posts) ? posts : []);
     const n = Object.keys(map).length;
+    const sig = JSON.stringify(map); if (sig === _lastSig) return;   // nothing moved since the last save: no write
     // the save is tried again when the site is busy (15 Nov 2026: a save lost to a busy moment left the map three hours behind)
     let r = null;
     for (let a = 0; a < 4; a++) {
       try { r = await fetch(SITE + '/api/live-data?type=buildings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ postgeo: { at: Date.now(), map } }), signal: AbortSignal.timeout(60000) }); } catch (e) { r = null; }
-      if (r && r.ok) break;
+      if (r && r.ok) { _lastSig = sig; break; }
       await new Promise((ok) => setTimeout(ok, 45000 * (a + 1)));
     }
     LOG('📍 post map: ' + n + ' posts with an address placed (' + ix.addr.size + ' streets known)' + (r && r.ok ? '' : ' — the site answered ' + (r ? r.status : 'nothing') + ', after four tries'));
   } catch (e) { LOG('📍 post map: ' + (e && e.message)); } finally { _running = false; }
 }
-function start(log) { if (log) LOG = log; setTimeout(() => run().catch(() => {}), 8 * 60 * 1000); setInterval(() => run().catch(() => {}), 3 * 3600 * 1000); }
+function start(log) { if (log) LOG = log; setTimeout(() => run().catch(() => {}), 8 * 60 * 1000); setInterval(() => run().catch(() => {}), 45 * 60 * 1000); }
 module.exports = { start, run, buildIndex, findAddress, findVenue, VENUES, geocodePosts, normEn, normHe, skel };

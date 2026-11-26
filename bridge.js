@@ -721,7 +721,8 @@ function smartTitle(body, kind, chatName) {
   if (kind === 'rental') return 'Apartment available';
   if (kind === 'ad') return 'From a local business';
   if (kind === 'question') return 'A question for the community';
-  return 'From ' + (chatName || 'the community');
+  // never the chat's name: a group called "#Pepperspray" put its name on 25 posts (Miriam, 26 Nov 2026: "Never ever say pepper spray!!!")
+  return 'From the community';
 }
 
 // Cross-group duplicate detection: the same ad pasted into several groups.
@@ -1798,8 +1799,8 @@ async function buildPost(cluster, chatName) {
   // a message that was only a flag or a few emoji with a flyer (Miriam, 6 Oct 2026): the words come from the flyer, in English
   if (stripEmoji(title).replace(/[^\p{L}\p{N}]/gu, '').length < 3) {
     const words = stripEmoji(String(memo || '').split('\n').find((l) => stripEmoji(l).replace(/[^\p{L}\p{N}]/gu, '').length >= 3) || '');
-    title = words ? smartTitle(words, kind, chatName) : ('Flyer from ' + chatName);
-    if (stripEmoji(String(memo || '')).replace(/[^\p{L}\p{N}]/gu, '').length < 3) memo = 'A flyer shared in ' + chatName + ' (see the picture).';
+    title = words ? smartTitle(words, kind, chatName) : 'Flyer';   // never the chat's name (26 Nov 2026)
+    if (stripEmoji(String(memo || '')).replace(/[^\p{L}\p{N}]/gu, '').length < 3) memo = 'See the picture.';
   }
 
   const allText = msgs.map(m => m.body).join(' ') + ' ' + ocrTexts.join(' ')
