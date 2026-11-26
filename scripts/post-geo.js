@@ -38,6 +38,8 @@ function buildIndex(tiles, cityNames) {
     en.set(normEn(e), hk); enName.set(hk, e);
     const s = skel(e); if (s.length >= 3) { if (sk.has(s) && sk.get(s) !== hk) sk.set(s, null); else sk.set(s, hk); }
   }
+  // spellings people use that the map does not ("Touval 7" is the map's Tuval 7: 26 Nov 2026, the Meuchedet clinic that moved there)
+  for (const [alias, he] of [['touval', 'תובל'], ['tuval', 'תובל']]) { const hk = normHe(he); if (addr.has(hk) && !en.has(alias)) en.set(alias, hk); }
   return { addr, en, sk, enName };
 }
 
