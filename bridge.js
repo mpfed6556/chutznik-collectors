@@ -17,6 +17,11 @@ const baileys = require('@whiskeysockets/baileys');
 const makeWASocket = baileys.default || baileys.makeWASocket;
 const { useMultiFileAuthState, DisconnectReason, downloadMediaMessage, fetchLatestBaileysVersion } = baileys;
 const { classify, categoriesFor, topicTitle, clusterWindow, fingerprint, phonesIn } = require('./lib/classify');
+// ── RECEIVE ONLY (Miriam, 26 Nov 2026: "I want to connect WhatsApp only for incoming … never send anything out from it").
+//    WhatsApp suspended the account on 19 Nov 2026 after invites had gone out from it. From here on the bridge only reads the
+//    groups: no message of any kind, no "typing…", no request for older messages, no request to send a picture again.
+//    This is a line of code and not a site setting, so nothing in the admin (WA_SEND, WA_INVITES) can open sending again.
+const RECEIVE_ONLY = true;
 
 const INGEST_URL = process.env.INGEST_URL || 'https://chutznik.org/api/ingest-whatsapp';
 const INGEST_KEY = process.env.INGEST_KEY || '';
@@ -2078,13 +2083,13 @@ async function pullSettings() {
   try {
     const r = await fetch(SITE + '/api/live-data?type=settings'); if (!r.ok) return;
     const j = await r.json(); if (!j || typeof j !== 'object') return;
-    { const v = String(j.WA_SEND || 'off').toLowerCase(); const on = v === 'on', cm = on || v === 'comments';
+    { const v = String(j.WA_SEND || 'off').toLowerCase(); const on = !RECEIVE_ONLY && v === 'on', cm = !RECEIVE_ONLY && (on || v === 'comments');
       if (on !== !!global._waSendOn || cm !== !!global._waCommentsOn) { global._waSendOn = on; global._waCommentsOn = cm; log('⚙️  WhatsApp sending is ' + (on ? 'ON' : cm ? 'COMMENT NOTES ONLY (a comment on a post posted for someone tells them at once; nothing else goes out)' : 'OFF') + ' (WA_SEND in the site settings)'); } }
     // the member drive's invites (Miriam, 12 Nov 2026: "1 message every 30 minutes from 8 am to 8 pm sunday through thursday and
     // 8-12 morning friday so we dont lose access to the whatsapp"): WA_INVITES { on, gapMin } lets outbox kind 'invite' through
     // WA_PACE (12 Nov 2026): the human pace for every WhatsApp message — runs of burstMin–burstMax, then breakMin–breakMax minutes
     { const v = j.WA_PACE && typeof j.WA_PACE === 'object' ? j.WA_PACE : null; if (JSON.stringify(v) !== JSON.stringify(global._waPace || null)) { global._waPace = v; if (v) log('⚙️  WhatsApp pace: ' + JSON.stringify(v)); } }
-    { const v = j.WA_INVITES && typeof j.WA_INVITES === 'object' ? j.WA_INVITES : {}; const on = !!v.on; const sig = JSON.stringify([on, v.minGap || 0, v.maxGap || 0, v.maxDay || 0]);
+    { const v = j.WA_INVITES && typeof j.WA_INVITES === 'object' ? j.WA_INVITES : {}; const on = !RECEIVE_ONLY && !!v.on; const sig = JSON.stringify([on, v.minGap || 0, v.maxGap || 0, v.maxDay || 0]);
       if (sig !== global._waInvitesSig) { global._waInvitesSig = sig; global._waInvitesOn = on; global._waInvites = v;
         log('⚙️  business invites are ' + (on ? 'ON — one at a time, ' + (Number(v.minGap) || 50) + '–' + (Number(v.maxGap) || 110) + ' min apart, at most ' + (Number(v.maxDay) || 8) + ' a day, Sun–Thu 8:00–20:00, Fri 8:00–12:00 (Israel)' : 'OFF') + ' (WA_INVITES in the site settings)'); } }
     if (j.NOTIFY_MODE && ['off', 'dry', 'live'].includes(String(j.NOTIFY_MODE).toLowerCase()) && String(j.NOTIFY_MODE).toLowerCase() !== NOTIFY_MODE) {
@@ -2553,6 +2558,7 @@ async function syncExtras() {
   if (reload.length) { log('⬆️  ' + reload.join(', ') + ' changed and is already loaded — restarting'); try { await flush(); } catch (e) {} setTimeout(() => process.exit(0), 1500); }
 }
 async function selfUpdate() {
+  if (global._qrMode) return;   // never restart under her hands while she is scanning the QR
   if (_updating) return; _updating = true;
   try {
     try { await syncExtras(); } catch (e) {}
@@ -2623,14 +2629,14 @@ async function emailLoggedOutOnce() {
   } catch (e) { log('✉️ logged-out note failed: ' + (e && e.message)); }
 }
 // WhatsApp refusing the account (403): one alarm per spell, phone + email through the site (a restart does not ring again)
-async function alarmRefusedOnce() {
+async function alarmRefusedOnce(why, code) {
   const f = path.join(__dirname, 'refused-state.json'); let st = {}; try { st = JSON.parse(fs.readFileSync(f, 'utf8')) || {}; } catch (e) {}
   if (st.alarmedAt && Date.now() - st.alarmedAt < 12 * 3600e3) return;
-  try { fs.writeFileSync(f, JSON.stringify({ alarmedAt: Date.now() })); } catch (e) {}
+  try { fs.writeFileSync(f, JSON.stringify(Object.assign({}, st, { alarmedAt: Date.now() }))); } catch (e) {}
   const to = String(process.env.OWNER_EMAILS || 'mpfederman@gmail.com,miriam@chutznik.org').split(',').map((x) => x.trim()).filter(Boolean);
   const when = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Jerusalem' });
-  const body = 'WhatsApp refused the Chutznik bridge (403) at ' + when + ' Israel time. That usually means WhatsApp has restricted the account. Nothing comes in from the groups and nothing is sent.\n\n'
-    + 'Open WhatsApp on the phone with the bridge\'s number. If it says the account cannot use WhatsApp, tap Request review.\n\nThe bridge tries again on its own, further apart each time.\n— Chutznik';
+  const body = (why || 'WhatsApp refused the Chutznik bridge') + ' (' + (code || 403) + ') at ' + when + ' Israel time. ' + (Number(code) === 440 ? 'The same link was opened somewhere else, so the bridge stepped back instead of fighting over it.' : 'That usually means WhatsApp has restricted the account.') + ' Nothing comes in from the groups, and nothing is sent.\n\n'
+    + 'Open WhatsApp on the phone with the bridge\'s number. If it says the account cannot use WhatsApp, tap Request review.\n\nThe bridge has STOPPED and will not try again by itself. When WhatsApp on the phone is working normally, open the admin → the WhatsApp bridge tile → "Try to connect once".\n— Chutznik';
   try {
     const r = await fetch(SITE + '/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': INGEST_KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ type: 'custom', to, subject: '⛔ WhatsApp is refusing the Chutznik bridge', body, whatsappAlert: true }), signal: AbortSignal.timeout(20000) });
     log('🚨 refused alarm ' + (r.ok ? 'sent (phone + email)' : 'failed (' + r.status + ')'));
@@ -2638,6 +2644,36 @@ async function alarmRefusedOnce() {
 }
 // once let in again, the next refusal rings again
 function refusedClear() { try { fs.unlinkSync(path.join(__dirname, 'refused-state.json')); } catch (e) {} }
+// ── WhatsApp pushing the bridge away (Miriam, 26 Nov 2026: "if it looks like it's locking you out don't relink on your own!").
+//    A refusal (403 and its like) or a session taken over stops the bridge dead: one alarm to her phone and email, the reason on
+//    the admin's tile, and no further attempt — not after a wait, not after a restart, not after an update — until she presses
+//    "Try to connect once" on the tile (WA_RETRY in the site settings). The stop is kept on disk so a restart respects it.
+const REFUSED_FILE = path.join(__dirname, 'refused-state.json');
+function refusedState() { try { return JSON.parse(fs.readFileSync(REFUSED_FILE, 'utf8')) || {}; } catch (e) { return {}; } }
+function stopRefused(code, why) {
+  // at the console, linking by QR: say it there and end — she is watching, and nothing may loop
+  if (global._qrMode) { console.log('\n⛔ ' + why + ' (' + code + '). Stopped. Do not try again now: open WhatsApp on the phone, check that the account is working normally, and tell Claude what it shows.\n'); setTimeout(() => process.exit(1), 1500); return; }
+  global._sock = null; global._f403 = (global._f403 || 0) + 1; if (!global._f403At) global._f403At = Date.now(); global._stopWhy = why; global._stopCode = code;
+  try { fs.writeFileSync(REFUSED_FILE, JSON.stringify(Object.assign({}, refusedState(), { stoppedAt: global._f403At, code, why }))); } catch (e) {}
+  alarmRefusedOnce(why, code).catch(() => {});
+  log('⛔ ' + why + ' (' + code + '). The bridge has stopped and will NOT try again by itself — it waits for "Try to connect once" on the admin\'s bridge tile.');
+  try { sendStatus(); } catch (e) {}
+  retryIdle();
+}
+function retryIdle() {
+  if (global._retryIdleTimer) return;
+  global._retryIdleTimer = setInterval(async () => {
+    try {
+      const r = await fetch(SITE + '/api/live-data?type=settings&t=' + Date.now(), { signal: AbortSignal.timeout(15000) }); if (!r.ok) return;
+      const j = await r.json(); const at = Number(j && j.WA_RETRY) || 0;
+      if (!at || at === (global._retryHandled || 0) || at < (global._f403At || 0) || Date.now() - at > 30 * 60000) return;   // only a press made after the stop, and a fresh one
+      global._retryHandled = at; clearInterval(global._retryIdleTimer); global._retryIdleTimer = null;
+      try { const st = refusedState(); delete st.stoppedAt; fs.writeFileSync(REFUSED_FILE, JSON.stringify(st)); } catch (e) {}
+      log('🔄 "Try to connect once" pressed in the admin — one attempt now');
+      start();
+    } catch (e) {}
+  }, 30 * 1000);
+}
 // while logged out: every 20 s, is there a fresh PAIR_NOW on the site? (the admin's bridge tile writes it)
 function pairIdle() {
   if (global._pairIdleTimer) return;
@@ -2670,8 +2706,8 @@ async function sendStatus() {
   try {
     const status = {
       node: process.version, at: new Date().toISOString(), version: (fs.statSync(__filename).mtime || '').toString(), pid: process.pid, up: Math.round(process.uptime()),
-      connected: !!(global._sock && global._sock.user), refused: global._f403At ? { since: new Date(global._f403At).toISOString(), times: global._f403 || 0 } : null, loggedOut: global._loggedOut ? new Date(global._loggedOut).toISOString() : null, pairing: global._pairCount || 0, pairCode: global._pairCode || null, pairCodeAt: global._pairCodeAt || 0, pairUntil: global._pairUntil || 0, me: global._sock && global._sock.user ? String(global._sock.user.id || '').split(':')[0] : '',
-      lids: Object.keys(LIDS).length, seen: SEEN.size, posted: Object.keys(POSTED).length, notifyMode: NOTIFY_MODE, waSend: global._waSendOn ? 'on' : (global._waCommentsOn ? 'comments' : 'off'),
+      connected: !!(global._sock && global._sock.user), refused: global._f403At ? { since: new Date(global._f403At).toISOString(), times: global._f403 || 0, stopped: true, why: global._stopWhy || '', code: global._stopCode || 0 } : null, receiveOnly: RECEIVE_ONLY, loggedOut: global._loggedOut ? new Date(global._loggedOut).toISOString() : null, pairing: global._pairCount || 0, pairCode: global._pairCode || null, pairCodeAt: global._pairCodeAt || 0, pairUntil: global._pairUntil || 0, me: global._sock && global._sock.user ? String(global._sock.user.id || '').split(':')[0] : '',
+      lids: Object.keys(LIDS).length, seen: SEEN.size, posted: Object.keys(POSTED).length, notifyMode: NOTIFY_MODE, waSend: RECEIVE_ONLY ? 'off' : global._waSendOn ? 'on' : (global._waCommentsOn ? 'comments' : 'off'),
       log: LOG_RING.slice(-80),
       events: global._eventsReport || null,
       jerusaguide: global._jgReport || null,
@@ -3044,7 +3080,7 @@ async function releaseHistory(sock) {
   for (let i = 0; i < all.length; i += 200) { try { await handleMessages(sock, all.slice(i, i + 200), 'history'); } catch (e) {} await new Promise((r) => setTimeout(r, 3000)); }
 }
 async function maybeBackfill(sock, m, ts, name) {
-  if (gentle()) return;
+  if (RECEIVE_ONLY || gentle()) return;
   try {
     const since = global._backfillSince || 0; if (!since || !ts || !m.key || !m.key.id) return;
     if (!backfillOn(name)) return;
@@ -3072,7 +3108,7 @@ setInterval(() => { if (!_lkDirty) return; _lkDirty = false; try { fs.writeFileS
 async function nudgeBackfill() {
   try {
     const sock = global._sock, since = global._backfillSince || 0;
-    if (!sock || !since || gentle()) return;
+    if (RECEIVE_ONLY || !sock || !since || gentle()) return;
     if (!(global._backfillChats || []).length) return;   // targeted backfills only
     for (const jid of Object.keys(LASTKEY)) {
       const st = BACKFILL.chats[jid];
@@ -3196,12 +3232,20 @@ async function start() {
   //    someone comments on it — the outbox marks it commentNote; everything else still stops here.
   const realSend = sock.sendMessage.bind(sock);
   sock.sendMessage = async (jid, content, opts) => {
+    if (RECEIVE_ONLY) { if (!global._sendOffSaid || Date.now() - global._sendOffSaid > 6 * 3600000) { global._sendOffSaid = Date.now(); log('🚫 receive only: something tried to send a WhatsApp message and was stopped (nothing goes out, whatever the site settings say)'); } throw new Error('WhatsApp sending is off (receive only)'); }
     // an invite goes on WA_INVITES alone (16 Nov 2026): WA_SEND can stay off for everything else
     if (opts && opts.invite) { const { invite, ...rest } = opts; if (global._waInvitesOn) { const r = await realSend(jid, content, rest); rememberSent(r); return r; } opts = rest; }
     if (opts && opts.commentNote) { const { commentNote, ...rest } = opts; if (global._waCommentsOn || global._waSendOn) { const r = await realSend(jid, content, rest); rememberSent(r); return r; } }
     if (!global._waSendOn) { const k = String(jid).split('@')[0]; if (!global._sendOffSaid || Date.now() - global._sendOffSaid > 600000) { global._sendOffSaid = Date.now(); log('🚫 WhatsApp sending is off — nothing sent to ' + k + ' (or anyone) until WA_SEND is on in the site settings'); } throw new Error('WhatsApp sending is off'); }
     const r = await realSend(jid, content, opts); rememberSent(r); return r;
   };
+  if (RECEIVE_ONLY) {
+    sock.sendPresenceUpdate = async () => {};   // never "typing…" or "online"
+    if (typeof sock.presenceSubscribe === 'function') sock.presenceSubscribe = async () => {};
+    if (typeof sock.readMessages === 'function') sock.readMessages = async () => {};   // never blue ticks
+    sock.fetchMessageHistory = async () => { throw new Error('receive only: older messages are not asked for'); };
+    sock.updateMediaMessage = async () => { throw new Error('receive only: a picture is not asked for a second time'); };
+  }
   sock.ev.on('creds.update', saveCreds);
   // Pairing by code instead of the QR (Miriam, 16 Sep 2026): start with
   //   PAIR_PHONE=19295630370 node bridge.js
@@ -3227,12 +3271,16 @@ async function start() {
     }
     if (u.qr && !global._loggedOut) { console.log('\n📱 Scan with WhatsApp → Settings → Linked devices → Link a device:\n'); qrcode.generate(u.qr, { small: true }); }
     if (u.connection === 'open') {
-      const wasOut = !!global._loggedOut || !!global._f403; if (global._f403) { log('✅ WhatsApp lets the bridge in again after ' + global._f403 + ' refusal(s)'); refusedClear(); } global._f403 = 0; global._f403At = 0;
+      const wasOut = !!global._loggedOut || !!global._f403; if (global._f403) { log('✅ WhatsApp lets the bridge in again after ' + global._f403 + ' refusal(s)'); } refusedClear(); global._f403 = 0; global._f403At = 0; global._stopWhy = ''; global._stopCode = 0;
+      clearTimeout(global._dropReset); global._dropReset = setTimeout(() => { global._dropN = 0; }, 10 * 60000);
       global._loggedOut = 0; global._pairCount = 0; global._pairCode = null; global._pairUntil = 0; pairIdleStop(); try { fs.unlinkSync(path.join(__dirname, 'pair-state.json')); } catch (e) {}
       try { const me = String(sock.user && sock.user.id || '').split(':')[0].replace(/\D/g, ''); if (me) fs.writeFileSync(path.join(__dirname, 'my-number.txt'), me); } catch (e) {}
       log('✅ Connected. Watching ALL groups. History for the last ' + HOURS + 'h arrives on its own; live messages reach the site within seconds.');
       if (wasOut || global._qrMode) { try { sendStatus(); } catch (e) {} }
-      if (global._qrMode) { global._qrMode = false; console.log('\n✅ Linked by QR. Now press Ctrl+C once, wait for the prompt, then type:   pm2 start all\n'); }
+      // linked at the console: this one ends by itself after a few seconds and the pasted line starts the bridge the usual way
+      // (26 Nov 2026) — nothing to press, and never two bridges on one link
+      if (global._qrMode) { global._qrMode = false; console.log('\n✅ Linked by QR. Wait: the bridge starts by itself in a few seconds. Nothing more to press.\n   (If the prompt comes back and no table appears, type:   pm2 start all )\n');
+        setTimeout(async () => { try { await flush(); } catch (e) {} try { sock.end(undefined); } catch (e) {} setTimeout(() => process.exit(0), 1500); }, 8000); }
       global._linkedAt = Date.now();
       setTimeout(async () => { await refreshLids(sock); await backfillContacts(); }, GENTLE_MS + 8000);   // gentle start: after the window
       setTimeout(() => { releaseHistory(sock).catch(() => {}); }, GENTLE_MS + 30000);
@@ -3245,11 +3293,12 @@ async function start() {
         // 26 Oct 2026 (twice in a day): the bridge no longer dies and restarts every five seconds. The old pairing is put
         // aside; one email says it is out, and the admin's bridge tile hands out the code when Miriam is ready for it.
         global._loggedOut = global._loggedOut || Date.now(); global._sock = null; global._pairCode = null;
-        // the code was refused or ran out while a request is fresh: another code (four at most), not the quiet wait
-        if (!state.creds.registered && (global._pairUntil || 0) > Date.now() && (global._pairCount || 0) < 4) {
-          log('🔗 that code did not link — a fresh one in a few seconds');
+        // WhatsApp turned a link down while a code was out: no second code by itself (26 Nov 2026) — the leftover is cleared and
+        // the bridge goes back to waiting for a new request from the tile
+        if (!paired(state.creds) && (global._pairUntil || 0) > Date.now()) {
+          log('🔗 WhatsApp did not accept that link. Not asking again by itself — press the button on the bridge tile when you want another try.');
           try { const a = path.join(__dirname, 'baileys_auth'); if (fs.existsSync(a)) fs.rmSync(a, { recursive: true, force: true }); } catch (e) {}
-          setTimeout(start, 4000); return;
+          global._pairUntil = 0; global._pairCount = 0; try { sendStatus(); } catch (e) {} pairIdle(); return;
         }
         log('❌ Logged out by WhatsApp. Waiting for a pairing request from the admin\'s bridge tile.');
         try { const a = path.join(__dirname, 'baileys_auth'); if (fs.existsSync(a)) fs.renameSync(a, a + '.old-' + Date.now()); } catch (e) { log('could not put the old pairing aside: ' + (e && e.message)); }
@@ -3260,8 +3309,8 @@ async function start() {
       }
       if (!paired(state.creds) && global._qrMode) {
         global._sock = null; global._qrRounds = (global._qrRounds || 0) + 1;
-        if (global._qrRounds < 8) { console.log('\n📱 That QR ran out — a fresh one is coming…'); setTimeout(start, 2000); }
-        else { console.log('\n📱 No scan in about fifteen minutes — stopped. Paste the same line again when you are ready.\n'); process.exit(0); }
+        if (global._qrRounds < 4) { console.log('\n📱 That QR ran out — a fresh one is coming…'); setTimeout(start, 2000); }
+        else { console.log('\n📱 No scan in about ten minutes — stopped. Paste the same line again when you are ready.\n'); process.exit(0); }
         return;
       }
       if (!paired(state.creds) && !process.env.PAIR_PHONE) {
@@ -3272,20 +3321,18 @@ async function start() {
         else { log('🔗 no pairing request in the last ten minutes — waiting for the admin\'s bridge tile'); try { sendStatus(); } catch (e) {} pairIdle(); }
         return;
       }
-      // WhatsApp refusing the account (403, 19 Nov 2026: refused every five seconds for hours, nothing coming in): asking again
-      // and again only makes it worse, so the waits grow (5, 10, 20, then every 30 minutes) and the status says so plainly
-      if (code === 403) {
-        global._sock = null; global._f403 = (global._f403 || 0) + 1; if (!global._f403At) global._f403At = Date.now();
-        const mins = [5, 10, 20, 30, 60, 120][Math.min(5, global._f403 - 1)];
-        // the owners hear at once, by phone and email (Miriam, 19 Nov 2026: "The first thing that should happen before doing
-        // anything is to inform me!"): the first refusal of each spell, never again until it has let the bridge in
-        if (global._f403 === 1) alarmRefusedOnce().catch(() => {});
-        log('⛔ WhatsApp refused the connection (403), ' + global._f403 + ' time(s) since ' + new Date(global._f403At).toLocaleTimeString('en-GB', { timeZone: 'Asia/Jerusalem' }) + ' Israel — trying again in ' + mins + ' min');
-        try { sendStatus(); } catch (e) {}
-        setTimeout(start, mins * 60000); return;
-      }
-      log('🔌 Connection dropped (' + code + ') — reconnecting in 5s…');
-      setTimeout(start, 5000);
+      // WhatsApp refusing the account (403, 19 Nov 2026: refused every five seconds for hours, nothing coming in, the account
+      // suspended a day later). Since 26 Nov 2026 a refusal is the end of it: the owners hear at once, by phone and email
+      // (Miriam, 19 Nov 2026: "The first thing that should happen before doing anything is to inform me!") and the bridge stops.
+      // 402, 405, 406, 409 and 411 are WhatsApp turning the device down in other words; they are treated the same.
+      if ([402, 403, 405, 406, 409, 411].includes(Number(code))) { stopRefused(code, 'WhatsApp refused the connection'); return; }
+      // the same link opened somewhere else (two bridges running): fighting over it looks like an attack — stop, say so
+      if (Number(code) === 440) { stopRefused(code, 'Another device took over this link (is a second bridge running?)'); return; }
+      // an ordinary drop (the network, WhatsApp restarting the line): try again, a little later each time it keeps dropping
+      global._dropN = (global._dropN || 0) + 1; clearTimeout(global._dropReset);
+      const waitS = Number(code) === 515 ? 2 : [5, 15, 30, 60, 120, 300][Math.min(5, global._dropN - 1)];   // 515 is WhatsApp's own "restart now" straight after linking
+      log('🔌 Connection dropped (' + code + ') — reconnecting in ' + waitS + 's' + (global._dropN > 3 ? ' (drop ' + global._dropN + ' in a row)' : '') + '…');
+      setTimeout(start, waitS * 1000);
     }
   });
   sock.ev.on('messaging-history.set', ({ messages, syncType, isLatest }) => {
@@ -3310,9 +3357,13 @@ process.on('unhandledRejection', (e) => { try { log('💥 unhandled: ' + (e && e
       if (registered) { console.log('\nThis bridge already holds a link — starting it as usual. If WhatsApp shows no linked device, tell Claude.\n'); return start(); }
       try { const a = path.join(__dirname, 'baileys_auth'); if (fs.existsSync(a)) fs.rmSync(a, { recursive: true, force: true }); } catch (e) {}
       global._qrMode = true; global._qrRounds = 0; global._loggedOut = 0;
-      console.log('\n📱 QR mode: the code appears below in a few seconds. A fresh one follows by itself for about fifteen minutes.\n');
+      console.log('\n📱 QR mode: the code appears below in a few seconds. A fresh one follows by itself for about ten minutes.\n');
       return start();
     }
+    // stopped after a refusal (refused-state.json): a restart or an update does not try again either
+    { const rs = refusedState(); if (registered && rs.stoppedAt && !process.env.PAIR_PHONE) { global._f403 = 1; global._f403At = rs.stoppedAt; global._stopWhy = rs.why || 'WhatsApp refused the connection'; global._stopCode = rs.code || 403;
+        log('⛔ stopped since ' + new Date(rs.stoppedAt).toISOString() + ' (' + global._stopWhy + ') — waiting for "Try to connect once" on the admin\'s bridge tile; no attempt until then');
+        try { sendStatus(); } catch (e) {} retryIdle(); return; } }
     if (registered || process.env.PAIR_PHONE) return start();
     // not paired: a logout put the old pairing aside (baileys_auth.old-<time>) — wait for the admin's request, never a socket every two minutes
     const olds = fs.readdirSync(__dirname).map((n) => (n.match(/^baileys_auth\.old-?(\d+)$/) || [])[1]).filter(Boolean).map(Number);
