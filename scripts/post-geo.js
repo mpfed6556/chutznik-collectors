@@ -53,17 +53,36 @@ function lookupStreet(ix, words, he) {
     const e = normEn(cand); if (!e || NOT_STREET.test(e)) continue;   // "Nov 6" is a date, though Jerusalem has a Nov Street
     if (ix.en.has(e)) return ix.en.get(e);
     const s = skel(cand); if (s.length >= 4 && ix.sk.get(s)) return ix.sk.get(s);
+    // the Ashkenazi way of saying it (26 Nov 2026: "Ponim Meiros 16", "Reishis Chochmah" found no street): a closing s is a t
+    const a = skel(cand.replace(/s\b/gi, 't').replace(/\bbais\b/gi, 'beit').replace(/oi|oy/gi, 'o')); if (a !== s && a.length >= 4 && ix.sk.get(a)) return ix.sk.get(a);
   }
   return null;
 }
 function findAddress(ix, text) {
   const t = String(text || '').replace(/<[^>]+>/g, ' ').slice(0, 6000);
-  const hit = (hk, num) => { const m = ix.addr.get(hk); if (!m) return null; const n = String(num).replace(/[a-z]$/i, ''); const g = m.get(String(num)) || m.get(n); return g ? { lat: g[0], lon: g[1], label: (ix.enName.get(hk) || hk) + ' ' + num } : null; };
-  let m;
-  HE_RE.lastIndex = 0; while ((m = HE_RE.exec(t))) { const words = m[1].trim().split(/\s+/); const hk = lookupStreet(ix, words, true); if (hk) { const g = hit(hk, m[2]); if (g) return g; } }
-  EN_A.lastIndex = 0; while ((m = EN_A.exec(t))) { const words = m[1].trim().split(/\s+/); const hk = lookupStreet(ix, words, false); if (hk) { const g = hit(hk, m[2]); if (g) return g; } }
-  EN_B.lastIndex = 0; while ((m = EN_B.exec(t))) { const words = m[2].trim().split(/\s+/); for (let k = Math.min(4, words.length); k >= 1; k--) { const hk = lookupStreet(ix, words.slice(0, k), false); if (hk) { const g = hit(hk, m[1]); if (g) return g; break; } } }
-  return null;
+  // A number the map's address book does not carry (26 Nov 2026, Miriam: "there's literally a Meuchedet right next door" — the
+  // clinic is at Yirmiyahu 19; the book has 18 and 20 but no 19, so it stood nowhere). The spot is then worked out from the
+  // street's own numbers: halfway between the nearest numbers on the same side (13 and 25 → 19), or beside the house one or
+  // two numbers away. Never further than that, and the label says "about".
+  const about = (m, num) => {
+    const n = parseInt(String(num), 10); if (!(n >= 1) || /^0/.test(String(num))) return null;
+    let lo = null, hi = null;
+    for (const [k, g] of m) { if (!/^\d+$/.test(k)) continue; const v = +k; if ((v - n) % 2 !== 0) continue; if (v < n && n - v <= 12 && (!lo || v > lo.v)) lo = { v, g }; if (v > n && v - n <= 12 && (!hi || v < hi.v)) hi = { v, g }; }
+    if (lo && hi) { const f = (n - lo.v) / (hi.v - lo.v); const d = Math.hypot((hi.g[0] - lo.g[0]) * 111000, (hi.g[1] - lo.g[1]) * 94000); if (d < 400) return [lo.g[0] + (hi.g[0] - lo.g[0]) * f, lo.g[1] + (hi.g[1] - lo.g[1]) * f]; }
+    let best = null; for (const [k, g] of m) { if (!/^\d+$/.test(k)) continue; const d = Math.abs(+k - n); if (d && d <= 2 && (!best || d < best.d)) best = { d, g }; }
+    if (best) return [best.g[0], best.g[1]];
+    const one = lo || hi; return one && Math.abs(one.v - n) <= 4 ? [one.g[0], one.g[1]] : null;
+  };
+  const hit = (hk, num) => { const m = ix.addr.get(hk); if (!m) return null; const n = String(num).replace(/[a-z]$/i, ''); const g = m.get(String(num)) || m.get(n); if (g) return { lat: g[0], lon: g[1], label: (ix.enName.get(hk) || hk) + ' ' + num };
+    const a = about(m, n); return a ? { lat: +a[0].toFixed(6), lon: +a[1].toFixed(6), label: 'about ' + (ix.enName.get(hk) || hk) + ' ' + num, about: true } : null; };
+  let m, soft = null;
+  const CUE = /📍|\baddress\b|\blocat(?:ed|ion)\b|\bstreet\b|\bst\.?(?=\s|,|$)|\bre[ck]?hov\b|\bcorner of\b|רחוב|רח['׳]|כתובת|מיקום/i;
+  const lineAt = (i) => { const a = t.lastIndexOf('\n', i - 1) + 1; let b = t.indexOf('\n', i); if (b < 0) b = t.length; return t.slice(a, b); };
+  const take = (g) => { if (g && !g.about) return g; if (g && !soft && m && CUE.test(lineAt(m.index))) soft = g; return null; };
+  HE_RE.lastIndex = 0; while ((m = HE_RE.exec(t))) { const words = m[1].trim().split(/\s+/); const hk = lookupStreet(ix, words, true); if (hk) { const g = take(hit(hk, m[2])); if (g) return g; } }
+  EN_A.lastIndex = 0; while ((m = EN_A.exec(t))) { const words = m[1].trim().split(/\s+/); const hk = lookupStreet(ix, words, false); if (hk) { const g = take(hit(hk, m[2])); if (g) return g; } }
+  EN_B.lastIndex = 0; while ((m = EN_B.exec(t))) { const words = m[2].trim().split(/\s+/); for (let k = Math.min(4, words.length); k >= 1; k--) { const hk = lookupStreet(ix, words.slice(0, k), false); if (hk) { const g = take(hit(hk, m[1])); if (g) return g; break; } } }
+  return soft;
 }
 // ── A post held at a well-known place (Miriam, 15 Nov 2026, a flyer reading "ALL @ TACHANA RISHONA": "should show on map,
 //    all such instances"). A post with no street address that names one of these places as where it happens is put there.
@@ -156,15 +175,25 @@ function findVenue(ix, p) {
   }
   return null;
 }
+// a health fund's branch, named by its street: "Meuchedet clinic - Yirmiyahu 19", "at the Meuchedet Yirmiyahu clinic"
+const FUND = '(meu[c]?hedet|maccabi|clalit|leumit)';
+const BRANCH_A = new RegExp('\\b' + FUND + '\\s+((?:[A-Z][A-Za-z\'’-]+\\s+){1,3})(?:clinic|branch|center|centre)\\b', 'i');
+const BRANCH_B = new RegExp('\\b' + FUND + '\\b[^\\n]{0,24}?\\b(?:clinic|branch)\\s*[-–—:,]\\s*((?:[A-Z][A-Za-z\'’-]+\\s*){1,3})\\b', 'i');
+function branchKey(text) { const t = String(text || ''); const m = BRANCH_A.exec(t) || BRANCH_B.exec(t); if (!m) return ''; const st = skel(m[2].replace(/s\b/gi, 't')); return st.length >= 3 ? m[1].toLowerCase().replace('meuhedet', 'meuchedet') + '|' + st : ''; }
 function geocodePosts(ix, updates, posts) {
-  const out = {};
+  const out = {}; const later = []; const branches = new Map();
   const each = (p, key) => {
     if (!p || p.deleted || (p.status && p.status !== 'public')) return;
-    const g = findAddress(ix, [p.title, p.memo, p.contactAddress, p.picText].filter(Boolean).join('\n')) || findVenue(ix, p);   // a street address first; failing that, the place it is held at
-    if (g) out[key] = [g.lat, g.lon, g.label.slice(0, 60)];
+    // the title and the address field are addresses by their place: marked, so a number the map lacks may be worked out there
+    const text = [p.title ? '📍 ' + p.title : '', p.memo, p.contactAddress ? '📍 ' + p.contactAddress : '', p.picText].filter(Boolean).join('\n');
+    const g = findAddress(ix, text) || findVenue(ix, p);   // a street address first; failing that, the place it is held at
+    if (g) { out[key] = [g.lat, g.lon, g.label.slice(0, 60)]; const bk = branchKey(String(p.title || '')); if (bk && !branches.has(bk)) branches.set(bk, out[key]); }
+    else later.push([p, key, text]);
   };
   for (const u of updates || []) each(u, 'up_' + u.id);
   for (const p of posts || []) if (p && !p._ad && !p._cfg) each(p, String(p.id));
+  // whoever works at a branch that is on the map stands where the branch stands
+  for (const [p, key, text] of later) { const bk = branchKey(text); const g = bk && branches.get(bk); if (g) out[key] = [g[0], g[1], String(g[2]).slice(0, 60)]; }
   return out;
 }
 
