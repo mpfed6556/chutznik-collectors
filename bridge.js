@@ -1250,7 +1250,8 @@ async function intake(sock, m, chatName) {
   return { id: key.id || String(Date.now()+Math.random()), ts, chat: chatName, sender, phone, body, media, docText, kind,
            quotedId, quotedText, quotedBy, mentions, cards, link,
            // where a private "your post is up" note can be sent (real number first, privacy id as fallback)
-           jid: pnJid || participant, fromMe: !!key.fromMe };
+           jid: pnJid || participant, fromMe: !!key.fromMe,
+           forwarded: !!(ctx && (ctx.isForwarded || Number(ctx.forwardingScore) > 0)) };
 }
 
 
@@ -1671,6 +1672,7 @@ async function buildAptItem(m, chatName, capFallback) {
   let body = cleanBody(bodyRaw, contacts) || cleanBody(ocr, contacts);
   let title = smartTitle(body, 'item', chatName);
   if (!title || /^From /.test(title)) title = 'Item';
+  const wordless = !String(body || '').trim() || title === 'Item';   // nothing to say what it is: her review, not the public site
   let memo = summarize(body, 700) || title;
   if (langOf(title)) { const en = await toEnglish(title); if (en) title = en.slice(0, 150); }
   memo = await englishMemo(memo);
@@ -1684,7 +1686,7 @@ async function buildAptItem(m, chatName, capFallback) {
     author: chatName,
     contactPhone: contacts.phones[0] || '',
     contactWebsite: contacts.urls[0] || '',
-    status: 'public',
+    status: wordless ? 'pending' : 'public',
     attachments,
     created: m.ts || Date.now(),
     dedupeKey: 'wa_apt' + tag,   // one key per photo, so every picture is its own post
@@ -2918,22 +2920,36 @@ async function flush() {
     buffers.set(chatName, []);
     msgs.sort((a, b) => (a.ts || 0) - (b.ts || 0));
     // The "Apt test" feed: every photo becomes its own Item post, published at
-    // once. A text-only line just before a photo captions it if the photo has none.
+    // once. A line she TYPES just before a photo captions that one photo if it has none.
+    // 26 Nov 2026 (a bunch of forwarded flyers came out crossed: a picture with no words took the words of the message
+    // before it, some twice over; one got a made-up title): a forwarded message never lends or borrows words — a forwarded
+    // picture stands on its own words or on what is written in the picture, a forwarded text is a post of its own — and a
+    // typed line is used for one photo only, never carried further down the bunch.
     if (isAptTestChat(chatName)) {
       const nPhotos = msgs.filter((m) => m.media).length;
       log('🛍️  ' + chatName + ': ' + msgs.length + ' msg(s) → ' + nPhotos + ' item post(s)');
-      let lastCap = '';
-      for (const m of msgs) {
-        const cap = String(m.body || '').trim();
-        if (cap) lastCap = cap;
-        if (!m.media) continue;                 // text-only line: held as the next photo's caption
+      let typed = null;   // her own text-only line, waiting for the photo that follows it
+      const sendApt = async (m, cap) => {
         try {
-          const post = await buildAptItem(m, chatName, cap ? '' : lastCap);
-          if (SEEN.has(post.dedupeKey)) continue;
+          const post = await buildAptItem(m, chatName, cap);
+          if (SEEN.has(post.dedupeKey)) return;
           const ok = await sendToQueue(post);
           if (ok) { SEEN.add(post.dedupeKey); saveSeen(); }
         } catch (e) { log('   apt item failed: ' + (e && e.message)); }
+      };
+      for (const m of msgs) {
+        const cap = String(m.body || '').trim();
+        if (!m.media) {
+          if (m.forwarded) { if (cap.length >= 25) await sendApt(m, ''); typed = null; continue; }   // a forwarded text: its own post
+          if (typed && String(typed.body || '').trim().length >= 25) await sendApt(typed, '');          // an earlier line no photo followed
+          typed = cap ? m : null; continue;
+        }
+        const lend = (!cap && !m.forwarded && typed && Math.abs((m.ts || 0) - (typed.ts || 0)) < 3 * 60000) ? String(typed.body || '').trim() : '';
+        if (!lend && typed && String(typed.body || '').trim().length >= 25) await sendApt(typed, '');
+        typed = null;
+        await sendApt(m, lend);
       }
+      if (typed && String(typed.body || '').trim().length >= 25) await sendApt(typed, '');
       continue;
     }
     const clusters = clusterThreads(msgs);
