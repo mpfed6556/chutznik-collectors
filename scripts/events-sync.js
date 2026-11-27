@@ -85,8 +85,8 @@ function onShabbos(d, time, chanukah) {
 }
 // …and what belongs to the day itself stays in (Miriam, 27 Nov 2026: "Some events make sense to be in shabbos. Like big meals"):
 // a meal, a kiddush, an oneg, a tisch, davening, a shiur, a shabbaton. It is the workshop, the tour, the show, the market on
-// that day that is kept out.
-const SHABBOS_OK_RE = /\b(?:kiddush|seudah?|seudat|seudas|shalosh seudos|seudah shlishit|oneg|tisch|farbrengen|shabbaton|kabbal[ao][ts] shabb?[ao][ts]|davening|minyan|tefill?[ao][ths]?|shiur(?:im)?|drasha|parsh[ai]t?|melave malk[ae]h?)\b|\b(?:shabb?at|shabb?os|friday night|yom tov|chag|holiday|communal|community|festive)\s+(?:dinner|lunch|meals?|table)\b|\b(?:dinner|lunch|meals?)\s+(?:for|on|of)\s+(?:shabb?at|shabb?os|yom tov|chag)\b/i;
+// that day that is kept out. A tour on Shabbos is fine too (Miriam, 27 Nov 2026: "Tour on shabbat is ok").
+const SHABBOS_OK_RE = /\b(?:tours?|walking tour|guided walk|kiddush|seudah?|seudat|seudas|shalosh seudos|seudah shlishit|oneg|tisch|farbrengen|shabbaton|kabbal[ao][ts] shabb?[ao][ts]|davening|minyan|tefill?[ao][ths]?|shiur(?:im)?|drasha|parsh[ai]t?|melave malk[ae]h?)\b|\b(?:shabb?at|shabb?os|friday night|yom tov|chag|holiday|communal|community|festive)\s+(?:dinner|lunch|meals?|table)\b|\b(?:dinner|lunch|meals?)\s+(?:for|on|of)\s+(?:shabb?at|shabb?os|yom tov|chag)\b/i;
 const NOT_FOR_US_RE = /\b(shabbat market|saturday market|pride|nightclub|club night|dj set|bar crawl|pub crawl|cocktails?|beer festival|wine tasting)\b/i;
 const NOT_OURS_RE = /\b(church(?:es)?|christian(?:ity)?|christmas|xmas|jesus|christ\b|easter|monaster(?:y|ies)|convent|cathedral|basilica|chapel|nuns?|priests?|gospel|crusader|via dolorosa|holy sepulch|nativity|saints? [A-Z]|st\.? (?:john|mary|anne|peter|george|stephen)|mosque|ramadan|eid\b|buddh|hindu|yoga retreat temple|halloween|new year'?s eve)\b/i;
 const IMG_RE = /\.(jpe?g|png|webp|gif)(\?[^\s"']*)?$/i;
