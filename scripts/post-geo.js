@@ -42,6 +42,9 @@ function buildIndex(tiles, cityNames) {
   for (const [alias, he] of [['touval', 'תובל'], ['tuval', 'תובל']]) { const hk = normHe(he); if (addr.has(hk) && !en.has(alias)) en.set(alias, hk); }
   // "Sderot Eshkol" is Levi Eshkol, the boulevard of Ramat Eshkol — not the one-house HaEshkol lane the bare word finds (Miriam,
   // 26 Nov 2026, a sale at "10 Sderot Eshkol": "why doesn't it have a map icon with the address")
+  // Jaffa Road the way people here write it (27 Nov 2026: "Yaffo 180", "Yaffo 208" stood nowhere)
+  for (const alias of ['yaffo', 'yafo', 'jaffa', 'jaffa road', 'rechov yaffo', 'derech yaffo']) { const hk = normHe('יפו'); if (addr.has(hk) && !en.has(alias)) en.set(alias, hk); }
+  for (const [alias, he] of [['chaggai', 'חגי'], ['chagai', 'חגי'], ['shpitzer', 'שפיצר'], ['spitzer', 'שפיצר'], ['pitchiya', 'פתחיה'], ['pesachya', 'פתחיה'], ['alkabetz', 'אלקבץ']]) { const hk = normHe(he); if (addr.has(hk) && !en.has(alias)) en.set(alias, hk); }
   for (const alias of ['sderot eshkol', 'sderos eshkol', 'shderot eshkol', 'sd eshkol', 'sderot levi eshkol', 'sderos levi eshkol', 'shderot levi eshkol', 'sd levi eshkol']) { const hk = normHe('לוי אשכול'); if (addr.has(hk)) en.set(alias, hk); }
   return { addr, en, sk, enName };
 }
@@ -54,22 +57,18 @@ const NOT_STREET = /^(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|jan
 function lookupStreet(ix, words, he) {
   for (let k = Math.min(4, words.length); k >= 1; k--) {
     const cand = words.slice(-k).join(' ');
-    if (he) { const h = normHe(cand); if (ix.addr.has(h)) return h; const h2 = h.replace(/^[בלמה]/, ''); if (h2 !== h && ix.addr.has(h2)) return h2; continue; }
+    if (he) { const h = normHe(cand); if (ix.addr.has(h)) { lookupStreet.k = k; return h; } const h2 = h.replace(/^[בלמה]/, ''); if (h2 !== h && ix.addr.has(h2)) { lookupStreet.k = k; return h2; } continue; }
     const e = normEn(cand); if (!e || NOT_STREET.test(e)) continue;   // "Nov 6" is a date, though Jerusalem has a Nov Street
-    if (ix.en.has(e)) return ix.en.get(e);
-    const s = skel(cand); if (s.length >= 4 && ix.sk.get(s)) return ix.sk.get(s);
+    if (ix.en.has(e)) { lookupStreet.k = k; return ix.en.get(e); }
+    const s = skel(cand); if (s.length >= 4 && ix.sk.get(s)) { lookupStreet.k = k; return ix.sk.get(s); }
     // the Ashkenazi way of saying it (26 Nov 2026: "Ponim Meiros 16", "Reishis Chochmah" found no street): a closing s is a t
-    const a = skel(cand.replace(/s\b/gi, 't').replace(/\bbais\b/gi, 'beit').replace(/oi|oy/gi, 'o')); if (a !== s && a.length >= 4 && ix.sk.get(a)) return ix.sk.get(a);
+    const a = skel(cand.replace(/s\b/gi, 't').replace(/\b(?:bais|beis)\b/gi, 'beit').replace(/oi|oy/gi, 'o')); if (a !== s && a.length >= 4 && ix.sk.get(a)) { lookupStreet.k = k; return ix.sk.get(a); }
+    // a closing h that the map does not write (27 Nov 2026: "Imrei Binah 19", "Reishis Chochmah 23")
+    for (const v of [s, a]) { const b = v.replace(/h$/, ''); if (b !== v && b.length >= 4 && ix.sk.get(b)) { lookupStreet.k = k; return ix.sk.get(b); } }
   }
   return null;
 }
-function findAddress(ix, text) {
-  const t = String(text || '').replace(/<[^>]+>/g, ' ').slice(0, 6000);
-  // A number the map's address book does not carry (26 Nov 2026, Miriam: "there's literally a Meuchedet right next door" — the
-  // clinic is at Yirmiyahu 19; the book has 18 and 20 but no 19, so it stood nowhere). The spot is then worked out from the
-  // street's own numbers: halfway between the nearest numbers on the same side (13 and 25 → 19), or beside the house one or
-  // two numbers away. Never further than that, and the label says "about".
-  const about = (m, num) => {
+function aboutSpot(m, num) {
     const n = parseInt(String(num), 10); if (!(n >= 1) || /^0/.test(String(num))) return null;
     let lo = null, hi = null;
     for (const [k, g] of m) { if (!/^\d+$/.test(k)) continue; const v = +k; if ((v - n) % 2 !== 0) continue; if (v < n && n - v <= 12 && (!lo || v > lo.v)) lo = { v, g }; if (v > n && v - n <= 12 && (!hi || v < hi.v)) hi = { v, g }; }
@@ -77,7 +76,14 @@ function findAddress(ix, text) {
     let best = null; for (const [k, g] of m) { if (!/^\d+$/.test(k)) continue; const d = Math.abs(+k - n); if (d && d <= 2 && (!best || d < best.d)) best = { d, g }; }
     if (best) return [best.g[0], best.g[1]];
     const one = lo || hi; return one && Math.abs(one.v - n) <= 4 ? [one.g[0], one.g[1]] : null;
-  };
+  }
+function findAddress(ix, text) {
+  const t = String(text || '').replace(/<[^>]+>/g, ' ').slice(0, 6000);
+  // A number the map's address book does not carry (26 Nov 2026, Miriam: "there's literally a Meuchedet right next door" — the
+  // clinic is at Yirmiyahu 19; the book has 18 and 20 but no 19, so it stood nowhere). The spot is then worked out from the
+  // street's own numbers: halfway between the nearest numbers on the same side (13 and 25 → 19), or beside the house one or
+  // two numbers away. Never further than that, and the label says "about".
+  const about = aboutSpot;
   const hit = (hk, num) => { const m = ix.addr.get(hk); if (!m) return null; const n = String(num).replace(/[a-z]$/i, ''); const g = m.get(String(num)) || m.get(n); if (g) return { lat: g[0], lon: g[1], label: (ix.enName.get(hk) || hk) + ' ' + num };
     const a = about(m, n); return a ? { lat: +a[0].toFixed(6), lon: +a[1].toFixed(6), label: 'about ' + (ix.enName.get(hk) || hk) + ' ' + num, about: true } : null; };
   let m, soft = null;
@@ -88,6 +94,29 @@ function findAddress(ix, text) {
   EN_A.lastIndex = 0; while ((m = EN_A.exec(t))) { const words = m[1].trim().split(/\s+/); const hk = lookupStreet(ix, words, false); if (hk) { const g = take(hit(hk, m[2])); if (g) return g; } }
   EN_B.lastIndex = 0; while ((m = EN_B.exec(t))) { const words = m[2].trim().split(/\s+/); for (let k = Math.min(4, words.length); k >= 1; k--) { const hk = lookupStreet(ix, words.slice(0, k), false); if (hk) { const g = take(hit(hk, m[1])); if (g) return g; break; } } }
   return soft;
+}
+// Every address a post's own words name, each with the words exactly as written (Miriam, 27 Nov 2026: "show each mention of an
+// address as mini green ones"). Only a street and a number that really stand in the address book: never a worked-out spot.
+function findAll(ix, text) {
+  const t = String(text || '').replace(/<[^>]+>/g, ' ').slice(0, 9000); const out = []; const seen = new Set(); let m;
+  const hit = (hk, num) => { const b = ix.addr.get(hk); if (!b) return null; const n = String(num).replace(/[a-z]$/i, ''); const g = b.get(String(num)) || b.get(n); if (g) return { lat: g[0], lon: g[1], label: (ix.enName.get(hk) || hk) + ' ' + num };
+    const a = aboutSpot(b, n); return a ? { lat: +a[0].toFixed(6), lon: +a[1].toFixed(6), label: 'about ' + (ix.enName.get(hk) || hk) + ' ' + num } : null; };
+  const add = (g, raw) => { raw = String(raw || '').trim(); if (!g || raw.length < 4 || raw.length > 60 || /\n/.test(raw) || seen.has(raw)) return; seen.add(raw); out.push([raw, g.lat, g.lon, g.label.slice(0, 60)]); };
+  // the last k words of a run, as they stand in the text
+  const tailFrom = (run, k) => { const re = /\S+/g; const at = []; let w; while ((w = re.exec(run))) at.push(w.index); return at.length >= k ? at[at.length - k] : 0; };
+  const headTo = (run, k) => { const re = /\S+/g; let w, n = 0, end = run.length; while ((w = re.exec(run))) { n++; if (n === k) { end = w.index + w[0].length; break; } } return end; };
+  HE_RE.lastIndex = 0; while ((m = HE_RE.exec(t)) && out.length < 12) { const words = m[1].trim().split(/\s+/); lookupStreet.k = 0; const hk = lookupStreet(ix, words, true); if (!hk) continue; const g = hit(hk, m[2]); if (!g) continue; const lead = m[1].length - m[1].trimStart().length; const run = m[1].trim(); add(g, t.slice(m.index + lead + tailFrom(run, lookupStreet.k || words.length), m.index + m[0].length)); }
+  EN_A.lastIndex = 0; while ((m = EN_A.exec(t)) && out.length < 12) { const words = m[1].trim().split(/\s+/); lookupStreet.k = 0; const hk = lookupStreet(ix, words, false); if (!hk) continue; const g = hit(hk, m[2]); if (!g) continue; add(g, t.slice(m.index + tailFrom(m[1], lookupStreet.k || words.length), m.index + m[0].length)); }
+  EN_B.lastIndex = 0; while ((m = EN_B.exec(t)) && out.length < 12) { const words = m[2].trim().split(/\s+/); let hk = null, kk = 0; for (let k = Math.min(4, words.length); k >= 1; k--) { lookupStreet.k = 0; const h = lookupStreet(ix, words.slice(0, k), false); if (h && lookupStreet.k === k) { hk = h; kk = k; break; } } if (!hk) continue; const g = hit(hk, m[1]); if (!g) continue;
+    const s0 = m.index + m[0].indexOf(m[1]); const w0 = m.index + m[0].lastIndexOf(m[2]); add(g, t.slice(s0, w0 + headTo(m[2], kk))); }
+  return out;
+}
+function allAddresses(ix, updates, posts) {
+  const out = {};
+  const each = (p, key) => { if (!p || p.deleted || (p.status && p.status !== 'public')) return; const L = findAll(ix, [p.memo, p.memoHTML].filter(Boolean).join('\n')); if (L.length) out[key] = L; };
+  for (const u of updates || []) each(u, 'up_' + u.id);
+  for (const p of posts || []) if (p && !p._ad && !p._cfg) each(p, String(p.id));
+  return out;
 }
 // ── A post held at a well-known place (Miriam, 15 Nov 2026, a flyer reading "ALL @ TACHANA RISHONA": "should show on map,
 //    all such instances"). A post with no street address that names one of these places as where it happens is put there.
@@ -221,11 +250,12 @@ async function run() {
     if (!Array.isArray(ups)) { LOG('📍 post map: could not read the posts'); return; }
     const map = geocodePosts(ix, ups, Array.isArray(posts) ? posts : []);
     const n = Object.keys(map).length;
-    const sig = JSON.stringify(map); if (sig === _lastSig) return;   // nothing moved since the last save: no write
+    let all = {}; try { all = allAddresses(ix, ups, Array.isArray(posts) ? posts : []); } catch (e) { all = {}; }
+    const sig = JSON.stringify([map, all]); if (sig === _lastSig) return;   // nothing moved since the last save: no write
     // the save is tried again when the site is busy (15 Nov 2026: a save lost to a busy moment left the map three hours behind)
     let r = null;
     for (let a = 0; a < 4; a++) {
-      try { r = await fetch(SITE + '/api/live-data?type=buildings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ postgeo: { at: Date.now(), map } }), signal: AbortSignal.timeout(60000) }); } catch (e) { r = null; }
+      try { r = await fetch(SITE + '/api/live-data?type=buildings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-ingest-key': KEY, 'User-Agent': 'chutznik-bridge' }, body: JSON.stringify({ postgeo: { at: Date.now(), map, all } }), signal: AbortSignal.timeout(60000) }); } catch (e) { r = null; }
       if (r && r.ok) { _lastSig = sig; break; }
       await new Promise((ok) => setTimeout(ok, 45000 * (a + 1)));
     }
@@ -233,4 +263,4 @@ async function run() {
   } catch (e) { LOG('📍 post map: ' + (e && e.message)); } finally { _running = false; }
 }
 function start(log) { if (log) LOG = log; setTimeout(() => run().catch(() => {}), 8 * 60 * 1000); setInterval(() => run().catch(() => {}), 45 * 60 * 1000); }
-module.exports = { start, run, buildIndex, findAddress, findVenue, VENUES, geocodePosts, normEn, normHe, skel };
+module.exports = { start, run, buildIndex, findAddress, findAll, allAddresses, findVenue, VENUES, geocodePosts, normEn, normHe, skel };
