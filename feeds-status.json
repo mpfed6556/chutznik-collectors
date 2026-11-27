@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-27T04:23:28.931Z",
+  "lastRun": "2026-11-27T14:11:39.922Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -16,7 +16,7 @@
     "Employment Service": "page HTTP 403",
     "Meuhedet": "no feed, no scannable items, nothing in the news last 48h",
     "Clalit": "blocked: robots.txt unreachable — skipping to be safe",
-    "Maccabi": "no feed, no scannable items, nothing in the news last 48h",
+    "Maccabi": "blocked: robots.txt unreachable — skipping to be safe",
     "Leumit": "no feed, no scannable items, nothing in the news last 48h",
     "Ben Gurion Airport": "page HTTP 404",
     "El Al": "no feed, no scannable items, nothing in the news last 48h",
@@ -48,7 +48,7 @@
     "Hagihon (Jerusalem Water)": "blocked: robots.txt unreachable — skipping to be safe",
     "Magen David Adom": "no feed, no scannable items, nothing in the news last 48h",
     "United Hatzalah": "page HTTP 403",
-    "Yad Sarah": "no feed, no scannable items, nothing in the news last 48h",
+    "Yad Sarah": "ok via RSS (6 items)",
     "Chief Rabbinate (kashrut alerts)": "page HTTP 403",
     "Bank of Israel": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Welfare": "page HTTP 403",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-27T04:23:28.930Z",
+      "lastRun": "2026-11-27T14:11:39.920Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -208,34 +208,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "ACADEMY BY SAR-EL",
+            "title": "Community Shabbat Dinner in Honor of Yud Tet Kislev",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/academy-by-sar-el/"
+            "link": "https://www.nbn.org.il/events/community-shabbat-dinner-in-honor-of-yud-tet-kislev/"
           },
           {
-            "title": "Infinity Within Me: Uncover the Potential Within Yourself through Kabbalah",
+            "title": "Shabbat Dinner for Jerusalem Young Professionals | Thanksgiving",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/infinity-within-me-uncover-the-potential-within-yourself-through-kabbalah/"
+            "link": "https://www.nbn.org.il/events/shabbat-dinner-for-jerusalem-young-professionals-thanksgiving/"
           },
           {
-            "title": "Thanksgiving Dinner for Olim in Haifa",
-            "date": "2026-11-26",
-            "time": "",
-            "link": "https://www.nbn.org.il/events/thanksgiving-dinner-for-olim-in-haifa/"
-          },
-          {
-            "title": "HER Tel Aviv’s Iconic Women’s Mega Networking Night",
+            "title": "Chiburim Cozmim",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/her-tel-avivs-iconic-womens-mega-networking-night/"
+            "link": "https://www.nbn.org.il/events/chiburim-cozmim/"
           },
           {
-            "title": "Jacob’s Stepladder – A New Play",
+            "title": "Thanksgiving Shabbat Dinner at Beit Daniel",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/jacobs-stepladder-a-new-play/"
+            "link": "https://www.nbn.org.il/events/thanksgiving-is-one-week-away-mark-your-calendars/"
+          },
+          {
+            "title": "MielureTLV Shabbat Supper Club",
+            "date": null,
+            "time": "",
+            "link": "https://www.nbn.org.il/events/mieluretlv-shabbat-supper-club/"
           }
         ],
         "Pardes": [
