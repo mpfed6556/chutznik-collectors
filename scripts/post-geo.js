@@ -35,7 +35,8 @@ function buildIndex(tiles, cityNames) {
   const en = new Map(), sk = new Map(), enName = new Map();
   for (const nm of cityNames || []) {
     const e = nm && nm[0], h = nm && nm[1]; if (!e || !h) continue; const hk = normHe(h); if (!addr.has(hk)) continue;
-    en.set(normEn(e), hk); enName.set(hk, e);
+    // Yaffo, never Jaffa, on every address this writes (27 Nov 2026); 'jaffa' stays below as a way people write it
+    en.set(normEn(e), hk); enName.set(hk, String(e).replace(/\bJaffa\b/g, 'Yaffo'));
     const s = skel(e); if (s.length >= 3) { if (sk.has(s) && sk.get(s) !== hk) sk.set(s, null); else sk.set(s, hk); }
   }
   // spellings people use that the map does not ("Touval 7" is the map's Tuval 7: 26 Nov 2026, the Meuchedet clinic that moved there)
