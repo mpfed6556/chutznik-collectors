@@ -83,6 +83,10 @@ function onShabbos(d, time, chanukah) {
   if (isHolyDay(next)) return h != null && h >= DAY_IN_AT[mo] - (chanukah ? 0 : 0.5);
   return false;
 }
+// …and what belongs to the day itself stays in (Miriam, 27 Nov 2026: "Some events make sense to be in shabbos. Like big meals"):
+// a meal, a kiddush, an oneg, a tisch, davening, a shiur, a shabbaton. It is the workshop, the tour, the show, the market on
+// that day that is kept out.
+const SHABBOS_OK_RE = /\b(?:kiddush|seudah?|seudat|seudas|shalosh seudos|seudah shlishit|oneg|tisch|farbrengen|shabbaton|kabbal[ao][ts] shabb?[ao][ts]|davening|minyan|tefill?[ao][ths]?|shiur(?:im)?|drasha|parsh[ai]t?|melave malk[ae]h?)\b|\b(?:shabb?at|shabb?os|friday night|yom tov|chag|holiday|communal|community|festive)\s+(?:dinner|lunch|meals?|table)\b|\b(?:dinner|lunch|meals?)\s+(?:for|on|of)\s+(?:shabb?at|shabb?os|yom tov|chag)\b/i;
 const NOT_FOR_US_RE = /\b(shabbat market|saturday market|pride|nightclub|club night|dj set|bar crawl|pub crawl|cocktails?|beer festival|wine tasting)\b/i;
 const NOT_OURS_RE = /\b(church(?:es)?|christian(?:ity)?|christmas|xmas|jesus|christ\b|easter|monaster(?:y|ies)|convent|cathedral|basilica|chapel|nuns?|priests?|gospel|crusader|via dolorosa|holy sepulch|nativity|saints? [A-Z]|st\.? (?:john|mary|anne|peter|george|stephen)|mosque|ramadan|eid\b|buddh|hindu|yoga retreat temple|halloween|new year'?s eve)\b/i;
 const IMG_RE = /\.(jpe?g|png|webp|gif)(\?[^\s"']*)?$/i;
@@ -412,8 +416,8 @@ const SOURCES = [
           if (!arr) continue;                       // could not read its dates this time: try again next round
           const occ = occurrence(arr);
           // not for this community: anything on Shabbos, and nightlife
-          if (occ.date && occ.date.getDay() === 6) { SEEN.add(key); continue; }
-          if (/\b(saturday|shabbat market|pride|nightclub|club night|dj set|bar crawl|cocktail|beer festival|wine tasting)\b/i.test(title + ' ' + desc)) { SEEN.add(key); continue; }
+          if (occ.date && onShabbos(occ.date, occ.time, CHANUKAH_RE.test(title + ' ' + desc)) && !SHABBOS_OK_RE.test(title + ' ' + desc)) { SEEN.add(key); continue; }
+          if (!SHABBOS_OK_RE.test(title + ' ' + desc) && /\b(saturday|shabbat market|pride|nightclub|club night|dj set|bar crawl|cocktail|beer festival|wine tasting)\b/i.test(title + ' ' + desc)) { SEEN.add(key); continue; }
           items.push({ image: imageInObject(c, 'https://www.itraveljerusalem.com'), title, link, desc: desc.slice(0, 500), date: occ.date, time: occ.time, place, published: Date.now(), _raw: (arr ? arr.length + ' dates; first ' + JSON.stringify(arr[0]).slice(0, 160) : 'no dates on card') });
         }
         if (items.length) { STATUS[this.name] = 'ok via listing cards (' + items.length + ' new of ' + cards.length + ')'; return items; }
@@ -472,7 +476,7 @@ async function run(seenSet, statusObj, force) {
       // not for this site: anything church-related or otherwise not Jewish (Miriam, 25 Sep 2026)
       if (NOT_OURS_RE.test(r.title + ' ' + (r.desc || '') + ' ' + (r.place || ''))) { SEEN.add(key); continue; }
       // nor anything held on Shabbos or Yom Tov, nor nightlife (27 Nov 2026)
-      if (onShabbos(d, r.time, CHANUKAH_RE.test(r.title + ' ' + (r.desc || ''))) || NOT_FOR_US_RE.test(r.title + ' ' + (r.desc || ''))) { SEEN.add(key); continue; }
+      { const txt = r.title + ' ' + (r.desc || ''); if ((onShabbos(d, r.time, CHANUKAH_RE.test(txt)) && !SHABBOS_OK_RE.test(txt)) || NOT_FOR_US_RE.test(txt)) { SEEN.add(key); continue; } }
       let title = r.title, desc = r.desc || '';
       // a card's heading often runs the name, the speaker and the series into one line
       // ("The Battle for the Jewish Future Prof. Daniel R. Schwartz Series: …"): the name
