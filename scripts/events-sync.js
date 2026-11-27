@@ -73,10 +73,14 @@ function isHolyDay(d) {
 const DAY_IN_AT = [16.0, 16.5, 17.0, 18.3, 18.6, 19.0, 19.0, 18.5, 17.7, 16.3, 15.8, 15.8];    // by month, the earliest it comes in (hour of the day, Jerusalem)
 const DAY_OUT_AT = [18.3, 18.7, 19.9, 20.4, 20.7, 20.9, 20.9, 20.5, 19.9, 19.2, 18.0, 18.0];   // by month, the latest it goes out
 function hourOf(time) { const m = String(time || '').match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i); if (!m) return null; let h = Number(m[1]); if (m[3]) { if (/pm/i.test(m[3]) && h < 12) h += 12; if (/am/i.test(m[3]) && h === 12) h = 0; } return h > 23 ? null : h + Number(m[2] || 0) / 60; }
-function onShabbos(d, time) {
+// Chanukah is the exception (Miriam, 27 Nov 2026): a Chanukah event, a candle lighting above all, is held right up to the day
+// coming in and straight after it goes out, so it is not given the half hour before or the hour after. In the middle of the day
+// itself it stays out like anything else.
+const CHANUKAH_RE = /\b[ck]?h?an+uk+[ai]h?\b|חנוכה|\bmenorah\b/i;
+function onShabbos(d, time, chanukah) {
   if (!d || isNaN(d)) return false; const h = hourOf(time), mo = d.getMonth(); const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
-  if (isHolyDay(d)) return isHolyDay(next) ? true : !(h != null && h >= DAY_OUT_AT[mo] + 1);
-  if (isHolyDay(next)) return h != null && h >= DAY_IN_AT[mo] - 0.5;
+  if (isHolyDay(d)) return isHolyDay(next) ? true : !(h != null && h >= DAY_OUT_AT[mo] + (chanukah ? 0 : 1));
+  if (isHolyDay(next)) return h != null && h >= DAY_IN_AT[mo] - (chanukah ? 0 : 0.5);
   return false;
 }
 const NOT_FOR_US_RE = /\b(shabbat market|saturday market|pride|nightclub|club night|dj set|bar crawl|pub crawl|cocktails?|beer festival|wine tasting)\b/i;
@@ -468,7 +472,7 @@ async function run(seenSet, statusObj, force) {
       // not for this site: anything church-related or otherwise not Jewish (Miriam, 25 Sep 2026)
       if (NOT_OURS_RE.test(r.title + ' ' + (r.desc || '') + ' ' + (r.place || ''))) { SEEN.add(key); continue; }
       // nor anything held on Shabbos or Yom Tov, nor nightlife (27 Nov 2026)
-      if (onShabbos(d, r.time) || NOT_FOR_US_RE.test(r.title + ' ' + (r.desc || ''))) { SEEN.add(key); continue; }
+      if (onShabbos(d, r.time, CHANUKAH_RE.test(r.title + ' ' + (r.desc || ''))) || NOT_FOR_US_RE.test(r.title + ' ' + (r.desc || ''))) { SEEN.add(key); continue; }
       let title = r.title, desc = r.desc || '';
       // a card's heading often runs the name, the speaker and the series into one line
       // ("The Battle for the Jewish Future Prof. Daniel R. Schwartz Series: …"): the name
