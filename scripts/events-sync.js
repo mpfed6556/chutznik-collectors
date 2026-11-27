@@ -60,6 +60,26 @@ const niceDate = (d) => d.toLocaleDateString('en-US', { weekday: 'long', month: 
 // ── the event's picture (Miriam, 24 Sep 2026): the first picture the source
 //    shows for it — from the card, the feed entry, or the event's own page —
 //    downloaded and put on the site like a WhatsApp photo ──
+// ── Nothing held on Shabbos or Yom Tov, from any feed (Miriam, 27 Nov 2026: "Anything not shomer shabbat should not be here" —
+//    a workshop on a Saturday had come in). On the day itself an event stays out unless it starts a good hour after the day is
+//    out; on the day before, from half an hour ahead of when it comes in. No time given on the day itself: it stays out.
+const _hebDay = new Intl.DateTimeFormat('en-u-ca-hebrew', { day: 'numeric', month: 'long' });
+function isHolyDay(d) {
+  if (d.getDay() === 6) return true;
+  try { const ps = _hebDay.formatToParts(d); const day = Number((ps.find((x) => x.type === 'day') || {}).value), mon = String((ps.find((x) => x.type === 'month') || {}).value || '').toLowerCase();
+    if (/^tishr/.test(mon)) return [1, 2, 10, 15, 22].includes(day); if (/^nisan/.test(mon)) return day === 15 || day === 21; if (/^sivan/.test(mon)) return day === 6; } catch (e) {}
+  return false;
+}
+const DAY_IN_AT = [16.0, 16.5, 17.0, 18.3, 18.6, 19.0, 19.0, 18.5, 17.7, 16.3, 15.8, 15.8];    // by month, the earliest it comes in (hour of the day, Jerusalem)
+const DAY_OUT_AT = [18.3, 18.7, 19.9, 20.4, 20.7, 20.9, 20.9, 20.5, 19.9, 19.2, 18.0, 18.0];   // by month, the latest it goes out
+function hourOf(time) { const m = String(time || '').match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i); if (!m) return null; let h = Number(m[1]); if (m[3]) { if (/pm/i.test(m[3]) && h < 12) h += 12; if (/am/i.test(m[3]) && h === 12) h = 0; } return h > 23 ? null : h + Number(m[2] || 0) / 60; }
+function onShabbos(d, time) {
+  if (!d || isNaN(d)) return false; const h = hourOf(time), mo = d.getMonth(); const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+  if (isHolyDay(d)) return isHolyDay(next) ? true : !(h != null && h >= DAY_OUT_AT[mo] + 1);
+  if (isHolyDay(next)) return h != null && h >= DAY_IN_AT[mo] - 0.5;
+  return false;
+}
+const NOT_FOR_US_RE = /\b(shabbat market|saturday market|pride|nightclub|club night|dj set|bar crawl|pub crawl|cocktails?|beer festival|wine tasting)\b/i;
 const NOT_OURS_RE = /\b(church(?:es)?|christian(?:ity)?|christmas|xmas|jesus|christ\b|easter|monaster(?:y|ies)|convent|cathedral|basilica|chapel|nuns?|priests?|gospel|crusader|via dolorosa|holy sepulch|nativity|saints? [A-Z]|st\.? (?:john|mary|anne|peter|george|stephen)|mosque|ramadan|eid\b|buddh|hindu|yoga retreat temple|halloween|new year'?s eve)\b/i;
 const IMG_RE = /\.(jpe?g|png|webp|gif)(\?[^\s"']*)?$/i;
 const absUrl = (u, base) => { try { return new URL(String(u || '').trim(), base).href; } catch (e) { return ''; } };
@@ -257,7 +277,7 @@ const GENERIC_SOURCES = [
   generic({ name: 'Jerusalem Botanical Gardens', group: 'Jerusalem Botanical Gardens', types: ['Events', 'Place'], place: 'Botanical Gardens, Givat Ram', tries: ['https://www.botanic.co.il/en/events/', 'https://www.botanic.co.il/en/feed/', 'https://www.botanic.co.il/en/'] }),
   generic({ name: 'Biblical Zoo', group: 'Jerusalem Biblical Zoo', types: ['Events', 'Place'], place: 'Biblical Zoo', tries: ['https://www.jerusalemzoo.org/en/events/', 'https://www.jerusalemzoo.org/feed/', 'https://www.jerusalemzoo.org/en/'] }),
   generic({ name: 'Jerusalem Symphony', group: 'Jerusalem Symphony Orchestra', types: ['Events', 'Community'], tries: ['https://www.jso.co.il/en/concerts/', 'https://www.jso.co.il/en/', 'https://www.jso.co.il/feed/'] }),
-  generic({ name: 'Eventbrite Jerusalem', group: 'Eventbrite (Jerusalem)', types: ['Events', 'Community'], tries: ['https://www.eventbrite.com/d/israel--jerusalem/events/', 'https://www.eventbrite.com/d/israel--jerusalem/jewish/'] }),
+  // the Eventbrite listing is gone (Miriam, 17 and 27 Nov 2026): it was online events from every country, none of them for this community
   generic({ name: 'Janglo events', group: 'Janglo (events)', types: ['Events', 'Community'], tries: ['https://www.janglo.net/jerusalem/events', 'https://www.janglo.net/rss/jerusalem/events', 'https://www.janglo.net/events'] }),
   generic({ name: 'Secret Jerusalem', group: 'Secret Jerusalem', types: ['Events', 'Community'], tries: ['https://www.secretjerusalem.com/feed/', 'https://www.secretjerusalem.com/'] }),
 ];
@@ -447,6 +467,8 @@ async function run(seenSet, statusObj, force) {
       if (src.eventWords && !src.eventWords.test(r.title + ' ' + (r.desc || ''))) { SEEN.add(key); continue; }
       // not for this site: anything church-related or otherwise not Jewish (Miriam, 25 Sep 2026)
       if (NOT_OURS_RE.test(r.title + ' ' + (r.desc || '') + ' ' + (r.place || ''))) { SEEN.add(key); continue; }
+      // nor anything held on Shabbos or Yom Tov, nor nightlife (27 Nov 2026)
+      if (onShabbos(d, r.time) || NOT_FOR_US_RE.test(r.title + ' ' + (r.desc || ''))) { SEEN.add(key); continue; }
       let title = r.title, desc = r.desc || '';
       // a card's heading often runs the name, the speaker and the series into one line
       // ("The Battle for the Jewish Future Prof. Daniel R. Schwartz Series: …"): the name
