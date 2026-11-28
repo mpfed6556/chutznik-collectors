@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-11-28T04:23:41.719Z",
+  "lastRun": "2026-11-28T13:26:45.557Z",
   "orgs": {
     "Bituach Leumi": "ok via page-scan (5 items) — no RSS found",
     "Ministry of Aliyah & Integration": "page HTTP 403",
@@ -24,7 +24,7 @@
     "Arkia": "blocked: robots.txt unreachable — skipping to be safe",
     "Israel Railways": "blocked: robots.txt unreachable — skipping to be safe",
     "Egged": "no feed, no scannable items, nothing in the news last 48h",
-    "Superbus": "ok via page-scan (4 items) — no RSS found",
+    "Superbus": "blocked: robots.txt unreachable — skipping to be safe",
     "Dan": "ok via page-scan (3 items) — no RSS found",
     "Rav-Kav": "ok via page-scan (5 items) — no RSS found",
     "Bezeq": "no feed, no scannable items, nothing in the news last 48h",
@@ -61,7 +61,7 @@
     "Shaare Zedek Medical Center": "blocked: robots.txt disallows this path",
     "Herzog Medical Center": "ok via page-scan (5 items) — no RSS found",
     "_events": {
-      "lastRun": "2026-11-28T04:23:41.718Z",
+      "lastRun": "2026-11-28T13:26:45.556Z",
       "sent": 0,
       "sources": {
         "Nefesh B'Nefesh": "ok via https://www.nbn.org.il/events/feed/ (10 upcoming)",
@@ -182,34 +182,34 @@
         ],
         "Nefesh B'Nefesh": [
           {
-            "title": "Community Shabbat Dinner in Honor of Yud Tet Kislev",
+            "title": "Birdwatching Tours in English at Rosh Tsipor Urban Sanctuary",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/community-shabbat-dinner-in-honor-of-yud-tet-kislev/"
+            "link": "https://www.nbn.org.il/events/birdwatching-tours-in-english-at-rosh-tsipor-urban-sanctuary/"
           },
           {
-            "title": "Shabbat Dinner for Jerusalem Young Professionals | Thanksgiving",
+            "title": "Emunah Jerusalem First Yahrzeit Memorial Concert for Sonja Adler ע”ה",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/shabbat-dinner-for-jerusalem-young-professionals-thanksgiving/"
+            "link": "https://www.nbn.org.il/events/emunah-jerusalem-first-yahrzeit-memorial-concert-for-sonja-adler-%d7%a2%d7%94/"
           },
           {
-            "title": "Chiburim Cozmim",
+            "title": "Sunset Wine Club: Ancient Wines – Sips & Dips",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/chiburim-cozmim/"
+            "link": "https://www.nbn.org.il/events/sunset-wine-club-ancient-wines-sips-dips/"
           },
           {
-            "title": "Thanksgiving Shabbat Dinner at Beit Daniel",
+            "title": "ENCORE EDUCATIONAL THEATRE ORDINARY DAYS",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/thanksgiving-is-one-week-away-mark-your-calendars/"
+            "link": "https://www.nbn.org.il/events/encore-educational-theatre-ordinary-days/"
           },
           {
-            "title": "MielureTLV Shabbat Supper Club",
+            "title": "Nishmat’s Chanuka Yom Iyun,",
             "date": null,
             "time": "",
-            "link": "https://www.nbn.org.il/events/mieluretlv-shabbat-supper-club/"
+            "link": "https://www.nbn.org.il/events/nishmats-chanuka-yom-iyun/"
           }
         ],
         "Pardes": [
